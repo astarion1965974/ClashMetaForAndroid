@@ -26,3 +26,7 @@ The upstream README is included as attribution in the assets. Its CN domain set 
 From `core/src/main/golang`: `go test ./native/routing -count=1 -v`: original mode unchanged, priorities, exceptions, stale targets, stable caches, invalid domains/collisions, real Mihomo parsing of every bundled MRS and representative domestic/overseas domain routing.
 
 Release: same Live signing identity/application ID; version 2.11.36.Live3 / 211038. ARM64 APK. UI interaction and Android VPN reconnection still require device testing.
+
+## Live3.1 serialization fix
+
+The Live3 release used reflective serializer lookup for managed settings. R8 removed the indirectly referenced generated serializer, so saving a template failed with `Serializer for class 'ManagedRoutingSettings' is not found`. Live3.1 (versionCode 211039) explicitly references the generated serializer for both encoding and decoding, and encodes before opening the atomic write. Five codec regression tests cover every persisted field, native-consumer defaults, older partial files, unknown fields and malformed values. An R8-minified store reproduction fails on the old code and passes the save/reopen/disable cycle with the fix.
