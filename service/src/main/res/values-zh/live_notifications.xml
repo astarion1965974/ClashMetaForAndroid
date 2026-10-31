@@ -1,0 +1,21 @@
+<resources>
+    <string name="live_title">VPN · %1$s</string>
+    <string name="live_connected">VPN 已连接</string>
+    <string name="live_direct">直连</string>
+    <string name="live_multi_route">多线路分流</string>
+    <string name="live_multiple_nodes">%1$d 个节点</string>
+    <string name="live_by_rule">按规则分流</string>
+    <string name="live_unavailable">正在更新…</string>
+    <string name="live_mode_direct">直连</string>
+    <string name="live_mode_global">全局</string>
+    <string name="live_mode_rule">规则</string>
+    <string name="live_mode_script">脚本</string>
+    <string name="live_selected">所选出口：%1$s</string>
+    <string name="live_mode">模式：%1$s</string>
+    <string name="live_profile">配置：%1$s</string>
+    <string name="live_more_groups">另有 %1$d 个策略组 · 打开应用查看</string>
+    <string name="live_speed">↑ %1$s/s  ↓ %2$s/s</string>
+    <string name="live_total">累计：↑ %1$s  ↓ %2$s</string>
+    <string name="live_disconnect">断开连接</string>
+    <string name="live_enable">开启实时通知</string>
+</resources>

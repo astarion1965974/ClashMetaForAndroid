@@ -1,0 +1,21 @@
+<resources>
+    <string name="live_title">VPN · %1$s</string>
+    <string name="live_connected">VPN connected</string>
+    <string name="live_direct">DIRECT</string>
+    <string name="live_multi_route">Multiple routes</string>
+    <string name="live_multiple_nodes">%1$d nodes</string>
+    <string name="live_by_rule">By rule</string>
+    <string name="live_unavailable">Updating…</string>
+    <string name="live_mode_direct">Direct</string>
+    <string name="live_mode_global">Global</string>
+    <string name="live_mode_rule">Rule</string>
+    <string name="live_mode_script">Script</string>
+    <string name="live_selected">Selected exit: %1$s</string>
+    <string name="live_mode">Mode: %1$s</string>
+    <string name="live_profile">Profile: %1$s</string>
+    <string name="live_more_groups">+%1$d groups · open app for details</string>
+    <string name="live_speed">↑ %1$s/s  ↓ %2$s/s</string>
+    <string name="live_total">Total: ↑ %1$s  ↓ %2$s</string>
+    <string name="live_disconnect">Disconnect</string>
+    <string name="live_enable">Enable Live Updates</string>
+</resources>

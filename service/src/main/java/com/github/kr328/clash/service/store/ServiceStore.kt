@@ -65,4 +65,9 @@ class ServiceStore(context: Context) {
         key = "dynamic_notification",
         defaultValue = true
     )
+
+    var liveNotification by store.boolean(
+        key = "live_notification",
+        defaultValue = true
+    )
 }

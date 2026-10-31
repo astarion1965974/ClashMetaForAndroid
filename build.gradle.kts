@@ -21,6 +21,10 @@ buildscript {
 }
 
 subprojects {
+    val supportedAbis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+    val buildAbis = (rootProject.findProperty("cmfa.abis") as? String)
+        ?.split(',')?.map(String::trim)?.filter(String::isNotEmpty) ?: supportedAbis
+    require(buildAbis.isNotEmpty() && buildAbis.all { it in supportedAbis }) { "Unsupported cmfa.abis" }
     repositories {
         mavenCentral()
         google()
@@ -65,12 +69,12 @@ subprojects {
             resValue("integer", "release_code", "$versionCode")
 
             ndk {
-                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                abiFilters += buildAbis
             }
 
             externalNativeBuild {
                 cmake {
-                    abiFilters("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                    abiFilters(*buildAbis.toTypedArray())
                 }
             }
 
@@ -83,7 +87,9 @@ subprojects {
 
         ndkVersion = "29.0.14206865"
 
-        compileSdkVersion(defaultConfig.targetSdk!!)
+        // Live Updates are a platform API from Android 16 (API 36).
+        // Keep targetSdk unchanged to avoid unrelated behavior changes.
+        compileSdkVersion(36)
 
         if (isApp) {
             packagingOptions {
@@ -108,8 +114,8 @@ subprojects {
 
                 buildConfigField("boolean", "PREMIUM", "Boolean.parseBoolean(\"false\")")
 
-                resValue("string", "launch_name", "@string/launch_name_alpha")
-                resValue("string", "application_name", "@string/application_name_alpha")
+                resValue("string", "launch_name", queryConfigProperty("custom.application.name") as? String ?: "@string/launch_name_alpha")
+                resValue("string", "application_name", queryConfigProperty("custom.application.name") as? String ?: "@string/application_name_alpha")
 
                 if (isApp && !removeSuffix) {
                     applicationIdSuffix = ".alpha"
@@ -151,7 +157,7 @@ subprojects {
                         keystore.inputStream().use(this::load)
                     }
 
-                    storeFile = rootProject.file("release.keystore")
+                    storeFile = rootProject.file(prop.getProperty("keystore.path", "release.keystore"))
                     storePassword = prop.getProperty("keystore.password")!!
                     keyAlias = prop.getProperty("key.alias")!!
                     keyPassword = prop.getProperty("key.password")!!
@@ -188,7 +194,7 @@ subprojects {
                     isEnable = true
                     isUniversalApk = true
                     reset()
-                    include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+                    include(*buildAbis.toTypedArray())
                 }
             }
         }

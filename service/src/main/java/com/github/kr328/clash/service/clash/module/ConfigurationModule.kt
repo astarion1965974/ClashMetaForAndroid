@@ -57,6 +57,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 
                 Clash.setAgeSecretKey(active.ageSecretKey?.takeIf { it.isNotBlank() })
 
+                StatusProvider.profileLoaded = false
                 Clash.load(service.importedDir.resolve(active.uuid.toString())).await()
 
                 val remove = SelectionDao().querySelections(active.uuid)
@@ -66,6 +67,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                 SelectionDao().removeSelections(active.uuid, remove)
 
                 StatusProvider.currentProfile = active.name
+                StatusProvider.profileLoaded = true
 
                 service.sendProfileLoaded(current)
 

@@ -2,6 +2,7 @@ package com.github.kr328.clash.service.clash
 
 import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.service.StatusProvider
 import com.github.kr328.clash.service.clash.module.Module
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -28,6 +29,7 @@ fun CoroutineScope.clashRuntime(block: suspend ClashRuntimeScope.() -> Unit): Cl
                     try {
                         val modules = mutableListOf<Module<*>>()
 
+                        StatusProvider.profileLoaded = false
                         Clash.reset()
                         Clash.clearOverride(Clash.OverrideSlot.Session)
 
@@ -48,6 +50,7 @@ fun CoroutineScope.clashRuntime(block: suspend ClashRuntimeScope.() -> Unit): Cl
                         cancel()
                     } finally {
                         withContext(NonCancellable) {
+                            StatusProvider.profileLoaded = false
                             Clash.reset()
                             Clash.clearOverride(Clash.OverrideSlot.Session)
 

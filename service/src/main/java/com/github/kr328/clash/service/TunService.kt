@@ -34,7 +34,9 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val config = install(ConfigurationModule(self))
         val network = install(NetworkObserveModule(self))
 
-        if (store.dynamicNotification)
+        if (Build.VERSION.SDK_INT >= 36 && store.liveNotification)
+            install(LiveNotificationModule(self, store.dynamicNotification))
+        else if (store.dynamicNotification)
             install(DynamicNotificationModule(self))
         else
             install(StaticNotificationModule(self))

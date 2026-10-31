@@ -79,5 +79,7 @@ class StatusProvider : ContentProvider() {
                 }
             }
         var currentProfile: String? = null
+        @Volatile
+        var profileLoaded: Boolean = false
     }
 }
