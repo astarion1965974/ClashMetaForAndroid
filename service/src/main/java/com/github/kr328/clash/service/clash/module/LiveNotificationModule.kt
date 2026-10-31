@@ -9,6 +9,10 @@ import android.content.Intent
 import android.os.PowerManager
 import android.os.Bundle
 import android.provider.Settings
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.StyleSpan
 import androidx.core.content.getSystemService
 import com.github.kr328.clash.common.compat.getColorCompat
 import com.github.kr328.clash.common.compat.pendingIntentFlags
@@ -21,8 +25,10 @@ import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
 import com.github.kr328.clash.core.util.trafficUpload
+import com.github.kr328.clash.core.util.trafficTotal
 import com.github.kr328.clash.service.R
 import com.github.kr328.clash.service.StatusProvider
+import com.github.kr328.clash.service.store.ServiceStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -34,6 +40,15 @@ import kotlin.coroutines.coroutineContext
 @TargetApi(36)
 class LiveNotificationModule(service: Service, private val showTraffic: Boolean) : Module<Unit>(service) {
     private val manager = service.getSystemService<NotificationManager>()!!
+    private val store = ServiceStore(service)
+
+    private fun openNodes(group: String?): PendingIntent = PendingIntent.getActivity(
+        service, R.id.nf_clash_status + 1,
+        Intent().setClassName(service.packageName, "com.github.kr328.clash.ProxyActivity")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(Intents.EXTRA_NOTIFICATION_PROXY_GROUP, group),
+        pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)
+    )
 
     private val openApp = PendingIntent.getActivity(
         service, R.id.nf_clash_status,
@@ -61,7 +76,9 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         if (!StatusProvider.profileLoaded) return
         try {
             val mode = Clash.queryTunnelState().mode
-            val selection = NotificationNodeResolver.resolve(mode.name, Clash.queryGroupNames(false)) { name ->
+            val selection = NotificationNodeResolver.resolveMain(
+                mode.name, Clash.queryGroupNames(false), store.notificationProxyGroup
+            ) { name ->
                 Clash.queryGroup(name, ProxySort.Default).takeIf { it.type != "Unknown" }?.let {
                     NotificationNodeResolver.Group(
                         it.type, it.now, it.proxies.filter { proxy -> proxy.isGroup }.map { proxy -> proxy.name }.toSet()
@@ -70,11 +87,10 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
             }
             val label = when {
                 mode == TunnelState.Mode.Direct -> service.getString(R.string.live_direct)
-                selection.singleNode != null -> selection.singleNode!!
-                selection.entries.any { it.balanced } -> service.getString(R.string.live_multi_route)
-                selection.nodes.size > 1 -> service.getString(R.string.live_multiple_nodes, selection.nodes.size)
-                selection.entries.isNotEmpty() && selection.entries.all { it.node == "DIRECT" } -> service.getString(R.string.live_direct)
-                else -> service.getString(R.string.live_by_rule)
+                selection?.balanced == true -> service.getString(R.string.live_multi_route)
+                selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
+                selection?.node != null -> selection.node
+                else -> service.getString(R.string.live_unavailable)
             }
             val modeName = service.getString(when (mode) {
                 TunnelState.Mode.Direct -> R.string.live_mode_direct
@@ -82,46 +98,42 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 TunnelState.Mode.Rule -> R.string.live_mode_rule
                 TunnelState.Mode.Script -> R.string.live_mode_script
             })
-            val details = mutableListOf(service.getString(R.string.live_selected, label))
-            details += service.getString(R.string.live_mode, modeName)
-            StatusProvider.currentProfile?.let { details += service.getString(R.string.live_profile, it) }
-            for (entry in selection.entries.take(12)) {
-                val node = when {
-                    entry.balanced -> service.getString(R.string.live_multi_route)
-                    entry.node != null -> entry.node
-                    else -> service.getString(R.string.live_unavailable)
-                }
-                details += "${entry.group} → $node"
-            }
-            if (selection.entries.size > 12) {
-                details += service.getString(R.string.live_more_groups, selection.entries.size - 12)
-            }
-
+            val details = SpannableStringBuilder().append(
+                if (mode == TunnelState.Mode.Direct) service.getString(R.string.live_mode_direct)
+                else service.getString(R.string.live_main_group, selection?.group ?: "—")
+            ).append("\n\n")
             val summary = if (showTraffic) {
                 val now = Clash.queryTrafficNow()
-                val total = Clash.queryTrafficTotal()
-                details += service.getString(R.string.live_total, total.trafficUpload(), total.trafficDownload())
-                service.getString(R.string.live_speed, now.trafficUpload(), now.trafficDownload())
+                service.getString(R.string.live_speed_compact, now.trafficDownload(), now.trafficUpload())
             } else service.getString(R.string.live_connected)
-            details += summary
+            val speedStart = details.length
+            details.append(summary)
+            details.setSpan(StyleSpan(Typeface.BOLD), speedStart, details.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            if (showTraffic) details.append("\n").append(
+                service.getString(R.string.live_total_compact, Clash.queryTrafficTotal().trafficTotal())
+            )
+            StatusProvider.currentProfile?.let {
+                details.append(if (showTraffic) " · " else "\n").append(service.getString(R.string.live_profile, it))
+            }
 
             val builder = Notification.Builder(service, StaticNotificationModule.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_logo_service)
-                .setColor(service.getColorCompat(R.color.color_clash))
+                .setColor(service.getColorCompat(R.color.color_live_notification))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .setContentTitle(service.getString(R.string.live_title, label))
+                .setContentTitle(label)
                 .setContentText(summary)
                 .setSubText(modeName)
                 .setContentIntent(openApp)
-                .setStyle(Notification.BigTextStyle().bigText(details.joinToString("\n")))
+                .setStyle(Notification.BigTextStyle().bigText(details))
                 // The setter was added in 36.1; the standard extras contract also
                 // supports base API 36 without reflection or an AndroidX upgrade.
                 .addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
                 .setShortCriticalText(NotificationNodeResolver.chipText(label))
+                .addAction(Notification.Action.Builder(null, service.getString(R.string.live_nodes), openNodes(selection?.group)).build())
                 .addAction(Notification.Action.Builder(null, service.getString(R.string.live_disconnect), stopVpn).build())
 
             if (!manager.canPostPromotedNotifications()) {

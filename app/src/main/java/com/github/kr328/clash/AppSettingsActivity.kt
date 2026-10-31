@@ -2,12 +2,18 @@ package com.github.kr328.clash
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.content.Intent
+import androidx.appcompat.app.AlertDialog
+import com.github.kr328.clash.common.constants.Intents
+import com.github.kr328.clash.common.constants.Permissions
 import com.github.kr328.clash.common.util.componentName
 import com.github.kr328.clash.design.AppSettingsDesign
 import com.github.kr328.clash.design.model.Behavior
 import com.github.kr328.clash.design.store.UiStore.Companion.mainActivityAlias
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.ApplicationObserver
+import com.github.kr328.clash.util.withClash
+import com.github.kr328.clash.design.R as DesignR
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
@@ -28,18 +34,41 @@ class AppSettingsActivity : BaseActivity<AppSettingsDesign>(), Behavior {
             select<Unit> {
                 events.onReceive {
                     when (it) {
-                        Event.ClashStart, Event.ClashStop, Event.ServiceRecreated ->
+                        Event.ClashStart, Event.ClashStop, Event.ServiceRecreated, Event.ProfileLoaded ->
                             recreate()
                         else -> Unit
                     }
                 }
                 design.requests.onReceive {
-                    ApplicationObserver.createdActivities.forEach {
-                        it.recreate()
+                    when (it) {
+                        AppSettingsDesign.Request.ReCreateAllActivities ->
+                            ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
+                        AppSettingsDesign.Request.SelectNotificationGroup -> selectNotificationGroup()
                     }
                 }
             }
         }
+    }
+
+    private suspend fun selectNotificationGroup() {
+        if (!clashRunning) return
+        val names = withClash { queryProxyGroupNames(false) }.filter { it != "GLOBAL" }
+        val store = ServiceStore(this)
+        val values = listOf("") + names
+        val labels = listOf(getString(DesignR.string.live_notification_group_auto)) + names
+        AlertDialog.Builder(this)
+            .setTitle(DesignR.string.live_notification_group)
+            .setSingleChoiceItems(labels.toTypedArray(), values.indexOf(store.notificationProxyGroup).coerceAtLeast(0)) { dialog, which ->
+                store.notificationProxyGroup = values[which]
+                sendBroadcast(
+                    Intent(Intents.ACTION_PROXY_SELECTION_CHANGED).setPackage(packageName),
+                    Permissions.RECEIVE_SELF_BROADCASTS
+                )
+                dialog.dismiss()
+                recreate()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     override var autoRestart: Boolean

@@ -7,6 +7,36 @@ class NotificationNodeResolverTest {
     private fun group(now: String, vararg children: String) =
         NotificationNodeResolver.Group("Selector", now, children.toSet())
 
+    @Test fun explicitMainGroupWinsOverAutomaticDetection() {
+        assertEquals("Streaming", NotificationNodeResolver.mainGroup("Rule", listOf("Proxy", "Streaming"), "Streaming"))
+    }
+
+    @Test fun mainGroupDetectionRecognizesDecoratedChineseNames() {
+        assertEquals("🚀 节点选择", NotificationNodeResolver.mainGroup("Rule", listOf("自动选择", "🚀 节点选择"), ""))
+    }
+
+    @Test fun missingMainGroupFallsBackAfterProfileSwitch() {
+        assertEquals("Proxy", NotificationNodeResolver.mainGroup("Rule", listOf("Proxy", "Streaming"), "Old group"))
+        assertNull(NotificationNodeResolver.mainGroup("Rule", emptyList(), "Old group"))
+    }
+
+    @Test fun mainResolutionDoesNotSampleUnrelatedGroups() {
+        val groups = mapOf("Proxy" to group("Auto", "Auto"), "Auto" to group("HK 01"), "Streaming" to group("JP 02"))
+        val queried = mutableSetOf<String>()
+        val result = NotificationNodeResolver.resolveMain("Rule", groups.keys.toList(), "Proxy") { queried.add(it); groups[it] }
+        assertEquals("HK 01", result?.node)
+        assertEquals(setOf("Proxy", "Auto"), queried)
+    }
+
+    @Test fun mainResolutionUsesGlobalChainInGlobalMode() {
+        val groups = mapOf("GLOBAL" to group("JP 02"), "Proxy" to group("HK 01"))
+        assertEquals("JP 02", NotificationNodeResolver.resolveMain("Global", groups.keys.toList(), "Proxy", groups::get)?.node)
+    }
+
+    @Test fun mainResolutionNeverQueriesInDirectMode() {
+        assertEquals("DIRECT", NotificationNodeResolver.resolveMain("Direct", emptyList(), "Proxy") { error("must not query") }?.node)
+    }
+
     @Test fun globalResolvesNestedAndHiddenGroups() {
         val groups = mapOf("GLOBAL" to group("Proxy", "Proxy"), "Proxy" to group("Auto", "Auto"), "Auto" to group("HK 01"))
         val result = NotificationNodeResolver.resolve("Global", listOf("GLOBAL", "Proxy"), groups::get)

@@ -25,7 +25,7 @@ class AppSettingsDesign(
     onHideIconChange: (hide: Boolean) -> Unit,
 ) : Design<AppSettingsDesign.Request>(context) {
     enum class Request {
-        ReCreateAllActivities
+        ReCreateAllActivities, SelectNotificationGroup
     }
 
     private val binding = DesignSettingsCommonBinding
@@ -101,6 +101,14 @@ class AppSettingsDesign(
                     summary = R.string.live_notification_summary
                 ) {
                     enabled = !running
+                }
+                clickable(
+                    title = R.string.live_notification_group,
+                    summary = R.string.live_notification_group_summary
+                ) {
+                    enabled = running
+                    if (srvStore.notificationProxyGroup.isNotBlank()) summary = srvStore.notificationProxyGroup
+                    clicked { requests.trySend(Request.SelectNotificationGroup) }
                 }
                 clickable(
                     title = R.string.live_notification_settings,

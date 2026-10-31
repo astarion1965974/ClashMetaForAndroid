@@ -30,6 +30,7 @@ class ClashManager(private val context: Context) : IClashManager,
     }
 
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
+        if (!StatusProvider.profileLoaded) return emptyList()
         return Clash.queryGroupNames(excludeNotSelectable)
     }
 

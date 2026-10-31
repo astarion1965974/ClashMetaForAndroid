@@ -1,4 +1,8 @@
 <resources>
+    <string name="live_main_group">Selected exit · Main group “%1$s”</string>
+    <string name="live_nodes">Nodes</string>
+    <string name="live_speed_compact">↓ %1$s/s    ↑ %2$s/s</string>
+    <string name="live_total_compact">Session total %1$s</string>
     <string name="live_title">VPN · %1$s</string>
     <string name="live_connected">VPN connected</string>
     <string name="live_direct">DIRECT</string>

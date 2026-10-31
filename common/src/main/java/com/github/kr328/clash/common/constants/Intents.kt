@@ -10,6 +10,7 @@ object Intents {
     val ACTION_TOGGLE_CLASH = "$packageName.action.TOGGLE_CLASH"
 
     const val EXTRA_NAME = "name"
+    const val EXTRA_NOTIFICATION_PROXY_GROUP = "notification_proxy_group"
 
     // Self
     val ACTION_SERVICE_RECREATED = "$packageName.intent.action.CLASH_RECREATED"

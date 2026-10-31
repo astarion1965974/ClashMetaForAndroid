@@ -4,6 +4,25 @@ package com.github.kr328.clash.service.clash.module
 internal object NotificationNodeResolver {
     data class Group(val type: String, val selected: String, val childGroups: Set<String>)
     data class Entry(val group: String, val node: String?, val balanced: Boolean = false)
+
+    fun mainGroup(mode: String, names: List<String>, preferred: String): String? {
+        if (mode == "Direct") return null
+        if (mode == "Global") return "GLOBAL"
+        val available = names.filter { it != "GLOBAL" }.distinct()
+        if (preferred in available) return preferred
+        val common = setOf("节点选择", "代理选择", "代理", "proxy", "proxies", "proxymode", "selectproxy")
+        return available.firstOrNull {
+            it.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "") in common
+        } ?: available.firstOrNull()
+    }
+
+    fun resolveMain(mode: String, names: List<String>, preferred: String, query: (String) -> Group?): Entry? {
+        if (mode == "Direct") return Entry("DIRECT", "DIRECT")
+        val name = mainGroup(mode, names, preferred) ?: return null
+        // Scope resolution to the nominated group, including any hidden nested groups.
+        return resolve(if (name == "GLOBAL") "Global" else "Rule", listOf(name), query)
+            .entries.singleOrNull()
+    }
     data class Selection(val entries: List<Entry>) {
         val nodes: List<String>
             get() = entries.mapNotNull { it.node }

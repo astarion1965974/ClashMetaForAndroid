@@ -70,4 +70,9 @@ class ServiceStore(context: Context) {
         key = "live_notification",
         defaultValue = true
     )
+
+    var notificationProxyGroup by store.string(
+        key = "notification_proxy_group",
+        defaultValue = ""
+    )
 }
