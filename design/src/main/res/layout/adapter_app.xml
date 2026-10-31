@@ -15,7 +15,8 @@
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        android:minHeight="@dimen/item_min_height"
+        android:minHeight="88dp"
+        android:paddingVertical="8dp"
         android:paddingEnd="@dimen/item_tailing_margin">
 
         <View
@@ -29,7 +30,7 @@
             android:focusable="false" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_toStartOf="@id/switch_view"
@@ -37,17 +38,20 @@
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@{app.label}"
+                android:maxLines="1" android:ellipsize="end"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Body1" />
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/item_text_margin"
                 android:text="@{app.packageName}"
+                android:maxLines="1" android:ellipsize="middle"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+            <TextView android:id="@+id/route_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" />
         </LinearLayout>
 
         <com.google.android.material.checkbox.MaterialCheckBox

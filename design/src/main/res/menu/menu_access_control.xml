@@ -2,22 +2,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/select_all"
-        android:title="@string/select_all" />
+        android:title="@string/app_bulk_all" />
     <item
         android:id="@+id/select_none"
-        android:title="@string/select_none" />
+        android:title="@string/app_bulk_none" />
     <item
         android:id="@+id/select_invert"
-        android:title="@string/select_invert" />
-
-    <item android:title="@string/filter">
-        <menu>
-            <item
-                android:id="@+id/system_apps"
-                android:checkable="true"
-                android:title="@string/system_apps" />
-        </menu>
-    </item>
+        android:title="@string/app_bulk_invert" />
 
     <item android:title="@string/sort">
         <menu>

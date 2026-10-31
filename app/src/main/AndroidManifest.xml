@@ -172,11 +172,12 @@
             android:configChanges="uiMode"
             android:exported="false"
             android:label="@string/meta_features" />
+        <activity android:name=".ManagedRoutingActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/managed_routing" />
         <activity
             android:name=".AccessControlActivity"
             android:configChanges="uiMode"
             android:exported="false"
-            android:label="@string/access_control_packages" />
+            android:label="@string/app_routing" />
         <activity
             android:name=".HelpActivity"
             android:configChanges="uiMode"

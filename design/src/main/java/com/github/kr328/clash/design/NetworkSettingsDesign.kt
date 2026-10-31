@@ -22,7 +22,7 @@ class NetworkSettingsDesign(
     running: Boolean,
 ) : Design<NetworkSettingsDesign.Request>(context) {
     enum class Request {
-        StartAccessControlList
+        StartAccessControlList, StartManagedRouting
     }
 
     private val binding = DesignSettingsCommonBinding
@@ -111,26 +111,15 @@ class NetworkSettingsDesign(
                 configure = vpnDependencies::add,
             )
 
-            selectableList(
-                value = srvStore::accessControlMode,
-                values = AccessControlMode.values(),
-                valuesText = arrayOf(
-                    R.string.allow_all_apps,
-                    R.string.allow_selected_apps,
-                    R.string.deny_selected_apps
-                ),
-                title = R.string.access_control_mode,
-                configure = vpnDependencies::add,
-            )
+            clickable(
+                title = R.string.app_routing,
+                summary = R.string.app_routing_summary,
+            ) { clicked { requests.trySend(Request.StartAccessControlList) } }
 
             clickable(
-                title = R.string.access_control_packages,
-                summary = R.string.access_control_packages_summary,
-            ) {
-                clicked {
-                    requests.trySend(Request.StartAccessControlList)
-                }
-            }
+                title = R.string.managed_routing,
+                summary = R.string.managed_summary,
+            ) { clicked { requests.trySend(Request.StartManagedRouting) } }
 
             if (running) {
                 vpn.enabled = false

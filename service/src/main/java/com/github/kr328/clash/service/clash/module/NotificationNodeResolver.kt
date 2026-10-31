@@ -10,6 +10,7 @@ internal object NotificationNodeResolver {
         if (mode == "Global") return "GLOBAL"
         val available = names.filter { it != "GLOBAL" }.distinct()
         if (preferred in available) return preferred
+        if ("Live · 默认代理" in available) return "Live · 默认代理"
         val common = setOf("节点选择", "代理选择", "代理", "proxy", "proxies", "proxymode", "selectproxy")
         return available.firstOrNull {
             it.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "") in common

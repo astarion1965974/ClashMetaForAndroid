@@ -7,6 +7,12 @@ class NotificationNodeResolverTest {
     private fun group(now: String, vararg children: String) =
         NotificationNodeResolver.Group("Selector", now, children.toSet())
 
+    @Test fun managedGroupIsDefaultButAnExplicitPreferenceWins() {
+        val names = listOf("Proxy", "Streaming", "Live · 默认代理")
+        assertEquals("Live · 默认代理", NotificationNodeResolver.mainGroup("Rule", names, ""))
+        assertEquals("Streaming", NotificationNodeResolver.mainGroup("Rule", names, "Streaming"))
+    }
+
     @Test fun explicitMainGroupWinsOverAutomaticDetection() {
         assertEquals("Streaming", NotificationNodeResolver.mainGroup("Rule", listOf("Proxy", "Streaming"), "Streaming"))
     }

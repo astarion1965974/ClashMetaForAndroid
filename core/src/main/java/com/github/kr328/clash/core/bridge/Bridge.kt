@@ -68,6 +68,23 @@ object Bridge {
             .detachFd()
 
         val home = ctx.filesDir.resolve("clash").apply { mkdirs() }.absolutePath
+        // Seed a validated rules snapshot for first use without a network download.
+        // Later provider updates retain their cached files across profile changes.
+        val rulesDir = File(home, "managed-rules").apply { mkdirs() }
+        for (name in ctx.assets.list("managed-rules").orEmpty()) {
+            val target = File(rulesDir, name)
+            if (!target.exists()) {
+                val temporary = File.createTempFile("seed-", ".tmp", rulesDir)
+                try {
+                    ctx.assets.open("managed-rules/$name").use { input ->
+                        temporary.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    if (!temporary.renameTo(target) && !target.exists()) {
+                        error("Cannot install bundled rule $name")
+                    }
+                } finally { temporary.delete() }
+            }
+        }
         val versionName = ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "unknown"
         val sdkVersion = Build.VERSION.SDK_INT
 
