@@ -4,9 +4,9 @@
         android:id="@+id/text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingVertical="@dimen/item_padding_vertical"
+        android:paddingTop="22dp" android:paddingBottom="10dp"
         android:paddingStart="20dp"
         android:textAppearance="@style/TextAppearance.Live.Section"
         android:paddingEnd="@dimen/item_tailing_margin"
-        android:textColor="?attr/colorLiveMuted" />
+        android:textColor="?android:attr/textColorPrimary" />
 </layout>

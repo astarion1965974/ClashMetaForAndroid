@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
-        <variable name="homePaused" type="boolean" />
+        <variable name="homePaused" type="boolean"/>
         <variable name="self" type="com.github.kr328.clash.design.MainDesign"/>
         <variable name="clashRunning" type="boolean"/>
         <variable name="forwarded" type="String"/>
@@ -10,88 +10,288 @@
         <variable name="colorClashStarted" type="int"/>
         <variable name="colorClashStopped" type="int"/>
         <variable name="hasProviders" type="boolean"/>
-
         <import type="android.view.View"/>
         <import type="com.github.kr328.clash.design.MainDesign.Request"/>
     </data>
-<androidx.coordinatorlayout.widget.CoordinatorLayout android:layout_width="match_parent" android:layout_height="match_parent" android:paddingStart="@{self.surface.insets.start}" android:paddingEnd="@{self.surface.insets.end}">
-<ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:scrollbars="none" android:fillViewport="true">
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="20dp" android:paddingTop="@{self.surface.insets.top}" android:paddingBottom="@{(float) self.surface.insets.bottom + @dimen/dialog_padding}">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:gravity="center_vertical">
-        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/ic_clash" android:layout_marginEnd="12dp" android:importantForAccessibility="no"/>
-        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/application_name" android:textAppearance="@style/TextAppearance.Live.Heading"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="LIVE" android:background="@drawable/bg_live_badge" android:textAppearance="@style/TextAppearance.Live.Section" android:textColor="?attr/colorPrimary"/>
-    </LinearLayout>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="16dp" android:text="@string/live_overview" android:textAppearance="@style/TextAppearance.Live.Title" android:accessibilityHeading="true"/>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp" android:background="@drawable/bg_live_panel">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_live_badge" android:text="@{homePaused ? @string/mobile_home_capsule : (clashRunning ? @string/running : @string/stopped)}" android:textColor="@{clashRunning ? colorClashStarted : colorClashStopped}" android:textAppearance="@style/TextAppearance.Live.Section" android:accessibilityLiveRegion="polite"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@{homePaused ? @string/mobile_home_paused : (clashRunning ? @string/live_connected : @string/live_ready)}" android:textAppearance="@style/TextAppearance.Live.Title" android:textSize="26sp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@{homePaused ? @string/mobile_home_paused_hint : (clashRunning ? @string/live_connected_hint : @string/live_connect_hint)}" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        <com.google.android.material.button.MaterialButton android:id="@+id/toggle_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginTop="20dp" android:text="@{homePaused ? @string/mobile_home_stop : (clashRunning ? @string/live_disconnect : @string/live_connect)}" android:onClick="@{() -&gt; self.request(Request.ToggleStatus)}" app:icon="@drawable/ic_live_power" app:iconGravity="textStart"/>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="16dp" android:background="?attr/colorLiveBorder"/>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:baselineAligned="false">
-            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_traffic" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning &amp;&amp; !homePaused &amp;&amp; forwarded != null ? forwarded : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading" android:fontFamily="sans-serif-medium"/>
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:paddingStart="@{self.surface.insets.start}"
+        android:paddingEnd="@{self.surface.insets.end}">
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent"
+            android:fillViewport="true" android:scrollbars="none">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:paddingHorizontal="20dp"
+                android:paddingTop="@{self.surface.insets.top}"
+                android:paddingBottom="@{(float) self.surface.insets.bottom + @dimen/dialog_padding}">
+
+                <!-- Calm, compact header, with an always-accessible Settings shortcut. -->
+                <LinearLayout android:layout_width="match_parent" android:layout_height="76dp"
+                    android:gravity="center_vertical" android:orientation="horizontal">
+                    <ImageView android:layout_width="30dp" android:layout_height="30dp"
+                        android:src="@drawable/ic_clash" android:importantForAccessibility="no" />
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_height="wrap_content" android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:text="@string/coui_home_title"
+                            android:textAppearance="@style/TextAppearance.CouiHome.PageTitle"
+                            android:accessibilityHeading="true"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp" android:text="@string/coui_home_subtitle"
+                            android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+                    </LinearLayout>
+                    <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                        android:padding="12dp" android:src="@drawable/ic_baseline_settings"
+                        app:tint="?attr/colorPrimary" android:background="@drawable/bg_coui_home_row"
+                        android:clickable="true" android:focusable="true"
+                        android:contentDescription="@string/coui_home_settings_shortcut"
+                        android:onClick="@{() -&gt; self.request(Request.OpenSettings)}" />
+                </LinearLayout>
+
+                <!-- Connection state and VPN action retain the original Data Binding contracts. -->
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:background="@drawable/bg_coui_home_card"
+                    android:padding="20dp" android:orientation="vertical">
+                    
+                    <!-- Animated-free status emblem to minimize battery use. -->
+                    <FrameLayout android:layout_width="224dp" android:layout_height="176dp"
+                        android:layout_gravity="center_horizontal"
+                        android:contentDescription="@string/coui_home_status_hint">
+                        <View android:layout_width="224dp" android:layout_height="176dp"
+                            android:layout_gravity="center" android:background="@drawable/bg_vshield_halo"/>
+                        <FrameLayout android:layout_width="126dp" android:layout_height="126dp"
+                            android:layout_gravity="center" android:elevation="3dp">
+                            <View android:layout_width="match_parent" android:layout_height="match_parent"
+                                android:background="@drawable/bg_vshield_ring"
+                                android:visibility="@{clashRunning &amp;&amp; !homePaused ? View.VISIBLE : View.GONE}"/>
+                            <View android:layout_width="match_parent" android:layout_height="match_parent"
+                                android:background="@drawable/bg_vshield_ring_off"
+                                android:visibility="@{clashRunning &amp;&amp; !homePaused ? View.GONE : View.VISIBLE}"/>
+                            <ImageView android:layout_width="58dp" android:layout_height="58dp"
+                                android:layout_gravity="center" android:src="@drawable/ic_vshield_shield"
+                                android:importantForAccessibility="no"/>
+                        </FrameLayout>
+                    </FrameLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:background="@drawable/bg_coui_home_status"
+                        android:text="@{homePaused ? @string/mobile_home_capsule : (clashRunning ? @string/running : @string/stopped)}"
+                        android:textColor="@{clashRunning &amp;&amp; !homePaused ? colorClashStarted : colorClashStopped}"
+                        android:textAppearance="@style/TextAppearance.Live.Section"
+                        android:accessibilityLiveRegion="polite"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp" android:gravity="center"
+                        android:text="@{homePaused ? @string/mobile_home_paused : (clashRunning ? @string/coui_home_connected : @string/coui_home_disconnected)}"
+                        android:textAppearance="@style/TextAppearance.CouiHome.Hero"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" android:maxLines="3" android:gravity="center"
+                        android:text="@{homePaused ? @string/mobile_home_paused_hint : (clashRunning ? @string/live_connected_hint : @string/live_connect_hint)}"
+                        android:textAppearance="@style/TextAppearance.Live.Secondary"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/toggle_view" style="@style/Widget.CouiHome.PrimaryButton"
+                        android:layout_width="match_parent" android:layout_height="56dp"
+                        android:layout_marginTop="22dp"
+                        android:text="@{homePaused ? @string/mobile_home_stop : (clashRunning ? @string/live_disconnect : @string/live_connect)}"
+                        android:onClick="@{() -&gt; self.request(Request.ToggleStatus)}"
+                        app:icon="@drawable/ic_live_power"
+                        app:iconTint="@android:color/white"
+                        app:iconGravity="textStart"
+                        app:backgroundTint="@color/coui_home_action"
+                        android:textColor="@android:color/white"/>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:orientation="horizontal" android:baselineAligned="false">
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_height="wrap_content" android:layout_marginEnd="6dp"
+                            android:padding="15dp" android:orientation="vertical"
+                            android:background="@drawable/bg_coui_home_soft">
+                            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:text="@string/live_traffic"
+                                android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+                            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="@{clashRunning &amp;&amp; !homePaused &amp;&amp; forwarded != null ? forwarded : &quot;—&quot;}"
+                                android:textAppearance="@style/TextAppearance.CouiHome.Metric"
+                                android:singleLine="true" android:ellipsize="end"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                            android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                            android:padding="15dp" android:orientation="vertical"
+                            android:background="@drawable/bg_coui_home_soft">
+                            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:text="@string/live_mode"
+                                android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+                            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="@{clashRunning &amp;&amp; !homePaused ? mode : &quot;—&quot;}"
+                                android:textAppearance="@style/TextAppearance.CouiHome.Metric"
+                                android:singleLine="true" android:ellipsize="end"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp" android:layout_marginBottom="12dp"
+                    android:text="@string/coui_home_section_connection"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Section"
+                    android:accessibilityHeading="true" />
+                
+        <LinearLayout  android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="78dp" android:layout_marginBottom="8dp" android:paddingHorizontal="15dp" android:paddingVertical="14dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_coui_home_row" android:clickable="true" android:focusable="true"
+            android:onClick="@{() -&gt; self.request(Request.OpenProfiles)}" >
+            <ImageView android:layout_width="46dp" android:layout_height="46dp" android:padding="11dp"
+                android:background="@drawable/bg_coui_home_icon" android:src="@drawable/ic_baseline_view_list"
+                app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="14dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/coui_home_profile_title" android:textAppearance="@style/TextAppearance.CouiHome.Row" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:maxLines="2" android:ellipsize="end"
+                    android:text="@{profileName != null ? profileName : @string/live_profile_hint}" android:textAppearance="@style/TextAppearance.CouiHome.Caption" />
             </LinearLayout>
-            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_mode" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning &amp;&amp; !homePaused ? mode : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading"/>
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp"
+                android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no" />
+        </LinearLayout>
+                
+        <LinearLayout  android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="78dp" android:layout_marginBottom="8dp" android:paddingHorizontal="15dp" android:paddingVertical="14dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_coui_home_row" android:clickable="true" android:focusable="true"
+            android:onClick="@{() -&gt; self.request(Request.OpenProxy)}" android:visibility="@{clashRunning ? View.VISIBLE : View.GONE}">
+            <ImageView android:layout_width="46dp" android:layout_height="46dp" android:padding="11dp"
+                android:background="@drawable/bg_coui_home_icon" android:src="@drawable/ic_baseline_apps"
+                app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="14dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/coui_home_nodes_title" android:textAppearance="@style/TextAppearance.CouiHome.Row" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:maxLines="2" android:ellipsize="end"
+                    android:text="@string/live_nodes_hint" android:textAppearance="@style/TextAppearance.CouiHome.Caption" />
             </LinearLayout>
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp"
+                android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no" />
         </LinearLayout>
+                
+        <LinearLayout  android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="78dp" android:layout_marginBottom="8dp" android:paddingHorizontal="15dp" android:paddingVertical="14dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_coui_home_row" android:clickable="true" android:focusable="true"
+            android:onClick="@{() -&gt; self.request(Request.OpenProviders)}" android:visibility="@{clashRunning &amp;&amp; hasProviders ? View.VISIBLE : View.GONE}">
+            <ImageView android:layout_width="46dp" android:layout_height="46dp" android:padding="11dp"
+                android:background="@drawable/bg_coui_home_icon" android:src="@drawable/ic_baseline_swap_vertical_circle"
+                app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="14dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/coui_home_providers_title" android:textAppearance="@style/TextAppearance.CouiHome.Row" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:maxLines="2" android:ellipsize="end"
+                    android:text="@string/providers" android:textAppearance="@style/TextAppearance.CouiHome.Caption" />
+            </LinearLayout>
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp"
+                android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no" />
         </LinearLayout>
-    <Space android:layout_width="match_parent" android:layout_height="16dp"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenProxy)}" android:visibility="@{clashRunning ? View.VISIBLE : View.GONE}">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_apps" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_nodes" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/live_nodes_hint" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenProfiles)}">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_view_list" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/profile" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@{profileName != null ? profileName : @string/live_profile_hint}" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:layout_marginBottom="12dp" android:text="@string/live_routing" android:textAppearance="@style/TextAppearance.Live.Section"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenAppRouting)}" android:id="@+id/app_routing_view">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_apps" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_app_routing" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/live_app_hint" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenRouting)}" android:id="@+id/rule_routing_view">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_dns" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_rules" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/live_rules_hint" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:layout_marginBottom="12dp" android:text="@string/live_tools" android:textAppearance="@style/TextAppearance.Live.Section"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenSettings)}">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_settings" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/settings" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/live_settings_hint" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenLogs)}">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_assignment" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/logs" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/live_logs_hint" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp" android:layout_marginBottom="8dp" android:padding="16dp" android:gravity="center_vertical" android:background="@drawable/bg_live_row" android:clickable="true" android:focusable="true" android:onClick="@{() -&gt; self.request(Request.OpenProviders)}" android:visibility="@{clashRunning &amp;&amp; hasProviders ? View.VISIBLE : View.GONE}">
-        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="16dp" android:src="@drawable/ic_baseline_swap_vertical_circle" app:tint="?attr/colorPrimary" android:importantForAccessibility="no"/>
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/providers" android:textAppearance="@style/TextAppearance.Live.Body" android:fontFamily="sans-serif-medium"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:text="@string/providers" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        </LinearLayout>
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_marginStart="8dp" android:src="@drawable/ic_live_chevron" android:importantForAccessibility="no"/>
-    </LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:layout_marginTop="8dp">
-    <com.google.android.material.button.MaterialButton style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/help" android:onClick="@{() -&gt; self.request(Request.OpenHelp)}"/>
-    <com.google.android.material.button.MaterialButton style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/about" android:onClick="@{() -&gt; self.request(Request.OpenAbout)}"/>
-</LinearLayout>
-</LinearLayout></ScrollView></androidx.coordinatorlayout.widget.CoordinatorLayout></layout>
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp" android:layout_marginBottom="12dp"
+                    android:text="@string/coui_home_section_actions"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Section"
+                    android:accessibilityHeading="true" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:baselineAligned="false">
+                    
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:minHeight="110dp" android:padding="16dp" android:orientation="vertical"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_coui_home_row"
+                android:clickable="true" android:focusable="true"
+                android:onClick="@{() -&gt; self.request(Request.OpenAppRouting)}">
+                <ImageView android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp"
+                    android:src="@drawable/ic_baseline_apps" app:tint="?attr/colorPrimary"
+                    android:background="@drawable/bg_coui_home_icon" android:importantForAccessibility="no"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="@string/live_app_routing"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Row"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:text="@string/live_app_hint" android:maxLines="2"
+                    android:ellipsize="end" android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+            </LinearLayout>
+                    
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:minHeight="110dp" android:padding="16dp" android:orientation="vertical"
+                
+                android:background="@drawable/bg_coui_home_row"
+                android:clickable="true" android:focusable="true"
+                android:onClick="@{() -&gt; self.request(Request.OpenRouting)}">
+                <ImageView android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp"
+                    android:src="@drawable/ic_baseline_dns" app:tint="?attr/colorPrimary"
+                    android:background="@drawable/bg_coui_home_icon" android:importantForAccessibility="no"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="@string/live_rules"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Row"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:text="@string/live_rules_hint" android:maxLines="2"
+                    android:ellipsize="end" android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+            </LinearLayout>
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:orientation="horizontal" android:baselineAligned="false">
+                    
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:minHeight="110dp" android:padding="16dp" android:orientation="vertical"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_coui_home_row"
+                android:clickable="true" android:focusable="true"
+                android:onClick="@{() -&gt; self.request(Request.OpenSettings)}">
+                <ImageView android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp"
+                    android:src="@drawable/ic_baseline_settings" app:tint="?attr/colorPrimary"
+                    android:background="@drawable/bg_coui_home_icon" android:importantForAccessibility="no"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="@string/settings"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Row"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:text="@string/live_settings_hint" android:maxLines="2"
+                    android:ellipsize="end" android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+            </LinearLayout>
+                    
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:minHeight="110dp" android:padding="16dp" android:orientation="vertical"
+                
+                android:background="@drawable/bg_coui_home_row"
+                android:clickable="true" android:focusable="true"
+                android:onClick="@{() -&gt; self.request(Request.OpenLogs)}">
+                <ImageView android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp"
+                    android:src="@drawable/ic_baseline_assignment" app:tint="?attr/colorPrimary"
+                    android:background="@drawable/bg_coui_home_icon" android:importantForAccessibility="no"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="@string/logs"
+                    android:textAppearance="@style/TextAppearance.CouiHome.Row"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp" android:text="@string/live_logs_hint" android:maxLines="2"
+                    android:ellipsize="end" android:textAppearance="@style/TextAppearance.CouiHome.Caption"/>
+            </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:gravity="center" android:layout_marginTop="16dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_height="48dp" android:text="@string/help"
+                        android:onClick="@{() -&gt; self.request(Request.OpenHelp)}"/>
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_height="48dp" android:text="@string/about"
+                        android:onClick="@{() -&gt; self.request(Request.OpenAbout)}"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+</layout>

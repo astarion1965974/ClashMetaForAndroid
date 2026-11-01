@@ -30,17 +30,17 @@
         <item name="android:letterSpacing">0.025</item>
     </style>
     <style name="Widget.Live.Button" parent="Widget.MaterialComponents.Button">
-        <item name="cornerRadius">8dp</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="cornerRadius">17dp</item>
+        <item name="android:minHeight">52dp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:elevation">0dp</item>
     </style>
     <style name="Widget.Live.Input" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">8dp</item>
-        <item name="boxCornerRadiusTopEnd">8dp</item>
-        <item name="boxCornerRadiusBottomStart">8dp</item>
-        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
         <item name="boxStrokeColor">@color/live_input_stroke</item>
     </style>
 </resources>

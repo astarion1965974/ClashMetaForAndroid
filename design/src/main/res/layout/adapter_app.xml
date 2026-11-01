@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bg_live_row"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginVertical="4dp"
+        android:layout_marginVertical="5dp"
         android:clickable="true"
         android:focusable="true"
         android:minHeight="88dp"
@@ -23,8 +23,8 @@
 
         <View
             android:id="@+id/icon_view"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_centerVertical="true"
             android:layout_marginHorizontal="@dimen/item_header_margin"
             android:background="@{app.icon}"
