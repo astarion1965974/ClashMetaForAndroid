@@ -24,6 +24,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           persist-credentials: false
+      - name: Existing protected Live CI helper regressions
+        run: |
+          mkdir -p "$RUNNER_TEMP/live-ci-tests"
+          git show origin/main:.github/scripts/weekly_live.py > "$RUNNER_TEMP/live-ci-tests/weekly_live.py"
+          git show origin/main:.github/scripts/test_weekly_live.py > "$RUNNER_TEMP/live-ci-tests/test_weekly_live.py"
+          python3 "$RUNNER_TEMP/live-ci-tests/test_weekly_live.py"
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin

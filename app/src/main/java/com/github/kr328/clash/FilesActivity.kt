@@ -7,18 +7,19 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import com.github.kr328.clash.design.util.DirectoryBackCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.github.kr328.clash.common.util.grantPermissions
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.common.util.uuid
 import com.github.kr328.clash.design.FilesDesign
+import com.github.kr328.clash.design.util.DirectoryBackCallback
 import com.github.kr328.clash.design.util.showExceptionToast
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.withProfile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 import java.util.*
@@ -58,6 +59,8 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                     }
                 }
                 design.requests.onReceive {
+                    val previousStack = stack.toList()
+                    val previousPreviews = previews.toList()
                     try {
                         when (it) {
                             FilesDesign.Request.PopStack -> {
@@ -117,11 +120,18 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                             }
                         }
                     } catch (e: Exception) {
+                        if (e is CancellationException) throw e
                         design.showExceptionToast(e)
                     }
 
                     try {
                         design.fetch(client, stack, root)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        // Keep the visible directory and its back destination consistent on IO failure.
+                        stack.clear(); stack.addAll(previousStack)
+                        previews.clear(); previews.addAll(previousPreviews)
+                        design.showExceptionToast(e)
                     } finally {
                         back.complete()
                         back.isEnabled = stack.isNotEmpty()
