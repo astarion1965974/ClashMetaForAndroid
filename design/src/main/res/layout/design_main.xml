@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
+        <variable name="homePaused" type="boolean" />
         <variable name="self" type="com.github.kr328.clash.design.MainDesign"/>
         <variable name="clashRunning" type="boolean"/>
         <variable name="forwarded" type="String"/>
@@ -23,19 +24,19 @@
     </LinearLayout>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="16dp" android:text="@string/live_overview" android:textAppearance="@style/TextAppearance.Live.Title" android:accessibilityHeading="true"/>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp" android:background="@drawable/bg_live_panel">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_live_badge" android:text="@{clashRunning ? @string/running : @string/stopped}" android:textColor="@{clashRunning ? colorClashStarted : colorClashStopped}" android:textAppearance="@style/TextAppearance.Live.Section" android:accessibilityLiveRegion="polite"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@{clashRunning ? @string/live_connected : @string/live_ready}" android:textAppearance="@style/TextAppearance.Live.Title" android:textSize="26sp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@{clashRunning ? @string/live_connected_hint : @string/live_connect_hint}" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-        <com.google.android.material.button.MaterialButton android:id="@+id/toggle_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginTop="20dp" android:text="@{clashRunning ? @string/live_disconnect : @string/live_connect}" android:onClick="@{() -&gt; self.request(Request.ToggleStatus)}" app:icon="@drawable/ic_live_power" app:iconGravity="textStart"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_live_badge" android:text="@{homePaused ? @string/mobile_home_capsule : (clashRunning ? @string/running : @string/stopped)}" android:textColor="@{clashRunning ? colorClashStarted : colorClashStopped}" android:textAppearance="@style/TextAppearance.Live.Section" android:accessibilityLiveRegion="polite"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@{homePaused ? @string/mobile_home_paused : (clashRunning ? @string/live_connected : @string/live_ready)}" android:textAppearance="@style/TextAppearance.Live.Title" android:textSize="26sp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@{homePaused ? @string/mobile_home_paused_hint : (clashRunning ? @string/live_connected_hint : @string/live_connect_hint)}" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
+        <com.google.android.material.button.MaterialButton android:id="@+id/toggle_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginTop="20dp" android:text="@{homePaused ? @string/mobile_home_stop : (clashRunning ? @string/live_disconnect : @string/live_connect)}" android:onClick="@{() -&gt; self.request(Request.ToggleStatus)}" app:icon="@drawable/ic_live_power" app:iconGravity="textStart"/>
         <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="16dp" android:background="?attr/colorLiveBorder"/>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:baselineAligned="false">
             <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:orientation="vertical">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_traffic" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning &amp;&amp; forwarded != null ? forwarded : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading" android:fontFamily="sans-serif-medium"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning &amp;&amp; !homePaused &amp;&amp; forwarded != null ? forwarded : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading" android:fontFamily="sans-serif-medium"/>
             </LinearLayout>
             <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_mode" android:textAppearance="@style/TextAppearance.Live.Secondary"/>
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning ? mode : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@{clashRunning &amp;&amp; !homePaused ? mode : &quot;—&quot;}" android:textAppearance="@style/TextAppearance.Live.Heading"/>
             </LinearLayout>
         </LinearLayout>
         </LinearLayout>

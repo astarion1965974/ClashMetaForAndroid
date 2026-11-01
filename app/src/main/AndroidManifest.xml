@@ -152,6 +152,7 @@
             android:configChanges="uiMode"
             android:exported="false"
             android:label="@string/settings" />
+        <activity android:name=".MobileNetworkActivity" android:exported="false" android:configChanges="uiMode" android:label="@string/mobile_title" />
         <activity
             android:name=".NetworkSettingsActivity"
             android:configChanges="uiMode"

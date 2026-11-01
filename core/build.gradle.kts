@@ -56,9 +56,20 @@ dependencies {
     implementation(libs.kotlin.serialization.json)
 }
 
+val mobileOverlay = tasks.register<Exec>("prepareMobileCoreOverlay") {
+    workingDir(rootDir)
+    commandLine("python3", rootProject.file(".github/scripts/mobile_core_overlay.py").absolutePath)
+    inputs.file(rootProject.file(".github/scripts/mobile_core_overlay.py"))
+    inputs.files(file("src/foss/golang/clash/adapter/provider/healthcheck.go"), file("src/foss/golang/clash/component/resource/fetcher.go"), file("src/foss/golang/clash/adapter/outboundgroup/groupbase.go"))
+    outputs.dir(layout.buildDirectory.dir("mobile-overlay"))
+}
+
 afterEvaluate {
     tasks.withType(GolangBuildTask::class.java).forEach {
         it.inputs.dir(golangSource)
+        it.dependsOn(mobileOverlay)
+        it.inputs.dir(layout.buildDirectory.dir("mobile-overlay"))
+        it.environment("GOFLAGS", "-overlay=" + layout.buildDirectory.file("mobile-overlay/overlay.json").get().asFile.absolutePath)
     }
 }
 

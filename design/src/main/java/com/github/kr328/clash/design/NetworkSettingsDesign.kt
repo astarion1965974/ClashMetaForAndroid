@@ -22,7 +22,7 @@ class NetworkSettingsDesign(
     running: Boolean,
 ) : Design<NetworkSettingsDesign.Request>(context) {
     enum class Request {
-        StartAccessControlList, StartManagedRouting
+        StartAccessControlList, StartManagedRouting, StartMobileNetwork
     }
 
     private val binding = DesignSettingsCommonBinding
@@ -111,6 +111,9 @@ class NetworkSettingsDesign(
                 configure = vpnDependencies::add,
             )
 
+            clickable(title = R.string.mobile_title, summary = R.string.mobile_ready) {
+                clicked { requests.trySend(Request.StartMobileNetwork) }
+            }
             clickable(
                 title = R.string.app_routing,
                 summary = R.string.app_routing_summary,

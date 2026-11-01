@@ -2,6 +2,7 @@
 package routing
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -135,5 +136,47 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		}
 		cfg.DNS.NameServerPolicy.Set("rule-set,live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"})
 	}
+	// DNS policies and group filters may still reference original providers.
+	old := map[string]map[string]any{}
+	for k, v := range cfg.RuleProvider {
+		if !strings.HasPrefix(k, Prefix) {
+			old[k] = v
+			delete(cfg.RuleProvider, k)
+		}
+	}
+	data, _ := json.Marshal(cfg)
+	var value any
+	_ = json.Unmarshal(data, &value)
+	keep := map[string]bool{}
+	var scan func(any)
+	scan = func(v any) {
+		switch x := v.(type) {
+		case string:
+			if _, ok := old[x]; ok {
+				keep[x] = true
+			}
+			if strings.Contains(strings.ToLower(x), "rule-set,") {
+				for _, token := range strings.Split(x, ",") {
+					if _, ok := old[strings.TrimSpace(token)]; ok {
+						keep[strings.TrimSpace(token)] = true
+					}
+				}
+			}
+		case []any:
+			for _, item := range x {
+				scan(item)
+			}
+		case map[string]any:
+			for k, item := range x {
+				scan(k)
+				scan(item)
+			}
+		}
+	}
+	scan(value)
+	for k := range keep {
+		cfg.RuleProvider[k] = old[k]
+	}
+
 	return nil
 }

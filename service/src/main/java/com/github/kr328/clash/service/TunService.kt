@@ -13,6 +13,8 @@ import com.github.kr328.clash.service.clash.clashRuntime
 import com.github.kr328.clash.service.clash.module.*
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
+import com.github.kr328.clash.service.store.MobileNetworkStore
+import com.github.kr328.clash.service.util.sendServiceRecreated
 import com.github.kr328.clash.service.util.cancelAndJoinBlocking
 import com.github.kr328.clash.service.util.parseCIDR
 import com.github.kr328.clash.service.util.sendClashStarted
@@ -33,6 +35,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val tun = install(TunModule(self))
         val config = install(ConfigurationModule(self))
         val network = install(NetworkObserveModule(self))
+        val mobile = install(MobileNetworkModule(self))
 
         if (Build.VERSION.SDK_INT >= 36 && store.liveNotification)
             install(LiveNotificationModule(self, store.dynamicNotification))
@@ -46,7 +49,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         install(SuspendModule(self))
 
         try {
-            tun.open()
+            StatusProvider.homePaused = MobileNetworkModule.snapshot(self, MobileNetworkStore(self).read()).pause
+            if (!StatusProvider.homePaused) tun.open()
 
             while (isActive) {
                 val quit = select<Boolean> {
@@ -57,6 +61,14 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                         reason = it.message
 
                         true
+                    }
+                    mobile.onEvent { pause ->
+                        if (pause != StatusProvider.homePaused) {
+                            if (pause) { com.github.kr328.clash.core.bridge.Bridge.nativeReleaseConnections(); TunModule.requestStop() } else tun.open()
+                            StatusProvider.homePaused = pause
+                            sendServiceRecreated()
+                        }
+                        false
                     }
                     network.onEvent { n ->
                         if (Build.VERSION.SDK_INT in 22..28) @TargetApi(22) {
@@ -106,6 +118,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         TunModule.requestStop()
 
         StatusProvider.serviceRunning = false
+        StatusProvider.homePaused = false
 
         sendClashStopped(reason)
 

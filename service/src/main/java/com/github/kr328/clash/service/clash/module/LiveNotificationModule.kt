@@ -19,8 +19,9 @@ import com.github.kr328.clash.common.compat.pendingIntentFlags
 import com.github.kr328.clash.common.compat.startForegroundCompat
 import com.github.kr328.clash.common.constants.Components
 import com.github.kr328.clash.common.constants.Intents
-import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.core.bridge.Bridge
+import kotlinx.serialization.json.*
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
@@ -34,6 +35,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.selects.onTimeout
 import kotlin.coroutines.coroutineContext
 
 /** Standard platform templates let ColorOS render the capsule and expanded live card. */
@@ -72,6 +74,14 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         )
     }
 
+    private var lastContent: String? = null
+    private var lastRegionNode: String? = null
+    private var lastRegion: String? = null
+    private fun region(node: String): String? {
+        if (node != lastRegionNode) { lastRegionNode = node; lastRegion = NotificationNodeRegion.regionLabel(node) }
+        return lastRegion
+    }
+
     private fun update() {
         if (!StatusProvider.profileLoaded) return
         try {
@@ -79,13 +89,17 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
             val selection = NotificationNodeResolver.resolveMain(
                 mode.name, Clash.queryGroupNames(false), store.notificationProxyGroup
             ) { name ->
-                Clash.queryGroup(name, ProxySort.Default).takeIf { it.type != "Unknown" }?.let {
-                    NotificationNodeResolver.Group(
-                        it.type, it.now, it.proxies.filter { proxy -> proxy.isGroup }.map { proxy -> proxy.name }.toSet()
-                    )
+                Bridge.nativeQuerySelection(name)?.let { payload ->
+                    val value = Json.parseToJsonElement(payload).jsonObject
+                    val selected = value.getValue("now").jsonPrimitive.content
+                    NotificationNodeResolver.Group(value.getValue("type").jsonPrimitive.content, selected,
+                        if (value.getValue("child").jsonPrimitive.boolean) setOf(selected) else emptySet())
                 }
             }
+
+            val paused = StatusProvider.homePaused
             val label = when {
+                paused -> service.getString(R.string.live_home_title)
                 mode == TunnelState.Mode.Direct -> service.getString(R.string.live_direct)
                 selection?.balanced == true -> service.getString(R.string.live_multi_route)
                 selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
@@ -93,10 +107,11 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 else -> service.getString(R.string.live_unavailable)
             }
             val capsuleLabel = when {
+                paused -> service.getString(R.string.live_home_capsule)
                 mode == TunnelState.Mode.Direct || selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
                 selection?.balanced == true -> service.getString(R.string.live_multi_route)
                 selection?.node in setOf("REJECT", "REJECT-DROP") -> service.getString(R.string.live_blocked)
-                selection?.node != null -> NotificationNodeRegion.regionLabel(selection.node)
+                selection?.node != null -> region(selection.node)
                     ?: service.getString(R.string.live_proxy_active)
                 else -> service.getString(R.string.live_unavailable)
             }
@@ -110,20 +125,23 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 if (mode == TunnelState.Mode.Direct) service.getString(R.string.live_mode_direct)
                 else service.getString(R.string.live_main_group, selection?.group ?: "—")
             ).append("\n\n")
-            val summary = if (showTraffic) {
+            val summary = if (paused) service.getString(R.string.live_home_hint) else if (showTraffic) {
                 val now = Clash.queryTrafficNow()
                 service.getString(R.string.live_speed_compact, now.trafficDownload(), now.trafficUpload())
             } else service.getString(R.string.live_connected)
             val speedStart = details.length
             details.append(summary)
             details.setSpan(StyleSpan(Typeface.BOLD), speedStart, details.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            if (showTraffic) details.append("\n").append(
+            if (showTraffic && !paused) details.append("\n").append(
                 service.getString(R.string.live_total_compact, Clash.queryTrafficTotal().trafficTotal())
             )
             StatusProvider.currentProfile?.let {
                 details.append(if (showTraffic) " · " else "\n").append(service.getString(R.string.live_profile, it))
             }
 
+            val fingerprint = listOf(label, capsuleLabel, summary, details.toString(), modeName,
+                selection?.group, manager.canPostPromotedNotifications()).joinToString("\u0000")
+            if (fingerprint == lastContent) return
             val builder = Notification.Builder(service, StaticNotificationModule.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_logo_service)
                 .setColor(service.getColorCompat(R.color.color_live_notification))
@@ -152,6 +170,7 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
 
             // Same foreground ID throughout the session; no duplicate notifications.
             service.startForegroundCompat(R.id.nf_clash_status, builder.build())
+            lastContent = fingerprint
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -160,33 +179,27 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         }
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     override suspend fun run() = coroutineScope {
         val changes = receiveBroadcast(capacity = Channel.CONFLATED) {
             addAction(Intents.ACTION_PROFILE_LOADED)
             addAction(Intents.ACTION_PROXY_SELECTION_CHANGED)
             addAction(Intents.ACTION_OVERRIDE_CHANGED)
+            addAction(Intents.ACTION_SERVICE_RECREATED)
         }
         val screens = receiveBroadcast(false, Channel.CONFLATED) {
-            addAction(Intent.ACTION_SCREEN_ON)
-            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF)
         }
         var interactive = service.getSystemService<PowerManager>()?.isInteractive ?: true
-        var ticks = 0
-        // Polling also catches automatic URLTest/Fallback selections. No wake lock.
-        val timer = ticker(3_000)
+        update()
         while (coroutineContext.isActive) {
             select<Unit> {
-                changes.onReceive {
-                    update()
-                }
+                changes.onReceive { if (interactive || StatusProvider.homePaused) update() }
                 screens.onReceive {
                     interactive = it.action == Intent.ACTION_SCREEN_ON
                     if (interactive) update()
                 }
-                timer.onReceive {
-                    ticks++
-                    if (interactive || ticks % 5 == 0) update()
-                }
+                if (interactive && !StatusProvider.homePaused) onTimeout(3_000) { update() }
             }
         }
     }

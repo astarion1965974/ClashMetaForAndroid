@@ -39,6 +39,10 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         }
     }
 
+    var pausedAtHome: Boolean = false
+        private set
+    fun setHomePaused(paused: Boolean) { pausedAtHome = paused; binding.homePaused = paused }
+
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
             binding.clashRunning = running

@@ -1,0 +1,5 @@
+<resources>
+<string name="live_home_title">家庭 Wi-Fi 直连</string>
+<string name="live_home_capsule">家中直连</string>
+<string name="live_home_hint">VPN 接管已暂停，离开可信 Wi-Fi 后自动恢复。</string>
+</resources>

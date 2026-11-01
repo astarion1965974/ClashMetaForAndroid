@@ -204,3 +204,22 @@ func TestProviderOnlySubscriptionAndOriginalDNSReferences(t *testing.T) {
 		}
 	}
 }
+
+func TestPruneUnusedProvidersButKeepDNSReferences(t *testing.T) {
+	cfg := config.DefaultRawConfig()
+	cfg.Proxy = []map[string]any{{"name": "node", "type": "ss"}}
+	cfg.RuleProvider = map[string]map[string]any{"old-a": {"type": "http"}, "old-b": {"type": "http"}, "unused": {"type": "http"}}
+	cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
+	cfg.DNS.NameServerPolicy.Set("rule-set,old-a,old-b", []string{"system://"})
+	if err := Apply(cfg, Settings{Enabled: true}, t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := cfg.RuleProvider["unused"]; ok {
+		t.Fatal("unused provider retained")
+	}
+	for _, n := range []string{"old-a", "old-b"} {
+		if _, ok := cfg.RuleProvider[n]; !ok {
+			t.Fatal("DNS reference removed", n)
+		}
+	}
+}

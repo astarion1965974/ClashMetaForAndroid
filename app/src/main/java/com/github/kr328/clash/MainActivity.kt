@@ -83,9 +83,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                             design.showAbout(queryAppVersionName())
                     }
                 }
-                if (clashRunning) {
+                if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
                     ticker.onReceive {
-                        design.fetchTraffic()
+                        if (!design.pausedAtHome) design.fetchTraffic()
                     }
                 }
             }
@@ -94,6 +94,7 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private suspend fun MainDesign.fetch() {
         setClashRunning(clashRunning)
+        setHomePaused(com.github.kr328.clash.remote.StatusClient(this@MainActivity).homePaused())
 
         val state = withClash {
             queryTunnelState()

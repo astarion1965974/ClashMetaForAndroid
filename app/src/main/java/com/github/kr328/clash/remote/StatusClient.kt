@@ -15,6 +15,10 @@ class StatusClient(private val context: Context) {
                 .build()
         }
 
+    fun homePaused(): Boolean = runCatching {
+        context.contentResolver.call(uri, StatusProvider.METHOD_CURRENT_PROFILE, null, null)?.getBoolean("homePaused") ?: false
+    }.getOrDefault(false)
+
     fun currentProfile(): String? {
         return try {
             val result = context.contentResolver.call(

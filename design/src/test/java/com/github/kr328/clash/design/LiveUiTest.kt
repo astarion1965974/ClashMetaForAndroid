@@ -66,6 +66,24 @@ class LiveUiTest {
         assertTrue(view.measuredWidth > 0)
     }
 
+    @Test fun mobileSettingsBothThemesAndHomePauseStatus() {
+        for(dark in listOf(false,true)) {
+            val ctx=context(dark)
+            (ctx as android.app.Activity).title=ctx.getString(R.string.mobile_title)
+            val settings=com.github.kr328.clash.service.store.MobileNetworkSettings()
+            val design=MobileNetworkDesign(ctx,settings,listOf("东京 1","东京 2"),true)
+            render(design.root,if(dark) "mobile-dark" else "mobile-light")
+            assertFalse(design.dirty)
+            design.bind("Home Wi-Fi")
+            assertTrue(design.dirty)
+            assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
+            val home=MainDesign(ctx)
+            val binding=DataBindingUtil.getBinding<DesignMainBinding>(home.root)!!
+            binding.clashRunning=true;home.setHomePaused(true);binding.executePendingBindings()
+            assertEquals(ctx.getString(R.string.mobile_home_stop),binding.toggleView.text.toString())
+        }
+    }
+
     @Test fun homeReflectsConnectionAndRoutesActions() {
         for (dark in listOf(false, true)) {
             val design = MainDesign(context(dark))

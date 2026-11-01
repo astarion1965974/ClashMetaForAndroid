@@ -23,6 +23,9 @@ func init() {
 		defer log.UnSubscribe(sub)
 
 		for msg := range sub {
+			if msg.LogLevel < log.Level() {
+				continue
+			}
 			cPayload := C.CString(msg.Payload)
 
 			switch msg.LogLevel {

@@ -609,3 +609,26 @@ Java_com_github_kr328_clash_core_bridge_Bridge_nativeCoreVersion(JNIEnv *env, jo
 
     return new_string(Version);
 }
+
+JNIEXPORT void JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeMobileState(JNIEnv *env, jobject thiz, jboolean online, jboolean screen, jboolean metered, jboolean charge, jboolean paused) {
+    mobileState(online, screen, metered, charge, paused);
+}
+JNIEXPORT jstring JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeQuerySelection(JNIEnv *env, jobject thiz, jstring name) {
+    scoped_string _name = get_string(name);
+    scoped_string response = querySelection(_name);
+    return response == NULL ? NULL : new_string(response);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeProbeSelection(JNIEnv *env, jobject thiz, jobject completable, jstring name) {
+    jobject _completable = new_global(completable);
+    scoped_string _name = get_string(name);
+    probeSelection(_completable, _name);
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeReleaseConnections(JNIEnv *env, jobject thiz) {
+    releaseConnections();
+}

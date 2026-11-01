@@ -16,6 +16,7 @@ import com.github.kr328.clash.common.id.UndefinedIds
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.uuid
 import com.github.kr328.clash.service.data.ImportedDao
+import com.github.kr328.clash.service.util.importedDir
 import com.github.kr328.clash.service.util.sendProfileUpdateCompleted
 import com.github.kr328.clash.service.util.sendProfileUpdateFailed
 import kotlinx.coroutines.*
@@ -59,7 +60,7 @@ class ProfileWorker : BaseService() {
             Intents.ACTION_PROFILE_REQUEST_UPDATE -> {
                 intent.uuid?.also {
                     val job = launch {
-                        run(it)
+                        run(it, intent.getBooleanExtra("manual", false))
                     }
 
                     jobs.add(job)
@@ -79,9 +80,18 @@ class ProfileWorker : BaseService() {
         return START_NOT_STICKY
     }
 
-    private suspend fun run(uuid: UUID) {
+    private suspend fun run(uuid: UUID, manual: Boolean) {
         val imported = ImportedDao().queryByUUID(uuid) ?: return
 
+        if (!manual) {
+            val settings = com.github.kr328.clash.service.store.MobileNetworkStore(this).read()
+            val state = com.github.kr328.clash.service.clash.module.MobileNetworkModule.snapshot(this,settings)
+            val config = importedDir.resolve(imported.uuid.toString()).resolve("config.yaml")
+            if (config.exists() && !com.github.kr328.clash.service.model.MobilePolicy.allowUpdate(settings.enabled,
+                    settings.wifiUpdates,state.network != null,state.metered,state.charging,System.currentTimeMillis()-config.lastModified())) {
+                ProfileReceiver.scheduleAfter(this,imported,TimeUnit.HOURS.toMillis(6)); return
+            }
+        }
         try {
             processing(imported.name) {
                 ProfileProcessor.update(this, imported.uuid, null)
