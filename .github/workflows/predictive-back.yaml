@@ -73,3 +73,40 @@ jobs:
             design/build/ui-previews/
             app/build/outputs/apk/alpha/release/*arm64-v8a*.apk
           if-no-files-found: warn
+      - name: Build emulator test APKs
+        env:
+          GOMAXPROCS: '2'
+        run: gradle --no-daemon --console=plain --max-workers=2 app:assembleAlphaDebug app:assembleAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Start isolated Android 15 gesture-navigation emulator
+        run: |
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
+          echo no | avdmanager create avd --name predictive-ci --package 'system-images;android-35;google_apis;x86_64' --device pixel_6
+          "$ANDROID_HOME/emulator/emulator" -avd predictive-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > emulator.log 2>&1 &
+          adb wait-for-device
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb shell input keyevent 82
+          adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural
+          adb install -g app/build/outputs/apk/alpha/debug/*x86_64*.apk
+      - name: Real touchscreen preview, cancel and commit regression
+        run: gradle --no-daemon --console=plain --max-workers=2 app:connectedAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Collect emulator visual evidence
+        if: always()
+        run: |
+          mkdir -p emulator-evidence
+          adb pull /sdcard/Android/data/com.astarion.clash.live/files/predictive-back emulator-evidence/ || true
+          adb logcat -d > emulator-evidence/logcat.txt || true
+      - name: Retain emulator test results
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: predictive-back-emulator-${{ github.run_id }}
+          path: |
+            emulator-evidence/
+            emulator.log
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
