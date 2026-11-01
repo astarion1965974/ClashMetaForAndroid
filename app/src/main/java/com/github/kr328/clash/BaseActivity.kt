@@ -62,7 +62,13 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
     /** Only intercept while the page has work that prevents a normal system back. */
     protected fun interceptBack(design: D, enabled: () -> Boolean, onBack: () -> Unit) {
         val callback = object : OnBackPressedCallback(enabled()) {
-            override fun handleOnBackPressed() = onBack()
+            override fun handleOnBackPressed() {
+                // Saving may finish while this callback owns an in-progress gesture.
+                if (enabled()) onBack() else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
         }
         design.onBackStateChanged = { callback.isEnabled = enabled() }
         onBackPressedDispatcher.addCallback(this, callback)

@@ -1,6 +1,8 @@
 package com.github.kr328.clash
 
 import android.app.Application
+import androidx.activity.BackEventCompat
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import com.github.kr328.clash.common.Global
 import com.github.kr328.clash.design.AccessControlDesign
@@ -65,6 +67,32 @@ class BackGuardTest {
 
     private fun busy(activity: BaseActivity<*>, field: String, value: Boolean) {
         activity.javaClass.getDeclaredField(field).apply { isAccessible = true }.setBoolean(activity, value)
+    }
+
+    class GuardHarnessActivity : BaseActivity<MobileNetworkDesign>() {
+        var blocked = true
+        var intercepted = 0
+        override suspend fun main() = Unit
+        fun configure(page: MobileNetworkDesign) {
+            design = page
+            interceptBack(page, { blocked }) { intercepted++ }
+        }
+    }
+
+    @Test fun saveCompletingDuringGestureFallsThroughExactlyOnce() {
+        val page = activity(GuardHarnessActivity::class.java)
+        val design = MobileNetworkDesign(page, MobileNetworkSettings(), emptyList(), false)
+        var parentBack = 0
+        page.onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { parentBack++ }
+        })
+        page.configure(design)
+        page.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_LEFT))
+        page.blocked = false
+        design.onBackStateChanged()
+        page.onBackPressedDispatcher.onBackPressed()
+        assertEquals(1, parentBack)
+        assertEquals(0, page.intercepted)
     }
 
     @Test fun dirtyPagesKeepEditingOrDiscardAndBusyWorkCannotExit() {
