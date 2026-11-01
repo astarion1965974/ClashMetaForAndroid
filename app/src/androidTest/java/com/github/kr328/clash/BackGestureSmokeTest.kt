@@ -16,6 +16,11 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.github.kr328.clash.design.MobileNetworkDesign
+import com.github.kr328.clash.common.util.setUUID
+import com.github.kr328.clash.service.model.Profile
+import com.github.kr328.clash.service.util.pendingDir
+import com.github.kr328.clash.util.withProfile
+import kotlinx.coroutines.runBlocking
 import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
 import com.github.kr328.clash.design.dialog.FullScreenDialog
 import org.junit.Assert.*
@@ -74,9 +79,9 @@ class BackGestureSmokeTest {
         screenshot("$name-after")
     }
 
-    private fun <T : Activity> open(parent: Activity, type: Class<T>): T {
+    private fun <T : Activity> open(parent: Activity, type: Class<T>, configure: (Intent) -> Intent = { it }): T {
         val monitor = instrumentation.addMonitor(type.name, null, false)
-        instrumentation.runOnMainSync { parent.startActivity(Intent(parent, type)) }
+        instrumentation.runOnMainSync { parent.startActivity(configure(Intent(parent, type))) }
         val activity = monitor.waitForActivityWithTimeout(10_000)
         instrumentation.removeMonitor(monitor)
         assertNotNull("Activity did not open: ${type.name}", activity)
@@ -104,6 +109,31 @@ class BackGestureSmokeTest {
             assertFalse(nodes.isFinishing)
             gesture(false, "nodes-commit")
             waitFor("Node page did not return") { nodes.isDestroyed }
+
+            // Create only a new disposable test profile; never reset app storage or existing profiles.
+            val uuid = runBlocking { withProfile { create(Profile.Type.File, "CI directory preview") } }
+            try {
+                val fixture = instrumentation.targetContext.pendingDir.resolve(uuid.toString())
+                fixture.resolve("config.yaml").writeText("mixed-port: 7890\n")
+                fixture.resolve("providers/child").mkdirs()
+                fixture.resolve("providers/child/leaf.yaml").writeText("payload: []\n")
+                val files = open(main!!, FilesActivity::class.java) { it.setUUID(uuid) }
+                val providers = main!!.getString(com.github.kr328.clash.service.R.string.provider_files)
+                device.wait(Until.findObject(By.text(providers)), 5_000)!!.click()
+                device.wait(Until.findObject(By.text("child")), 5_000)!!.click()
+                assertNotNull(device.wait(Until.findObject(By.text("leaf.yaml")), 5_000))
+                gesture(true, "directory-cancel", right = true)
+                assertTrue(device.hasObject(By.text("leaf.yaml")))
+                gesture(false, "directory-pop")
+                assertNotNull(device.wait(Until.findObject(By.text("child")), 5_000))
+                assertFalse(files.isFinishing)
+                gesture(false, "directory-root")
+                assertNotNull(device.wait(Until.findObject(By.text(providers)), 5_000))
+                gesture(false, "files-exit")
+                waitFor("Files root did not return") { files.isDestroyed }
+            } finally {
+                runBlocking { withProfile { release(uuid) } }
+            }
 
             val mobile = open(main!!, MobileNetworkActivity::class.java)
             instrumentation.runOnMainSync {
