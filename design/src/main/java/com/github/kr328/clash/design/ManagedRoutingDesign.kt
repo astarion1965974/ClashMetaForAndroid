@@ -31,7 +31,7 @@ class ManagedRoutingDesign(
     val dirty get() = original != settings
     override val root: View get() = binding.root
 
-    private fun changed() { binding.saveView.isEnabled = dirty && !saving && !updating }
+    private fun changed() { onBackStateChanged(); binding.saveView.isEnabled = dirty && !saving && !updating }
     fun markSaved() { original = settings.copy(); changed() }
     fun setSaving(value: Boolean) {
         saving = value

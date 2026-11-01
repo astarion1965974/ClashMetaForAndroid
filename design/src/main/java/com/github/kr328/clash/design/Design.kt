@@ -16,6 +16,9 @@ abstract class Design<R>(val context: Context) :
     CoroutineScope by CoroutineScope(Dispatchers.Unconfined) {
     abstract val root: View
 
+    // Designs notify synchronously when dirty/busy state changes, before the next gesture.
+    var onBackStateChanged: () -> Unit = {}
+
     val surface = Surface()
     val requests: Channel<R> = Channel(Channel.UNLIMITED)
 

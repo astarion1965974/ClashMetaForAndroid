@@ -50,6 +50,7 @@ class AccessControlDesign(
     }
 
     private fun refresh() {
+        onBackStateChanged()
         val query = binding.keywordView.text?.toString().orEmpty().trim()
         val onlySelected = binding.selectedFilter.isChecked
         adapter.mode = mode

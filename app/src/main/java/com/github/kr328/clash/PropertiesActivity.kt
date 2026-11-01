@@ -29,6 +29,7 @@ class PropertiesActivity : BaseActivity<PropertiesDesign>() {
         design.profile = original
 
         setContentDesign(design)
+        interceptBack(design, { design.progressing || original != design.profile }, ::confirmBack)
 
         defer {
             canceled = true
@@ -69,7 +70,7 @@ class PropertiesActivity : BaseActivity<PropertiesDesign>() {
         }
     }
 
-    override fun onBackPressed() {
+    private fun confirmBack() {
         design?.apply {
             launch {
                 if (!progressing) {
@@ -77,7 +78,7 @@ class PropertiesActivity : BaseActivity<PropertiesDesign>() {
                         finish()
                 }
             }
-        } ?: return super.onBackPressed()
+        }
     }
 
     private suspend fun PropertiesDesign.verifyAndCommit() {

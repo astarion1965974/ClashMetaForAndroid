@@ -1,0 +1,152 @@
+name: Predictive Back Regression
+
+on:
+  push:
+    branches: [feat/predictive-back]
+  pull_request:
+    branches: [main, feat/live-notifications]
+    paths:
+      - 'app/**'
+      - 'design/**'
+      - 'gradle/**'
+      - '.github/workflows/predictive-back.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Existing protected Live CI helper regressions
+        run: |
+          mkdir -p "$RUNNER_TEMP/live-ci-tests"
+          git show origin/main:.github/scripts/weekly_live.py > "$RUNNER_TEMP/live-ci-tests/weekly_live.py"
+          git show origin/main:.github/scripts/test_weekly_live.py > "$RUNNER_TEMP/live-ci-tests/test_weekly_live.py"
+          python3 "$RUNNER_TEMP/live-ci-tests/test_weekly_live.py"
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          gradle-version: '8.10.2'
+      - name: Install project Android tools
+        run: |
+          python3 - <<'PY'
+          import os, subprocess
+          from pathlib import Path
+          sdk = os.environ['ANDROID_HOME']
+          manager = sdk + '/cmdline-tools/latest/bin/sdkmanager'
+          subprocess.run([manager, '--licenses'], input='y\n' * 200, text=True, stdout=subprocess.DEVNULL, check=True)
+          subprocess.run([manager, 'platforms;android-36', 'build-tools;35.0.0', 'ndk;29.0.14206865', 'cmake;3.22.1'], check=True)
+          Path('local.properties').write_text(f'sdk.dir={sdk}\ncustom.application.id=com.astarion.clash.live\ncustom.application.name=Clash Meta Live\nremove.suffix=true\n')
+          PY
+      - name: Install patched project Go toolchain
+        run: |
+          curl --fail --location --retry 3 https://github.com/MetaCubeX/go/releases/download/build/go1.26.linux-amd64.tar.gz --output "$RUNNER_TEMP/go.tar.gz"
+          mkdir -p "$RUNNER_TEMP/cmfa-go"
+          tar -xzf "$RUNNER_TEMP/go.tar.gz" -C "$RUNNER_TEMP/cmfa-go"
+          echo "GOROOT=$RUNNER_TEMP/cmfa-go/go" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/cmfa-go/go/bin" >> "$GITHUB_PATH"
+          for patch_file in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do
+            patch -d "$RUNNER_TEMP/cmfa-go/go" --forward -p 1 -i "$patch_file"
+          done
+      - name: Existing native routing and mobile regressions
+        working-directory: core/src/main/golang
+        env:
+          GOMAXPROCS: '2'
+        run: |
+          overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
+          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1 -v
+      - name: Android back, UI, service regressions and ARM64 release build
+        env:
+          GOMAXPROCS: '2'
+        run: gradle --no-daemon --console=plain --max-workers=2 design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Record resolved navigation dependencies
+        run: gradle --no-daemon --console=plain app:dependencies --configuration alphaReleaseRuntimeClasspath -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Retain test reports and candidate (not Live signed)
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: predictive-back-validation-${{ github.run_id }}
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+            design/build/ui-previews/
+            app/build/outputs/apk/alpha/release/*arm64-v8a*.apk
+          if-no-files-found: warn
+      - name: Build emulator test APKs
+        env:
+          GOMAXPROCS: '2'
+        run: gradle --no-daemon --console=plain --max-workers=2 app:assembleAlphaDebug app:assembleAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Retain emulator APKs for independent device checks
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: predictive-back-emulator-apks-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/alpha/debug/*x86_64*.apk
+            app/build/outputs/apk/androidTest/alpha/debug/*.apk
+          if-no-files-found: error
+
+  gestures:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: predictive-back-emulator-apks-${{ github.run_id }}
+          path: apks
+      - name: Start isolated Android 15 gesture-navigation emulator
+        run: |
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64'
+          echo no | avdmanager create avd --name predictive-ci --package 'system-images;android-35;google_apis;x86_64' --device pixel_6
+          "$ANDROID_HOME/emulator/emulator" -avd predictive-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -memory 2048 -cores 2 > emulator.log 2>&1 &
+          timeout 180 adb wait-for-device
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          adb shell input keyevent 82
+          adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural
+          adb shell settings put global window_animation_scale 1
+          adb shell settings put global transition_animation_scale 1
+          adb shell settings put global animator_duration_scale 1
+          app_apk=$(find apks/alpha/debug -name '*x86_64*.apk' -print -quit)
+          test_apk=$(find apks/androidTest/alpha/debug -name '*.apk' -print -quit)
+          adb install -g "$app_apk"
+          adb install -t "$test_apk"
+      - name: Real touchscreen preview, cancel and commit regression
+        run: |
+          timeout 300 adb shell am instrument -w -r com.astarion.clash.live.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
+          grep -q 'OK (1 test)' instrumentation.txt
+      - name: Collect emulator visual evidence
+        if: always()
+        run: |
+          mkdir -p emulator-evidence
+          adb pull /sdcard/Android/data/com.astarion.clash.live/files/predictive-back emulator-evidence/ || true
+          adb logcat -d > emulator-evidence/logcat.txt || true
+      - name: Retain emulator test results
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: predictive-back-emulator-${{ github.run_id }}
+          path: |
+            emulator-evidence/
+            emulator.log
+            instrumentation.txt

@@ -13,11 +13,13 @@ import com.github.kr328.clash.common.util.grantPermissions
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.common.util.uuid
 import com.github.kr328.clash.design.FilesDesign
+import com.github.kr328.clash.design.util.DirectoryBackCallback
 import com.github.kr328.clash.design.util.showExceptionToast
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.withProfile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 import java.util.*
@@ -32,6 +34,12 @@ class FilesActivity : BaseActivity<FilesDesign>() {
         val design = FilesDesign(this)
         val client = FilesClient(this)
         val stack = Stack<String>()
+        val previews = Stack<ByteArray?>()
+        val back = DirectoryBackCallback({ design.root }, { previews.lastOrNull() }) {
+            design.requests.trySend(FilesDesign.Request.PopStack)
+        }
+        lifecycle.addObserver(back)
+        onBackPressedDispatcher.addCallback(this, back)
 
         design.configurationEditable = profile.type != Profile.Type.Url
         design.fetch(client, stack, root)
@@ -51,6 +59,8 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                     }
                 }
                 design.requests.onReceive {
+                    val previousStack = stack.toList()
+                    val previousPreviews = previews.toList()
                     try {
                         when (it) {
                             FilesDesign.Request.PopStack -> {
@@ -58,9 +68,11 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                                     finish()
                                 } else {
                                     stack.pop()
+                                    previews.pop()
                                 }
                             }
                             is FilesDesign.Request.OpenDirectory -> {
+                                previews.push(design.captureBackPreview())
                                 stack.push(it.file.id)
                             }
                             is FilesDesign.Request.OpenFile -> {
@@ -108,10 +120,22 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                             }
                         }
                     } catch (e: Exception) {
+                        if (e is CancellationException) throw e
                         design.showExceptionToast(e)
                     }
 
-                    design.fetch(client, stack, root)
+                    try {
+                        design.fetch(client, stack, root)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        // Keep the visible directory and its back destination consistent on IO failure.
+                        stack.clear(); stack.addAll(previousStack)
+                        previews.clear(); previews.addAll(previousPreviews)
+                        design.showExceptionToast(e)
+                    } finally {
+                        back.complete()
+                        back.isEnabled = stack.isNotEmpty()
+                    }
                 }
                 if (activityStarted) {
                     ticker.onReceive {
@@ -120,10 +144,6 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                 }
             }
         }
-    }
-
-    override fun onBackPressed() {
-        design?.requests?.trySend(FilesDesign.Request.PopStack)
     }
 
     private suspend fun FilesDesign.fetch(client: FilesClient, stack: Stack<String>, root: String) {

@@ -16,7 +16,7 @@ class MobileNetworkDesign(context: Context, val settings: MobileNetworkSettings,
     private var saving = false
     val dirty get() = original != settings
     override val root: View get() = binding.root
-    private fun changed() { binding.saveView.isEnabled = dirty && !saving }
+    private fun changed() { onBackStateChanged(); binding.saveView.isEnabled = dirty && !saving }
     fun markSaved() { original = settings.copy(); changed() }
     fun setSaving(value: Boolean) { saving = value; fun freeze(v: View) {
         v.isEnabled = !value

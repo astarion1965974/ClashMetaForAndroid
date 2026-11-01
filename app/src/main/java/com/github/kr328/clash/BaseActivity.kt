@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
@@ -57,6 +58,21 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
     private var dayNight: DayNight = DayNight.Day
 
     protected abstract suspend fun main()
+
+    /** Only intercept while the page has work that prevents a normal system back. */
+    protected fun interceptBack(design: D, enabled: () -> Boolean, onBack: () -> Unit) {
+        val callback = object : OnBackPressedCallback(enabled()) {
+            override fun handleOnBackPressed() {
+                // Saving may finish while this callback owns an in-progress gesture.
+                if (enabled()) onBack() else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        }
+        design.onBackStateChanged = { callback.isEnabled = enabled() }
+        onBackPressedDispatcher.addCallback(this, callback)
+    }
 
     fun defer(operation: suspend () -> Unit) {
         this.defer = operation
@@ -150,7 +166,7 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        this.onBackPressed()
+        onBackPressedDispatcher.onBackPressed()
         return true
     }
 

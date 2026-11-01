@@ -45,6 +45,8 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
         }
     }
 
+    fun captureBackPreview(): ByteArray? = DirectoryBackCallback.capture(root)
+
     fun updateElapsed() {
         adapter.updateElapsed()
     }

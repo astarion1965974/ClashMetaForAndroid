@@ -23,12 +23,11 @@ import kotlinx.coroutines.selects.select
 class MobileNetworkActivity : BaseActivity<MobileNetworkDesign>() {
     private var saving=false
     private var leaving=false
-    override fun onBackPressed() {
+    private fun confirmBack() {
         if(saving)return
         if(!leaving && design?.dirty==true) MaterialAlertDialogBuilder(this).setTitle(R.string.route_unsaved)
             .setMessage(R.string.route_unsaved_hint).setNegativeButton(R.string.route_keep_editing,null)
             .setPositiveButton(R.string.route_discard){_,_->leaving=true;finish()}.show()
-        else super.onBackPressed()
     }
     private suspend fun permissions() {
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED) {
@@ -47,6 +46,7 @@ class MobileNetworkActivity : BaseActivity<MobileNetworkDesign>() {
                 .filter { !it.isGroup && it.name !in setOf("DIRECT","REJECT","REJECT-DROP","PASS","COMPATIBLE") }.map { it.name }.distinct().sorted()
         } }.getOrDefault(emptyList()) else emptyList()
         val design=MobileNetworkDesign(this,settings,nodes,clashRunning);setContentDesign(design)
+        interceptBack(design, { saving || (!leaving && design.dirty) }, ::confirmBack)
         while(isActive) select<Unit> {
             events.onReceive { }
             design.requests.onReceive { when(it) {
