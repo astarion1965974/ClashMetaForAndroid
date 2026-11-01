@@ -22,8 +22,11 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="5dp"
+        android:background="@drawable/bg_live_row"
         android:minHeight="@dimen/item_min_height"
-        android:paddingStart="@dimen/item_header_margin"
+        android:paddingStart="18dp"
         android:paddingEnd="0dp">
 
         <LinearLayout
