@@ -12,7 +12,7 @@ Compilation runs without signing credentials or repository write permissions. An
 
 1. Open the repository Actions tab and enable GitHub Actions if this newly forked repository asks for activation.
 2. Under Settings → Secrets and variables → Actions, add the repository secret `LIVE_SIGNING_BACKUP_B64`. Its value is the single-line Base64 encoding of the existing `ClashMeta-Live-signing-backup.zip` (the ZIP contains `clashmeta-live.jks` and `signing.properties`). Never commit the ZIP, key, password or encoded value to Git.
-3. Open Weekly Live Upstream Build and choose Run workflow to verify the first remote build. `force_build` is available for retries or a same-source rebuild.
+3. Open Weekly Live Upstream Build and choose Run workflow to verify the first remote build. `force_build` is available for a same-source rebuild. To retry only signing/publication after fixing credentials or runner configuration, set `publish_run_id` to the earlier successful build run ID; leave it blank for normal weekly runs. CI control-file pushes do not automatically rebuild the app.
 
 With an authenticated GitHub CLI, the signing secret can be set without displaying its content:
 
