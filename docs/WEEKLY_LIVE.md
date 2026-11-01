@@ -2,7 +2,7 @@
 
 Schedule: Monday 01:15 UTC / 09:15 Asia/Shanghai. Workflow: `.github/workflows/weekly-live.yaml`, on the default `main` branch. The customized source remains on `feat/live-notifications`.
 
-The trusted control branch fetches `MetaCubeX/ClashMetaForAndroid:main`, preserves Live modifications and follows the core submodule revision selected by the Android upstream. It does not independently jump to the newest Mihomo Alpha commit. A first build, unpublished custom change, upstream update or manual force request triggers native routing tests, service unit tests and an ARM64 release build. If both upstream and the published Live source are unchanged, compilation is skipped.
+The trusted control branch fetches `MetaCubeX/ClashMetaForAndroid:main`, preserves Live modifications and follows the core submodule revision selected by the Android upstream. It does not independently jump to the newest Mihomo Alpha commit. A first build, unpublished custom change, upstream update or manual force request triggers native routing/mobile tests, Android view tests, service unit tests and an ARM64 release build. If both upstream and the published Live source are unchanged, compilation is skipped.
 
 A merge conflict or test/build/validation failure leaves the remote Live branch and existing APK release intact. Only versionName/versionCode lines are normalized before merging to avoid routine release-number conflicts. All other merge conflicts stop the job and produce diagnostics. Android versionCode is greater than both previous Live and merged upstream codes.
 
@@ -31,3 +31,5 @@ GitHub schedules are best effort and may be delayed; scheduled workflows in inac
 ## CI helper checks
 
 Run `python3 .github/scripts/test_weekly_live.py`. These tests create isolated temporary Git repositories and cover upstream merges, retained custom changes, version monotonicity, conflict rollback, no-change skipping, first publication and manual rebuilds.
+
+Mobile maintenance hooks use a generated Go overlay; the upstream submodule remains unchanged. The build fails if upstream hook locations change, so unsupported merges cannot be published.

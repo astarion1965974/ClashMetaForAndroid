@@ -103,13 +103,15 @@ jobs:
         working-directory: source/core/src/main/golang
         env:
           GOMAXPROCS: '2'
-        run: go test ./native/routing -count=1 -v
+        run: |
+          overlay=$(python3 "$GITHUB_WORKSPACE/source/.github/scripts/mobile_core_overlay.py")
+          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1 -v
       - name: Test and build customized ARM64 APK
         if: steps.prepare.outputs.build == 'true'
         working-directory: source
         env:
           GOMAXPROCS: '2'
-        run: gradle --no-daemon --console=plain --max-workers=2 service:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+        run: gradle --no-daemon --console=plain --max-workers=2 design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
       - name: Verify and bundle tested candidate
         if: steps.prepare.outputs.build == 'true'
         run: python3 control/.github/scripts/weekly_live.py bundle --source source --artifact weekly-artifact
