@@ -1,6 +1,9 @@
 package com.github.kr328.clash.service
 
 import android.content.Context
+import android.content.Intent
+import com.github.kr328.clash.common.constants.Intents
+import com.github.kr328.clash.common.constants.Permissions
 import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.*
@@ -27,6 +30,7 @@ class ClashManager(private val context: Context) : IClashManager,
     }
 
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
+        if (!StatusProvider.profileLoaded) return emptyList()
         return Clash.queryGroupNames(excludeNotSelectable)
     }
 
@@ -48,6 +52,12 @@ class ClashManager(private val context: Context) : IClashManager,
 
     override fun patchSelector(group: String, name: String): Boolean {
         return Clash.patchSelector(group, name).also {
+            if (it) {
+                context.sendBroadcast(
+                    Intent(Intents.ACTION_PROXY_SELECTION_CHANGED).setPackage(context.packageName),
+                    Permissions.RECEIVE_SELF_BROADCASTS
+                )
+            }
             val current = store.activeProfile ?: return@also
 
             if (it) {

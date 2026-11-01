@@ -25,6 +25,8 @@ var processors = []processor{
 	patchTun,
 	patchListeners,
 	patchProviders,
+	patchManagedRouting,
+	patchMobile,
 	validConfig,
 }
 

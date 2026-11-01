@@ -65,4 +65,14 @@ class ServiceStore(context: Context) {
         key = "dynamic_notification",
         defaultValue = true
     )
+
+    var liveNotification by store.boolean(
+        key = "live_notification",
+        defaultValue = true
+    )
+
+    var notificationProxyGroup by store.string(
+        key = "notification_proxy_group",
+        defaultValue = ""
+    )
 }

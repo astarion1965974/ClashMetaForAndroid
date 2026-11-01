@@ -1,6 +1,9 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.view.View
 import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
 import com.github.kr328.clash.design.model.Behavior
@@ -22,7 +25,7 @@ class AppSettingsDesign(
     onHideIconChange: (hide: Boolean) -> Unit,
 ) : Design<AppSettingsDesign.Request>(context) {
     enum class Request {
-        ReCreateAllActivities
+        ReCreateAllActivities, SelectNotificationGroup
     }
 
     private val binding = DesignSettingsCommonBinding
@@ -89,6 +92,35 @@ class AppSettingsDesign(
             }
 
             category(R.string.service)
+
+            if (Build.VERSION.SDK_INT >= 36) {
+                switch(
+                    value = srvStore::liveNotification,
+                    icon = R.drawable.ic_baseline_domain,
+                    title = R.string.live_notification_title,
+                    summary = R.string.live_notification_summary
+                ) {
+                    enabled = !running
+                }
+                clickable(
+                    title = R.string.live_notification_group,
+                    summary = R.string.live_notification_group_summary
+                ) {
+                    enabled = running
+                    if (srvStore.notificationProxyGroup.isNotBlank()) summary = srvStore.notificationProxyGroup
+                    clicked { requests.trySend(Request.SelectNotificationGroup) }
+                }
+                clickable(
+                    title = R.string.live_notification_settings,
+                    summary = R.string.live_notification_settings_summary
+                ) {
+                    clicked {
+                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        context.startActivity(intent)
+                    }
+                }
+            }
 
             switch(
                 value = srvStore::dynamicNotification,

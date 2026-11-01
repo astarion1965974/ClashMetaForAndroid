@@ -1,0 +1,9 @@
+<resources>
+    <string name="live_notification_group">实时通知主策略组</string>
+    <string name="live_notification_group_summary">连接 VPN 后可选择，默认识别主代理策略组。</string>
+    <string name="live_notification_group_auto">自动识别主代理策略组</string>
+    <string name="live_notification_title">VPN 实时通知</string>
+    <string name="live_notification_summary">在胶囊和展开卡片显示所选节点。修改后重新连接 VPN 生效。</string>
+    <string name="live_notification_settings">实时通知权限</string>
+    <string name="live_notification_settings_summary">前往系统设置，允许本应用显示实时通知。</string>
+</resources>

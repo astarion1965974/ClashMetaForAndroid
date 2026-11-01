@@ -34,5 +34,5 @@ fun CoroutineScope.preferenceScreen(
 }
 
 fun PreferenceScreen.addElement(preference: Preference) {
-    root.addView(preference.view, LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+    root.addView(preference.view, preference.view.layoutParams ?: LayoutParams(MATCH_PARENT, WRAP_CONTENT))
 }

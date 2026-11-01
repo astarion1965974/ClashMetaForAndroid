@@ -68,12 +68,13 @@ class ProfileReceiver : BroadcastReceiver() {
             context.getSystemService<AlarmManager>()?.cancel(intent)
         }
 
-        fun schedule(context: Context, imported: Imported) {
-            val intent = pendingIntentOf(context, imported)
-
-            context.getSystemService<AlarmManager>()?.cancel(intent)
-
-            intent.send(context, 0, null)
+        fun schedule(context: Context, imported: Imported, manual: Boolean = true) {
+            context.getSystemService<AlarmManager>()?.cancel(pendingIntentOf(context,imported))
+            context.startForegroundServiceCompat(Intent(Intents.ACTION_PROFILE_REQUEST_UPDATE)
+                .setComponent(ProfileWorker::class.componentName).setUUID(imported.uuid).putExtra("manual",manual))
+        }
+        fun scheduleAfter(context: Context, imported: Imported, delay: Long) {
+            context.getSystemService<AlarmManager>()?.set(AlarmManager.RTC,System.currentTimeMillis()+delay,pendingIntentOf(context,imported))
         }
 
         fun scheduleNext(context: Context, imported: Imported) {
@@ -94,7 +95,9 @@ class ProfileReceiver : BroadcastReceiver() {
             if (last < 0)
                 return
 
-            val interval = (imported.interval - (current - last)).coerceAtLeast(0)
+            val mobile = com.github.kr328.clash.service.store.MobileNetworkStore(context).read()
+            val period = if (mobile.enabled && mobile.wifiUpdates) imported.interval.coerceAtLeast(TimeUnit.HOURS.toMillis(24)) else imported.interval
+            val interval = (period - (current - last)).coerceAtLeast(0)
 
             context.getSystemService<AlarmManager>()
                 ?.set(AlarmManager.RTC, current + interval, intent)

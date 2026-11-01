@@ -10,6 +10,7 @@ object Intents {
     val ACTION_TOGGLE_CLASH = "$packageName.action.TOGGLE_CLASH"
 
     const val EXTRA_NAME = "name"
+    const val EXTRA_NOTIFICATION_PROXY_GROUP = "notification_proxy_group"
 
     // Self
     val ACTION_SERVICE_RECREATED = "$packageName.intent.action.CLASH_RECREATED"
@@ -23,6 +24,7 @@ object Intents {
     val ACTION_PROFILE_SCHEDULE_UPDATES = "$packageName.intent.action.SCHEDULE_UPDATES"
     val ACTION_PROFILE_LOADED = "$packageName.intent.action.PROFILE_LOADED"
     val ACTION_OVERRIDE_CHANGED = "$packageName.intent.action.OVERRIDE_CHANGED"
+    val ACTION_PROXY_SELECTION_CHANGED = "$packageName.intent.action.PROXY_SELECTION_CHANGED"
 
     const val EXTRA_STOP_REASON = "stop_reason"
     const val EXTRA_UUID = "uuid"

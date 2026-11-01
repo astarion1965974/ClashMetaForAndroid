@@ -28,6 +28,10 @@ class NetworkSettingsActivity : BaseActivity<NetworkSettingsDesign>() {
                 }
                 design.requests.onReceive {
                     when (it) {
+                        NetworkSettingsDesign.Request.StartMobileNetwork ->
+                            startActivity(MobileNetworkActivity::class.intent)
+                        NetworkSettingsDesign.Request.StartManagedRouting ->
+                            startActivity(ManagedRoutingActivity::class.intent)
                         NetworkSettingsDesign.Request.StartAccessControlList ->
                             startActivity(AccessControlActivity::class.intent)
                     }

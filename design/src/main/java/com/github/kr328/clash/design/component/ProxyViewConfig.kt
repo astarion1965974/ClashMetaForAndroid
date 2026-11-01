@@ -13,8 +13,8 @@ class ProxyViewConfig(val context: Context, var proxyLine: Int) {
     val clickableBackground =
         context.resolveThemedResourceId(android.R.attr.selectableItemBackground)
 
-    val selectedControl = context.resolveThemedColor(com.google.android.material.R.attr.colorOnPrimary)
-    val selectedBackground = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
+    val selectedControl = context.resolveThemedColor(com.google.android.material.R.attr.colorOnSurface)
+    val selectedBackground = context.resolveThemedColor(R.attr.colorLiveSelection)
 
     val unselectedControl = context.resolveThemedColor(com.google.android.material.R.attr.colorOnSurface)
     val unselectedBackground: Int
@@ -28,8 +28,11 @@ class ProxyViewConfig(val context: Context, var proxyLine: Int) {
     val textSize
         get() = if (proxyLine==2) context.getPixels(R.dimen.proxy_text_size).toFloat() else context.getPixels(R.dimen.proxy_text_size_grid3).toFloat()
 
+    val border = context.resolveThemedColor(R.attr.colorLiveBorder)
+    val accent = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
+
     val shadow = Color.argb(
-        0x15,
+        0x00,
         Color.red(Color.DKGRAY),
         Color.green(Color.DKGRAY),
         Color.blue(Color.DKGRAY),

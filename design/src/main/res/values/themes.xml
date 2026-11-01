@@ -23,9 +23,20 @@
         <item name="colorSecondary">?attr/colorPrimary</item>
         <item name="colorOnSecondary">?attr/colorOnPrimary</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
         <item name="android:windowBackground">@color/color_light_background</item>
-    </style>
+
+        <item name="colorLiveBorder">#E7EAF2</item>
+        <item name="colorLiveMuted">#737988</item>
+        <item name="colorLiveRaised">#F2F4F8</item>
+        <item name="colorLiveSelection">#E9EEFF</item>
+        <item name="colorLiveSuccess">#22A963</item>
+        <item name="colorOnSurface">#1A1D25</item>
+        <item name="android:textColorPrimary">#1A1D25</item>
+        <item name="android:textColorSecondary">#737988</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppFullScreenDialogDarkBase" parent="Theme.MaterialComponents.Dialog">
         <item name="android:windowIsFloating">false</item>
@@ -37,7 +48,7 @@
         <item name="paddingLeftSystemWindowInsets">false</item>
 
         <item name="colorPrimary">@color/color_clash_dark</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorOnPrimary">#111226</item>
         <item name="colorSurface">@color/color_dark_surface</item>
         <item name="colorControlDisabled">@color/color_dark_control_disabled</item>
         <item name="android:windowBackground">@color/color_dark_background</item>
@@ -47,8 +58,18 @@
         <item name="colorOnSecondary">?attr/colorOnPrimary</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
         <item name="colorClashStopped">?attr/colorSurface</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
-    </style>
+
+        <item name="colorLiveBorder">#30343D</item>
+        <item name="colorLiveMuted">#A4ABB7</item>
+        <item name="colorLiveRaised">#282D36</item>
+        <item name="colorLiveSelection">#313B58</item>
+        <item name="colorLiveSuccess">#58D797</item>
+        <item name="colorOnSurface">#F7F9FC</item>
+        <item name="android:textColorPrimary">#F7F9FC</item>
+        <item name="android:textColorSecondary">#A4ABB7</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppFullScreenDialogLight" parent="AppFullScreenDialogLightBase">
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -76,10 +97,21 @@
         <item name="colorSecondary">?attr/colorPrimary</item>
         <item name="colorOnSecondary">?attr/colorOnPrimary</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
 
         <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
-    </style>
+
+        <item name="colorLiveBorder">#E7EAF2</item>
+        <item name="colorLiveMuted">#737988</item>
+        <item name="colorLiveRaised">#F2F4F8</item>
+        <item name="colorLiveSelection">#E9EEFF</item>
+        <item name="colorLiveSuccess">#22A963</item>
+        <item name="colorOnSurface">#1A1D25</item>
+        <item name="android:textColorPrimary">#1A1D25</item>
+        <item name="android:textColorSecondary">#737988</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppBottomSheetDialogDarkBase" parent="Theme.MaterialComponents.BottomSheetDialog">
         <item name="android:windowIsFloating">false</item>
@@ -88,7 +120,7 @@
         <item name="paddingLeftSystemWindowInsets">false</item>
 
         <item name="colorPrimary">@color/color_clash_dark</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorOnPrimary">#111226</item>
         <item name="colorSurface">@color/color_dark_surface</item>
         <item name="colorControlDisabled">@color/color_dark_control_disabled</item>
 
@@ -97,10 +129,20 @@
         <item name="colorOnSecondary">?attr/colorOnPrimary</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
         <item name="colorClashStopped">?attr/colorSurface</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
 
         <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
-    </style>
+
+        <item name="colorLiveBorder">#30343D</item>
+        <item name="colorLiveMuted">#A4ABB7</item>
+        <item name="colorLiveRaised">#282D36</item>
+        <item name="colorLiveSelection">#313B58</item>
+        <item name="colorLiveSuccess">#58D797</item>
+        <item name="colorOnSurface">#F7F9FC</item>
+        <item name="android:textColorPrimary">#F7F9FC</item>
+        <item name="android:textColorSecondary">#A4ABB7</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppBottomSheetDialogLight" parent="AppBottomSheetDialogLightBase">
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -128,11 +170,22 @@
         <item name="colorOnSecondary">?attr/colorOnPrimary</item>
         <item name="colorControlActivated">?attr/colorPrimary</item>
         <item name="colorLogo">?attr/colorControlActivated</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
 
         <item name="bottomSheetDialogTheme">@style/AppBottomSheetDialogLight</item>
         <item name="fullScreenDialogTheme">@style/AppFullScreenDialogLight</item>
-    </style>
+
+        <item name="colorLiveBorder">#E7EAF2</item>
+        <item name="colorLiveMuted">#737988</item>
+        <item name="colorLiveRaised">#F2F4F8</item>
+        <item name="colorLiveSelection">#E9EEFF</item>
+        <item name="colorLiveSuccess">#22A963</item>
+        <item name="colorOnSurface">#1A1D25</item>
+        <item name="android:textColorPrimary">#1A1D25</item>
+        <item name="android:textColorSecondary">#737988</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppThemeDarkBase" parent="Theme.MaterialComponents.NoActionBar">
         <item name="android:windowBackground">@color/color_dark_background</item>
@@ -140,7 +193,7 @@
         <item name="android:spotShadowAlpha">0.08</item>
 
         <item name="colorPrimary">@color/color_clash_dark</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorOnPrimary">#111226</item>
         <item name="colorSurface">@color/color_dark_surface</item>
         <item name="colorControlNormal">@android:color/white</item>
         <item name="colorControlDisabled">@color/color_dark_control_disabled</item>
@@ -151,11 +204,21 @@
         <item name="colorControlActivated">?attr/colorPrimary</item>
         <item name="colorClashStopped">?attr/colorSurface</item>
         <item name="colorLogo">?attr/colorControlNormal</item>
-        <item name="android:textColor">?attr/colorControlNormal</item>
 
         <item name="bottomSheetDialogTheme">@style/AppBottomSheetDialogDark</item>
         <item name="fullScreenDialogTheme">@style/AppFullScreenDialogDark</item>
-    </style>
+
+        <item name="colorLiveBorder">#30343D</item>
+        <item name="colorLiveMuted">#A4ABB7</item>
+        <item name="colorLiveRaised">#282D36</item>
+        <item name="colorLiveSelection">#313B58</item>
+        <item name="colorLiveSuccess">#58D797</item>
+        <item name="colorOnSurface">#F7F9FC</item>
+        <item name="android:textColorPrimary">#F7F9FC</item>
+        <item name="android:textColorSecondary">#A4ABB7</item>
+        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
+        <item name="textInputStyle">@style/Widget.Live.Input</item>
+</style>
 
     <style name="AppThemeLight" parent="AppThemeLightBase">
         <item name="android:statusBarColor">@color/color_system_ui_overlay</item>

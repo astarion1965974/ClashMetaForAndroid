@@ -14,6 +14,7 @@ class StatusProvider : ContentProvider() {
                 return if (serviceRunning)
                     Bundle().apply {
                         putString("name", currentProfile)
+                        putBoolean("homePaused", homePaused)
                     }
                 else
                     null
@@ -78,6 +79,9 @@ class StatusProvider : ContentProvider() {
                         delete()
                 }
             }
+        @Volatile var homePaused: Boolean = false
         var currentProfile: String? = null
+        @Volatile
+        var profileLoaded: Boolean = false
     }
 }

@@ -57,6 +57,9 @@ class LargeActionCard @JvmOverloads constructor(
             }
         }
 
+        strokeColor = context.resolveThemedColor(R.attr.colorLiveBorder)
+        strokeWidth = (resources.displayMetrics.density + 0.5f).toInt()
+
         minimumHeight = context.getPixels(R.dimen.large_action_card_min_height)
         radius = context.getPixels(R.dimen.large_action_card_radius).toFloat()
         elevation = context.getPixels(R.dimen.large_action_card_elevation).toFloat()

@@ -1,6 +1,7 @@
 package com.github.kr328.clash
 
 import com.github.kr328.clash.common.util.intent
+import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.design.ProxyDesign
@@ -16,6 +17,9 @@ class ProxyActivity : BaseActivity<ProxyDesign>() {
     override suspend fun main() {
         val mode = withClash { queryOverride(Clash.OverrideSlot.Session).mode }
         val names = withClash { queryProxyGroupNames(uiStore.proxyExcludeNotSelectable) }
+        intent.getStringExtra(Intents.EXTRA_NOTIFICATION_PROXY_GROUP)?.takeIf { it in names }?.let {
+            uiStore.proxyLastGroup = it
+        }
         val states = List(names.size) { ProxyState("?") }
         val unorderedStates = names.indices.map { names[it] to states[it] }.toMap()
         val reloadLock = Semaphore(10)

@@ -56,9 +56,7 @@ fun PreferenceScreen.clickable(
 
     impl.title = context.getText(title)
 
-    if (icon != null) {
-        impl.icon = context.getDrawableCompat(icon)
-    }
+    impl.icon = icon?.let(context::getDrawableCompat)
 
     if (summary != null) {
         impl.summary = context.getText(summary)

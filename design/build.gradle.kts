@@ -19,4 +19,16 @@ dependencies {
     implementation(libs.androidx.viewpager)
     implementation(libs.google.material)
     implementation(libs.zxing.core)
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+}
+
+android {
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+        }
+    }
 }

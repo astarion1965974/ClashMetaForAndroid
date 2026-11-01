@@ -44,6 +44,11 @@ class DynamicNotificationModule(service: Service) : Module<Unit>(service) {
     private val notificationManager = NotificationManagerCompat.from(service)
 
     private fun update() {
+        if (StatusProvider.homePaused) {
+            notificationManager.notify(R.id.nf_clash_status, builder.setContentTitle(service.getString(R.string.live_home_title))
+                .setContentText(service.getString(R.string.live_home_hint)).setSubText(null).build())
+            return
+        }
         val now = Clash.queryTrafficNow()
         val total = Clash.queryTrafficTotal()
 
@@ -80,6 +85,7 @@ class DynamicNotificationModule(service: Service) : Module<Unit>(service) {
 
         val profileLoaded = receiveBroadcast(capacity = Channel.CONFLATED) {
             addAction(Intents.ACTION_PROFILE_LOADED)
+            addAction(Intents.ACTION_SERVICE_RECREATED)
         }
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
@@ -96,8 +102,9 @@ class DynamicNotificationModule(service: Service) : Module<Unit>(service) {
                 }
                 profileLoaded.onReceive {
                     builder.setContentTitle(StatusProvider.currentProfile ?: "Not selected")
+                    if (StatusProvider.homePaused || shouldUpdate) update()
                 }
-                if (shouldUpdate) {
+                if (shouldUpdate && !StatusProvider.homePaused) {
                     ticker.onReceive {
                         update()
                     }

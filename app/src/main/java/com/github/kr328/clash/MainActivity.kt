@@ -73,15 +73,19 @@ class MainActivity : BaseActivity<MainDesign>() {
                         }
                         MainDesign.Request.OpenSettings ->
                             startActivity(SettingsActivity::class.intent)
+                        MainDesign.Request.OpenAppRouting ->
+                            startActivity(AccessControlActivity::class.intent)
+                        MainDesign.Request.OpenRouting ->
+                            startActivity(ManagedRoutingActivity::class.intent)
                         MainDesign.Request.OpenHelp ->
                             startActivity(HelpActivity::class.intent)
                         MainDesign.Request.OpenAbout ->
                             design.showAbout(queryAppVersionName())
                     }
                 }
-                if (clashRunning) {
+                if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
                     ticker.onReceive {
-                        design.fetchTraffic()
+                        if (!design.pausedAtHome) design.fetchTraffic()
                     }
                 }
             }
@@ -90,6 +94,7 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private suspend fun MainDesign.fetch() {
         setClashRunning(clashRunning)
+        setHomePaused(com.github.kr328.clash.remote.StatusClient(this@MainActivity).homePaused())
 
         val state = withClash {
             queryTunnelState()

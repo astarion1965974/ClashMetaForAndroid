@@ -36,6 +36,7 @@ class StaticNotificationModule(service: Service) : Module<Unit>(service) {
     override suspend fun run() {
         val loaded = receiveBroadcast(capacity = Channel.CONFLATED) {
             addAction(Intents.ACTION_PROFILE_LOADED)
+            addAction(Intents.ACTION_SERVICE_RECREATED)
         }
 
         while (true) {
@@ -44,8 +45,8 @@ class StaticNotificationModule(service: Service) : Module<Unit>(service) {
             val profileName = StatusProvider.currentProfile ?: "Not selected"
 
             val notification = builder
-                .setContentTitle(profileName)
-                .setContentText(service.getText(R.string.running))
+                .setContentTitle(if(StatusProvider.homePaused) service.getString(R.string.live_home_title) else profileName)
+                .setContentText(service.getText(if(StatusProvider.homePaused) R.string.live_home_hint else R.string.running))
                 .build()
 
             service.startForegroundCompat(R.id.nf_clash_status, notification)

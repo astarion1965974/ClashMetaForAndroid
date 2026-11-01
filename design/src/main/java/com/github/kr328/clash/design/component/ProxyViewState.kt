@@ -26,7 +26,8 @@ class ProxyViewState(
     var controls: Int = config.unselectedControl
 
     private var delay: Int = 0
-    private var selected: Boolean = false
+    var selected: Boolean = false
+        private set
     private var parentNow: String = ""
     private var linkNow: String? = null
 
@@ -58,7 +59,7 @@ class ProxyViewState(
 
         if (delay != proxy.delay) {
             delay = proxy.delay
-            delayText = if (proxy.delay in 0..Short.MAX_VALUE) proxy.delay.toString() else ""
+            delayText = if (proxy.delay in 0..Short.MAX_VALUE) "${proxy.delay} ms" else ""
         }
 
         if (parentNow !== parent.now) {

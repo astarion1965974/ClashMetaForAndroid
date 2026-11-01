@@ -1,0 +1,9 @@
+<resources>
+    <string name="live_notification_group">Main notification group</string>
+    <string name="live_notification_group_summary">Connect VPN to choose. Defaults to the main proxy group.</string>
+    <string name="live_notification_group_auto">Automatic · main proxy group</string>
+    <string name="live_notification_title">VPN Live Updates</string>
+    <string name="live_notification_summary">Show selected exits in the status chip and expanded card. Restart VPN to apply.</string>
+    <string name="live_notification_settings">Live Update permission</string>
+    <string name="live_notification_settings_summary">Allow Live Updates in system notification settings.</string>
+</resources>

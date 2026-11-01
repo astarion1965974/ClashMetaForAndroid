@@ -21,6 +21,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         OpenProviders,
         OpenLogs,
         OpenSettings,
+        OpenAppRouting,
+        OpenRouting,
         OpenHelp,
         OpenAbout,
     }
@@ -36,6 +38,10 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
             binding.profileName = name
         }
     }
+
+    var pausedAtHome: Boolean = false
+        private set
+    fun setHomePaused(paused: Boolean) { pausedAtHome = paused; binding.homePaused = paused }
 
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
@@ -81,8 +87,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     init {
         binding.self = this
 
-        binding.colorClashStarted = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
-        binding.colorClashStopped = context.resolveThemedColor(R.attr.colorClashStopped)
+        binding.colorClashStarted = context.resolveThemedColor(R.attr.colorLiveSuccess)
+        binding.colorClashStopped = context.resolveThemedColor(R.attr.colorLiveMuted)
     }
 
     fun request(request: Request) {

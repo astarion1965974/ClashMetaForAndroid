@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_overview">Overview</string>
+    <string name="live_ready">Ready when you are</string>
+    <string name="live_connected">Connection active</string>
+    <string name="live_connect_hint">Choose a profile and start your connection.</string>
+    <string name="live_connected_hint">Manage nodes and routing from one place.</string>
+    <string name="live_connect">Connect</string>
+    <string name="live_disconnect">Disconnect</string>
+    <string name="live_traffic">Traffic forwarded</string>
+    <string name="live_mode">Routing mode</string>
+    <string name="live_nodes">Nodes &amp; policies</string>
+    <string name="live_nodes_hint">Select a node or test latency</string>
+    <string name="live_profile_hint">Import and manage subscriptions</string>
+    <string name="live_routing">Routing workspace</string>
+    <string name="live_app_routing">App routing</string>
+    <string name="live_app_hint">Choose which apps use Clash</string>
+    <string name="live_rules">Rule sets</string>
+    <string name="live_rules_hint">Domestic and overseas routing</string>
+    <string name="live_tools">Tools &amp; preferences</string>
+    <string name="live_settings_hint">Appearance, notifications and network</string>
+    <string name="live_logs_hint">Review connection events</string>
+    <string name="live_app_intro">Your apps, your routes</string>
+    <string name="live_app_intro_hint">Pick a routing mode, then search and select apps below.</string>
+    <string name="live_rules_intro">Every connection has a route</string>
+    <string name="live_rules_intro_hint">Control category destinations and domain exceptions in one place.</string>
+    <string name="live_settings_intro">Make it yours</string>
+    <string name="live_settings_intro_hint">Fine-tune your everyday connection.</string>
+    <string name="live_setting_app_hint">Theme, live notifications and app behavior</string>
+    <string name="live_setting_network_hint">App routing, rule sets and VPN options</string>
+    <string name="live_setting_override_hint">Customize profile configuration</string>
+    <string name="live_setting_meta_hint">Advanced core capabilities</string>
+</resources>

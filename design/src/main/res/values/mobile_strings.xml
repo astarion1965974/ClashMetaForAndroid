@@ -1,0 +1,34 @@
+<resources>
+    <string name="mobile_title">蜂窝网络优化</string>
+    <string name="mobile_intro">稳定优先，减少后台消耗。订阅文件保持原样，设置在运行时合并；保存后重新连接生效。</string>
+    <string name="mobile_enabled">启用移动网络预设</string>
+    <string name="mobile_enabled_hint">懒惰测速不短于 10 分钟，熄屏暂停定期测速；真实连接失败时按需检测，手动测速仍可用。</string>
+    <string name="mobile_nodes">常用节点与故障回退</string>
+    <string name="mobile_stable">常用节点（最多 5 个）</string>
+    <string name="mobile_ai">AI 专用节点（最多 5 个）</string>
+    <string name="mobile_pick_hint">用于托管分流的默认出口，自定义出口保持原设置。按勾选顺序决定优先级。AI 备用节点建议选同一地区；普通连通性测试不保证服务可用。代理集合中的节点按集合顺序回退。</string>
+    <string name="mobile_empty">未设置，保留当前出口</string>
+    <string name="mobile_no_nodes">请先连接订阅再选择节点；已有选择会保留。</string>
+    <string name="mobile_five">最多选择 5 个节点</string>
+    <string name="mobile_dns">加密 DNS 与节点独立解析</string>
+    <string name="mobile_dns_hint">保留自定义策略与缓存；托管分流下国内直连 DNS、海外加密 DNS 经代理，关闭 DNS 的 HTTP/3 优先。</string>
+    <string name="mobile_updates">后台更新优先 Wi-Fi／充电</string>
+    <string name="mobile_updates_hint">自动更新间隔至少一天；蜂窝且未充电时延后，超过 72 小时仍允许更新。手动更新不受限。</string>
+    <string name="mobile_apps">选择使用 Clash 的应用</string>
+    <string name="mobile_apps_hint">在应用分流中选择「仅所选应用使用 Clash」，其他应用绕过本地 VPN。</string>
+    <string name="mobile_home">家庭 Wi-Fi 联动</string>
+    <string name="mobile_home_enabled">可信 Wi-Fi 下暂停 VPN 接管</string>
+    <string name="mobile_home_hint">仅对已绑定的 Wi-Fi 生效；保留轻量网络监听，离开后恢复。身份无法确认时继续使用 VPN，系统锁定模式下不暂停。</string>
+    <string name="mobile_bind">绑定当前家庭 Wi-Fi</string>
+    <string name="mobile_bound">管理已绑定 Wi-Fi</string>
+    <string name="mobile_permissions">配置 Wi-Fi 识别权限</string>
+    <string name="mobile_permission_hint">仅家庭 Wi-Fi 联动需要：精确位置、位置「始终允许」，并打开系统位置信息，以便后台读取 Wi-Fi 名称。不开启此功能无需授权，也不进行位置扫描或上传。</string>
+    <string name="mobile_wifi_missing">未读到 Wi-Fi 名称。请连接家庭 Wi-Fi，并检查精确位置权限和系统位置信息。</string>
+    <string name="mobile_bind_confirm">将「%1$s」添加为可信 Wi-Fi？启用联动后，在此网络中释放 VPN 接管。</string>
+    <string name="mobile_none_bound">尚未绑定</string>
+    <string name="mobile_home_paused">家庭 Wi-Fi 直连</string>
+    <string name="mobile_home_paused_hint">VPN 接管已暂停；离开可信 Wi-Fi 后自动恢复。</string>
+    <string name="mobile_home_stop">停止自动管理</string>
+    <string name="mobile_home_capsule">家中直连</string>
+    <string name="mobile_ready">默认开启，常用节点与家庭 Wi-Fi 可在此设置</string>
+</resources>
