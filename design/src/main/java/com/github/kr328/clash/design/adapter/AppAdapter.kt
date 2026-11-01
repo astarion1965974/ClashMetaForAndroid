@@ -7,6 +7,7 @@ import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.databinding.AdapterAppBinding
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
 
@@ -35,6 +36,11 @@ class AppAdapter(
             selected = checked
             switchView.isEnabled = editable
             routeView.setText(if (AppAccessPolicy.usesClash(mode, checked)) R.string.app_via_clash else R.string.app_bypass)
+            routeView.setTextColor(context.resolveThemedColor(
+                if (AppAccessPolicy.usesClash(mode, checked)) com.google.android.material.R.attr.colorPrimary
+                else R.attr.colorLiveMuted
+            ))
+            executePendingBindings()
             root.isEnabled = editable
             root.contentDescription = "${current.label}, ${current.packageName}, ${routeView.text}"
             root.setOnClickListener {

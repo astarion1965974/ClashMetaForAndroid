@@ -12,7 +12,9 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
+        android:background="@drawable/bg_live_row"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="4dp"
         android:clickable="true"
         android:focusable="true"
         android:minHeight="88dp"
@@ -21,8 +23,8 @@
 
         <View
             android:id="@+id/icon_view"
-            android:layout_width="@dimen/item_header_component_size"
-            android:layout_height="@dimen/item_header_component_size"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_centerVertical="true"
             android:layout_marginHorizontal="@dimen/item_header_margin"
             android:background="@{app.icon}"
@@ -50,7 +52,7 @@
                 android:layout_marginTop="@dimen/item_text_margin"
                 android:text="@{app.packageName}"
                 android:maxLines="1" android:ellipsize="middle"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+                android:textAppearance="@style/TextAppearance.Live.Secondary" />
             <TextView android:id="@+id/route_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" />
         </LinearLayout>
 

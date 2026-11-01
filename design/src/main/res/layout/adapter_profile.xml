@@ -19,13 +19,13 @@
     </data>
 
     <RelativeLayout
-        android:elevation="5dp"
+        android:elevation="0dp"
         android:id="@+id/root_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginVertical="5dp"
         android:layout_marginHorizontal="@dimen/item_header_margin"
-        android:background="@drawable/bg_b"
+        android:background="@drawable/bg_live_row"
         android:foreground="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/item_text_margin"
                 android:text="@{profile.pending ? @string/format_type_unsaved(I18nKt.toString(profile.type, context)) : I18nKt.toString(profile.type, context)}"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+                android:textAppearance="@style/TextAppearance.Live.Secondary" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

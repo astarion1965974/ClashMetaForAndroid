@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_overview">连接概览</string>
+    <string name="live_ready">随时准备连接</string>
+    <string name="live_connected">连接已开启</string>
+    <string name="live_connect_hint">选择配置，开启你的网络连接。</string>
+    <string name="live_connected_hint">在这里管理节点与分流方式。</string>
+    <string name="live_connect">开启连接</string>
+    <string name="live_disconnect">断开连接</string>
+    <string name="live_traffic">已转发流量</string>
+    <string name="live_mode">运行模式</string>
+    <string name="live_nodes">节点与策略</string>
+    <string name="live_nodes_hint">切换节点、策略组与延迟测试</string>
+    <string name="live_profile_hint">导入与管理订阅配置</string>
+    <string name="live_routing">分流工作台</string>
+    <string name="live_app_routing">应用分流</string>
+    <string name="live_app_hint">选择哪些应用交给 Clash</string>
+    <string name="live_rules">规则管理</string>
+    <string name="live_rules_hint">管理国内外与分类流量去向</string>
+    <string name="live_tools">工具与偏好</string>
+    <string name="live_settings_hint">外观、实时通知与网络设置</string>
+    <string name="live_logs_hint">查看连接事件与运行记录</string>
+    <string name="live_app_intro">让每个应用各行其道</string>
+    <string name="live_app_intro_hint">先选择分流模式，再搜索并勾选应用。</string>
+    <string name="live_rules_intro">每次连接，都有自己的去向</string>
+    <string name="live_rules_intro_hint">集中设置分类出口与域名例外。</string>
+    <string name="live_settings_intro">按你的习惯来</string>
+    <string name="live_settings_intro_hint">调整日常连接的每一处细节。</string>
+    <string name="live_setting_app_hint">主题、实时通知与应用行为</string>
+    <string name="live_setting_network_hint">应用分流、规则管理与 VPN 选项</string>
+    <string name="live_setting_override_hint">自定义配置中的参数</string>
+    <string name="live_setting_meta_hint">内核的进阶功能与实验选项</string>
+</resources>

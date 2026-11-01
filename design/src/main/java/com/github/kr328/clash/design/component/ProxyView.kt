@@ -72,6 +72,7 @@ class ProxyView(
 
         paint.color = state.background
         paint.style = Paint.Style.FILL
+        paint.isAntiAlias = true
 
         // draw background
         canvas.apply {
@@ -100,7 +101,12 @@ class ProxyView(
                 )
 
                 drawPath(path, paint)
-
+                paint.clearShadowLayer()
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = resources.displayMetrics.density * if (state.selected) 1.5f else 1f
+                paint.color = if (state.selected) state.config.accent else state.config.border
+                drawPath(path, paint)
+                paint.style = Paint.Style.FILL
                 clipPath(path)
             }
         }

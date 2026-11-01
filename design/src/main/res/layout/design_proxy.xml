@@ -62,28 +62,28 @@
 
                         <ImageView
                             android:id="@+id/url_test_view"
-                            android:layout_width="@dimen/item_tailing_component_size"
-                            android:layout_height="@dimen/item_tailing_component_size"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
                             android:layout_gravity="center"
                             android:background="?attr/selectableItemBackgroundBorderless"
                             android:clickable="true"
                             android:contentDescription="@string/delay_test"
                             android:focusable="true"
                             android:onClick="@{() -> self.requestUrlTesting()}"
-                            android:padding="@dimen/toolbar_image_action_padding"
+                            android:padding="12dp"
                             android:src="@drawable/ic_baseline_flash_on" />
 
                         <ProgressBar
                             android:id="@+id/url_test_progress_view"
-                            android:layout_width="@dimen/item_tailing_component_size"
-                            android:layout_height="@dimen/item_tailing_component_size"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
                             android:visibility="gone" />
                     </FrameLayout>
 
                     <ImageView
                         android:id="@+id/menu_view"
-                        android:layout_width="@dimen/item_tailing_component_size"
-                        android:layout_height="@dimen/item_tailing_component_size"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:layout_marginStart="@dimen/item_tailing_margin"
@@ -91,7 +91,7 @@
                         android:clickable="true"
                         android:contentDescription="@string/more"
                         android:focusable="true"
-                        android:padding="@dimen/toolbar_image_action_padding"
+                        android:padding="12dp"
                         android:src="@drawable/ic_baseline_more_vert" />
 
                 </RelativeLayout>
@@ -104,14 +104,17 @@
                 android:alpha="0.96"
                 android:background="?android:windowBackground"
                 app:tabBackground="@android:color/transparent"
-                app:tabMode="scrollable" />
+                app:tabMode="scrollable"
+                app:tabIndicatorHeight="3dp"
+                app:tabSelectedTextColor="?attr/colorPrimary"
+                app:tabTextColor="?attr/colorLiveMuted" />
 
             <View
                 android:id="@+id/elevation_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/divider_size"
                 android:alpha="0.96"
-                android:background="?android:windowBackground"
+                android:background="?attr/colorLiveBorder"
                 android:elevation="@dimen/tab_layout_elevation" />
         </LinearLayout>
 

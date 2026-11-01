@@ -73,6 +73,10 @@ class MainActivity : BaseActivity<MainDesign>() {
                         }
                         MainDesign.Request.OpenSettings ->
                             startActivity(SettingsActivity::class.intent)
+                        MainDesign.Request.OpenAppRouting ->
+                            startActivity(AccessControlActivity::class.intent)
+                        MainDesign.Request.OpenRouting ->
+                            startActivity(ManagedRoutingActivity::class.intent)
                         MainDesign.Request.OpenHelp ->
                             startActivity(HelpActivity::class.intent)
                         MainDesign.Request.OpenAbout ->

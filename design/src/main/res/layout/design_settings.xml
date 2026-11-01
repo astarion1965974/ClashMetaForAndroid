@@ -28,11 +28,19 @@
                 android:paddingTop="@{(float) self.surface.insets.top + @dimen/toolbar_height}"
                 android:paddingBottom="@{self.surface.insets.bottom}">
 
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_settings_intro" android:textAppearance="@style/TextAppearance.Live.Title" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/live_settings_intro_hint" android:textAppearance="@style/TextAppearance.Live.Secondary" />
+                </LinearLayout>
                 <com.github.kr328.clash.design.view.ActionLabel
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:onClick="@{() -> self.request(Request.StartApp)}"
                     app:icon="@drawable/ic_baseline_settings"
+                    app:subtext="@string/live_setting_app_hint"
+                    android:background="@drawable/bg_live_row"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginVertical="4dp"
                     app:text="@string/app" />
 
                 <com.github.kr328.clash.design.view.ActionLabel
@@ -40,6 +48,10 @@
                     android:layout_height="wrap_content"
                     android:onClick="@{() -> self.request(Request.StartNetwork)}"
                     app:icon="@drawable/ic_baseline_dns"
+                    app:subtext="@string/live_setting_network_hint"
+                    android:background="@drawable/bg_live_row"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginVertical="4dp"
                     app:text="@string/network" />
 
                 <com.github.kr328.clash.design.view.ActionLabel
@@ -47,6 +59,10 @@
                     android:layout_height="wrap_content"
                     android:onClick="@{() -> self.request(Request.StartOverride)}"
                     app:icon="@drawable/ic_baseline_extension"
+                    app:subtext="@string/live_setting_override_hint"
+                    android:background="@drawable/bg_live_row"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginVertical="4dp"
                     app:text="@string/override" />
 
                 <com.github.kr328.clash.design.view.ActionLabel
@@ -54,6 +70,10 @@
                     android:layout_height="wrap_content"
                     android:onClick="@{() -> self.request(Request.StartMetaFeature)}"
                     app:icon="@drawable/ic_baseline_meta"
+                    app:subtext="@string/live_setting_meta_hint"
+                    android:background="@drawable/bg_live_row"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginVertical="4dp"
                     app:text="@string/meta_features" />
 
             </LinearLayout>

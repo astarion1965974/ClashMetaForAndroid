@@ -36,6 +36,7 @@ fun PreferenceScreen.switch(
             get() = binding.iconView.background
             set(value) {
                 binding.iconView.background = value
+                binding.iconView.visibility = if (value == null) View.GONE else View.VISIBLE
             }
         override var title: CharSequence?
             get() = binding.titleView.text
@@ -46,6 +47,7 @@ fun PreferenceScreen.switch(
             get() = binding.summaryView.text
             set(value) {
                 binding.summaryView.text = value
+                binding.summaryView.visibility = if (value.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
         override var listener: OnChangedListener? = null
         override var enabled: Boolean
@@ -59,17 +61,13 @@ fun PreferenceScreen.switch(
 
     }
 
-    if (icon != null) {
-        impl.icon = context.getDrawableCompat(icon)
-    }
+    impl.icon = icon?.let(context::getDrawableCompat)
 
     if (title != null) {
         impl.title = context.getString(title)
     }
 
-    if (summary != null) {
-        impl.summary = context.getString(summary)
-    }
+    impl.summary = summary?.let(context::getString)
 
     impl.configure()
 
