@@ -22,6 +22,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-java@v6.1.0
         with:
@@ -62,6 +63,8 @@ jobs:
         env:
           GOMAXPROCS: '2'
         run: gradle --no-daemon --console=plain --max-workers=2 design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Record resolved navigation dependencies
+        run: gradle --no-daemon --console=plain app:dependencies --configuration alphaReleaseRuntimeClasspath -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
       - name: Retain test reports and candidate (not Live signed)
         if: always()
         uses: actions/upload-artifact@v7.0.2
