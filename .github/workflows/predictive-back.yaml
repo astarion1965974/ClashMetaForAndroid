@@ -86,13 +86,37 @@ jobs:
         env:
           GOMAXPROCS: '2'
         run: gradle --no-daemon --console=plain --max-workers=2 app:assembleAlphaDebug app:assembleAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+      - name: Retain emulator APKs for independent device checks
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: predictive-back-emulator-apks-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/alpha/debug/*x86_64*.apk
+            app/build/outputs/apk/androidTest/alpha/debug/*.apk
+          if-no-files-found: error
+
+  gestures:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: predictive-back-emulator-apks-${{ github.run_id }}
+          path: apks
       - name: Start isolated Android 15 gesture-navigation emulator
         run: |
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           sudo chmod 666 /dev/kvm
-          sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
+          sdkmanager 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64'
           echo no | avdmanager create avd --name predictive-ci --package 'system-images;android-35;google_apis;x86_64' --device pixel_6
-          "$ANDROID_HOME/emulator/emulator" -avd predictive-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > emulator.log 2>&1 &
-          adb wait-for-device
+          "$ANDROID_HOME/emulator/emulator" -avd predictive-ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -Vulkan -memory 2048 -cores 2 > emulator.log 2>&1 &
+          timeout 180 adb wait-for-device
           for i in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then break; fi
             sleep 2
@@ -100,9 +124,17 @@ jobs:
           test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
           adb shell input keyevent 82
           adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural
-          adb install -g app/build/outputs/apk/alpha/debug/*x86_64*.apk
+          adb shell settings put global window_animation_scale 1
+          adb shell settings put global transition_animation_scale 1
+          adb shell settings put global animator_duration_scale 1
+          app_apk=$(find apks/alpha/debug -name '*x86_64*.apk' -print -quit)
+          test_apk=$(find apks/androidTest/alpha/debug -name '*.apk' -print -quit)
+          adb install -g "$app_apk"
+          adb install -t "$test_apk"
       - name: Real touchscreen preview, cancel and commit regression
-        run: gradle --no-daemon --console=plain --max-workers=2 app:connectedAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+        run: |
+          timeout 300 adb shell am instrument -w -r com.astarion.clash.live.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
+          grep -q 'OK (1 test)' instrumentation.txt
       - name: Collect emulator visual evidence
         if: always()
         run: |
@@ -117,5 +149,4 @@ jobs:
           path: |
             emulator-evidence/
             emulator.log
-            app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
+            instrumentation.txt
