@@ -106,6 +106,10 @@ class FullScreenDialog(
         window!!.apply {
             isSystemBarsTranslucentCompat = true
 
+            // The moving foreground must stay opaque above the destination snapshot.
+            findViewById<FrameLayout>(android.R.id.content).setBackgroundResource(
+                context.resolveThemedResourceId(android.R.attr.windowBackground)
+            )
             setLayout(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT
