@@ -1,6 +1,11 @@
 name: Weekly Live Upstream Build
 
 on:
+  # Every reviewed main update checks the customized Live source and publishes
+  # only when its state has changed. Build runs without signing secrets.
+  push:
+    branches:
+      - main
   schedule:
     - cron: '15 1 * * 1' # Monday 09:15 Asia/Shanghai
   workflow_dispatch:
