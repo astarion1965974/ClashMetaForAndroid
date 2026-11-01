@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="coui_home_title">Clash Meta</string>
+    <string name="coui_home_subtitle">Your connection, at a glance</string>
+    <string name="coui_home_connected">You’re connected</string>
+    <string name="coui_home_disconnected">Ready to connect</string>
+    <string name="coui_home_section_connection">Connection</string>
+    <string name="coui_home_section_actions">Quick actions</string>
+    <string name="coui_home_status_hint">Live status</string>
+    <string name="coui_home_settings_shortcut">Open settings</string>
+    <string name="coui_home_profile_title">Active profile</string>
+    <string name="coui_home_nodes_title">Proxy nodes</string>
+    <string name="coui_home_providers_title">Rule providers</string>
+    <string name="coui_home_help_about">Help &amp; information</string>
+</resources>
