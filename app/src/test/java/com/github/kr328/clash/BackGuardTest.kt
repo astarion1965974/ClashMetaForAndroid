@@ -1,6 +1,7 @@
 package com.github.kr328.clash
 
 import android.app.Application
+import android.os.Looper
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
@@ -27,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowDialog
 
@@ -118,6 +120,7 @@ class BackGuardTest {
             val confirmation = ShadowDialog.getLatestDialog() as AlertDialog
             assertTrue(confirmation.isShowing)
             confirmation.getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             assertFalse(page.isFinishing)
             busy(page, "saving", true)
             back(page)
@@ -133,6 +136,7 @@ class BackGuardTest {
             }
             back(page)
             (ShadowDialog.getLatestDialog() as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             dispatcher.scheduler.runCurrent()
             assertTrue(page.isFinishing)
         }
