@@ -1,1 +1,4 @@
-<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="?attr/colorControlHighlight"><item><shape><solid android:color="?attr/colorSurface"/><corners android:radius="16dp"/></shape></item></ripple>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+ <item android:drawable="@drawable/bg_live_row"/>
+ <item android:drawable="@drawable/ic_live_expand" android:gravity="end|center_vertical" android:end="12dp" android:width="20dp" android:height="20dp"/>
+</layer-list>
