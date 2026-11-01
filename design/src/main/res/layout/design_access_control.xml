@@ -10,7 +10,7 @@
             </LinearLayout>
         </com.github.kr328.clash.design.view.ActivityBarLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="20dp">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="12dp" android:text="@string/live_app_intro" android:textAppearance="@style/TextAppearance.Live.Heading" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="16dp" android:text="@string/live_app_intro" android:textAppearance="@style/TextAppearance.CouiHome.PageTitle" />
             <Spinner android:id="@+id/mode_view" android:layout_width="match_parent" android:layout_height="48dp" android:contentDescription="@string/access_control_mode" android:background="@drawable/bg_live_spinner" android:paddingStart="12dp" android:paddingEnd="36dp" />
             <TextView android:id="@+id/mode_hint" android:layout_width="match_parent" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.Live.Secondary" android:paddingVertical="4dp" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_routing_summary" android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" android:paddingBottom="8dp" />

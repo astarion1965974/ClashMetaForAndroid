@@ -28,8 +28,8 @@
                 android:paddingTop="@{(float) self.surface.insets.top + @dimen/toolbar_height}"
                 android:paddingBottom="@{self.surface.insets.bottom}">
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_settings_intro" android:textAppearance="@style/TextAppearance.Live.Title" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp" android:layout_marginHorizontal="20dp" android:layout_marginTop="14dp" android:layout_marginBottom="12dp" android:background="@drawable/bg_vshield_header">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/live_settings_intro" android:textAppearance="@style/TextAppearance.CouiHome.PageTitle" />
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/live_settings_intro_hint" android:textAppearance="@style/TextAppearance.Live.Secondary" />
                 </LinearLayout>
                 <com.github.kr328.clash.design.view.ActionLabel
