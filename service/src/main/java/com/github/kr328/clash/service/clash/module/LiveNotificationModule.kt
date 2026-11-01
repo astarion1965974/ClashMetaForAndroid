@@ -92,6 +92,14 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 selection?.node != null -> selection.node
                 else -> service.getString(R.string.live_unavailable)
             }
+            val capsuleLabel = when {
+                mode == TunnelState.Mode.Direct || selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
+                selection?.balanced == true -> service.getString(R.string.live_multi_route)
+                selection?.node in setOf("REJECT", "REJECT-DROP") -> service.getString(R.string.live_blocked)
+                selection?.node != null -> NotificationNodeRegion.regionLabel(selection.node)
+                    ?: service.getString(R.string.live_proxy_active)
+                else -> service.getString(R.string.live_unavailable)
+            }
             val modeName = service.getString(when (mode) {
                 TunnelState.Mode.Direct -> R.string.live_mode_direct
                 TunnelState.Mode.Global -> R.string.live_mode_global
@@ -124,15 +132,15 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .setContentTitle(label)
+                .setContentTitle(capsuleLabel)
                 .setContentText(summary)
                 .setSubText(modeName)
                 .setContentIntent(openApp)
-                .setStyle(Notification.BigTextStyle().bigText(details))
+                .setStyle(Notification.BigTextStyle().setBigContentTitle(label).bigText(details))
                 // The setter was added in 36.1; the standard extras contract also
                 // supports base API 36 without reflection or an AndroidX upgrade.
                 .addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
-                .setShortCriticalText(NotificationNodeResolver.chipText(label))
+                .setShortCriticalText(NotificationNodeResolver.chipText(capsuleLabel))
                 .addAction(Notification.Action.Builder(null, service.getString(R.string.live_nodes), openNodes(selection?.group)).build())
                 .addAction(Notification.Action.Builder(null, service.getString(R.string.live_disconnect), stopVpn).build())
 

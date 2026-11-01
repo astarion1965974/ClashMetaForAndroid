@@ -30,3 +30,7 @@ Release: same Live signing identity/application ID; version 2.11.36.Live3 / 2110
 ## Live3.1 serialization fix
 
 The Live3 release used reflective serializer lookup for managed settings. R8 removed the indirectly referenced generated serializer, so saving a template failed with `Serializer for class 'ManagedRoutingSettings' is not found`. Live3.1 (versionCode 211039) explicitly references the generated serializer for both encoding and decoding, and encodes before opening the atomic write. Five codec regression tests cover every persisted field, native-consumer defaults, older partial files, unknown fields and malformed values. An R8-minified store reproduction fails on the old code and passes the save/reopen/disable cycle with the fix.
+
+## Live3.2 compact notification region
+
+The promoted notification's short critical text now shows only the selected main-group node's country/region (for example 香港 or 日本), inferred from its flag, country/region name or common subscription abbreviation. Expanded notification titles continue to show the full node name. Ambiguous or unidentified labels show the localized proxy status; direct, blocked, updating and multi-route states remain explicit. This is the region advertised by the node name, not an outbound-IP geolocation measurement. VersionCode 211040 supports in-place upgrades from Live3.1.

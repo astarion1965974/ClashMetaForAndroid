@@ -22,4 +22,6 @@
     <string name="live_total">累计：↑ %1$s  ↓ %2$s</string>
     <string name="live_disconnect">断开连接</string>
     <string name="live_enable">开启实时通知</string>
+    <string name="live_proxy_active">代理中</string>
+    <string name="live_blocked">已拦截</string>
 </resources>

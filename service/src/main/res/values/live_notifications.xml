@@ -22,4 +22,6 @@
     <string name="live_total">Total: ↑ %1$s  ↓ %2$s</string>
     <string name="live_disconnect">Disconnect</string>
     <string name="live_enable">Enable Live Updates</string>
+    <string name="live_proxy_active">Proxy</string>
+    <string name="live_blocked">Blocked</string>
 </resources>
