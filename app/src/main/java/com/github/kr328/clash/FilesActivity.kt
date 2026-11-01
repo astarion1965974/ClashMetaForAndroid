@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import com.github.kr328.clash.design.util.DirectoryBackCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.github.kr328.clash.common.util.grantPermissions
@@ -32,6 +33,12 @@ class FilesActivity : BaseActivity<FilesDesign>() {
         val design = FilesDesign(this)
         val client = FilesClient(this)
         val stack = Stack<String>()
+        val previews = Stack<ByteArray?>()
+        val back = DirectoryBackCallback({ design.root }, { previews.lastOrNull() }) {
+            design.requests.trySend(FilesDesign.Request.PopStack)
+        }
+        lifecycle.addObserver(back)
+        onBackPressedDispatcher.addCallback(this, back)
 
         design.configurationEditable = profile.type != Profile.Type.Url
         design.fetch(client, stack, root)
@@ -58,9 +65,11 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                                     finish()
                                 } else {
                                     stack.pop()
+                                    previews.pop()
                                 }
                             }
                             is FilesDesign.Request.OpenDirectory -> {
+                                previews.push(design.captureBackPreview())
                                 stack.push(it.file.id)
                             }
                             is FilesDesign.Request.OpenFile -> {
@@ -111,7 +120,12 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                         design.showExceptionToast(e)
                     }
 
-                    design.fetch(client, stack, root)
+                    try {
+                        design.fetch(client, stack, root)
+                    } finally {
+                        back.complete()
+                        back.isEnabled = stack.isNotEmpty()
+                    }
                 }
                 if (activityStarted) {
                     ticker.onReceive {
@@ -120,10 +134,6 @@ class FilesActivity : BaseActivity<FilesDesign>() {
                 }
             }
         }
-    }
-
-    override fun onBackPressed() {
-        design?.requests?.trySend(FilesDesign.Request.PopStack)
     }
 
     private suspend fun FilesDesign.fetch(client: FilesClient, stack: Stack<String>, root: String) {

@@ -24,14 +24,14 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
     private var saved = false
     private var saving = false
 
-    override fun onBackPressed() {
+    private fun confirmBack() {
         if (saving) return
         if (!saved && design?.dirty == true) {
             MaterialAlertDialogBuilder(this).setTitle(R.string.route_unsaved)
                 .setMessage(R.string.route_unsaved_hint)
                 .setNegativeButton(R.string.route_keep_editing, null)
                 .setPositiveButton(R.string.route_discard) { _, _ -> saved = true; finish() }.show()
-        } else super.onBackPressed()
+        }
     }
 
     override suspend fun main() {
@@ -40,6 +40,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
         val mode = withContext(Dispatchers.IO) { service.accessControlMode }
         val design = AccessControlDesign(this, uiStore, selected, mode, clashRunning)
         setContentDesign(design)
+        interceptBack(design, { saving || (!saved && design.dirty) }, ::confirmBack)
         design.requests.send(AccessControlDesign.Request.ReloadApps)
         while (isActive) {
             select<Unit> {

@@ -1,6 +1,7 @@
 package com.github.kr328.clash.design.util
 
 import android.app.Activity
+import androidx.activity.OnBackPressedDispatcherOwner
 import android.content.Context
 import android.widget.ImageView
 import android.widget.TextView
@@ -11,7 +12,8 @@ fun ActivityBarLayout.applyFrom(context: Context) {
     if (context is Activity) {
         findViewById<ImageView>(R.id.activity_bar_close_view)?.apply {
             setOnClickListener {
-                context.onBackPressed()
+                (context as? OnBackPressedDispatcherOwner)?.onBackPressedDispatcher?.onBackPressed()
+                    ?: context.finish()
             }
         }
         findViewById<TextView>(R.id.activity_bar_title_view)?.apply {

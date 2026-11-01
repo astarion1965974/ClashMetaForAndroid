@@ -1,11 +1,12 @@
 package com.github.kr328.clash.design.dialog
 
-import android.app.Dialog
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
+import androidx.activity.ComponentDialog
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import com.github.kr328.clash.common.compat.isAllowForceDarkCompat
@@ -14,6 +15,7 @@ import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.ui.Insets
 import com.github.kr328.clash.design.ui.Surface
 import com.github.kr328.clash.design.util.getPixels
+import com.github.kr328.clash.design.util.DirectoryBackCallback
 import com.github.kr328.clash.design.util.resolveThemedResourceId
 import com.github.kr328.clash.design.util.setOnInsertsChangedListener
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -71,8 +73,32 @@ class AppBottomSheetDialog(context: Context) : BottomSheetDialog(context) {
 
 class FullScreenDialog(
     context: Context
-) : Dialog(context, context.resolveThemedResourceId(R.attr.fullScreenDialogTheme)) {
+) : ComponentDialog(context, context.resolveThemedResourceId(R.attr.fullScreenDialogTheme)) {
     val surface = Surface()
+    private var backCancelable = true
+    private val back = DirectoryBackCallback(
+        { window!!.findViewById(android.R.id.content) },
+        { (context as? Activity)?.window?.decorView?.let(DirectoryBackCallback::capture) },
+        { cancel() },
+    )
+
+    override fun setCancelable(flag: Boolean) {
+        super.setCancelable(flag)
+        backCancelable = flag
+        back.isEnabled = flag
+    }
+
+    override fun setCanceledOnTouchOutside(cancel: Boolean) {
+        super.setCanceledOnTouchOutside(cancel)
+        if (cancel) setCancelable(true)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        back.isEnabled = backCancelable
+        lifecycle.addObserver(back)
+        onBackPressedDispatcher.addCallback(this, back)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

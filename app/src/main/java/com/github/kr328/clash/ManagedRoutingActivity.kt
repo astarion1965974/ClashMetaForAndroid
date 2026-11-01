@@ -16,13 +16,13 @@ class ManagedRoutingActivity : BaseActivity<ManagedRoutingDesign>() {
     private var saving = false
     private var updating = false
 
-    override fun onBackPressed() {
+    private fun confirmBack() {
         if (saving || updating) return
         if (!leaving && design?.dirty == true) {
             MaterialAlertDialogBuilder(this).setTitle(R.string.route_unsaved).setMessage(R.string.route_unsaved_hint)
                 .setNegativeButton(R.string.route_keep_editing, null)
                 .setPositiveButton(R.string.route_discard) { _, _ -> leaving = true; finish() }.show()
-        } else super.onBackPressed()
+        }
     }
 
     override suspend fun main() {
@@ -38,6 +38,7 @@ class ManagedRoutingActivity : BaseActivity<ManagedRoutingDesign>() {
         }.getOrDefault(emptyList()) else emptyList()
         val design = ManagedRoutingDesign(this, settings, targets, clashRunning)
         setContentDesign(design)
+        interceptBack(design, { saving || updating || (!leaving && design.dirty) }, ::confirmBack)
         suspend fun refresh() {
             val providers = if (clashRunning) runCatching { withClash { queryProviders().filter { it.type == Provider.Type.Rule && it.name.startsWith("live-") } } }.getOrDefault(emptyList()) else emptyList()
             design.setProviderStatus(providers.size, providers.map { it.updatedAt }.filter { it > 0 }.minOrNull())

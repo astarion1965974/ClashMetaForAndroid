@@ -33,6 +33,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
         get() = binding.profile!!
         set(value) {
             binding.profile = value
+            onBackStateChanged()
         }
 
     val progressing: Boolean
@@ -41,6 +42,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
     suspend fun withProcessing(executeTask: suspend (suspend (FetchStatus) -> Unit) -> Unit) {
         try {
             binding.processing = true
+            onBackStateChanged()
 
             context.withModelProgressBar {
                 configure {
@@ -56,6 +58,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
             }
         } finally {
             binding.processing = false
+            onBackStateChanged()
         }
     }
 
