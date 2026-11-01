@@ -77,7 +77,10 @@ class FullScreenDialog(
     val surface = Surface()
     private var backCancelable = true
     private val back = DirectoryBackCallback(
-        { window!!.findViewById(android.R.id.content) },
+        {
+            val content = window!!.findViewById<FrameLayout>(android.R.id.content)
+            content.getChildAt(0) ?: content
+        },
         { (context as? Activity)?.window?.decorView?.let(DirectoryBackCallback::capture) },
         { cancel() },
     )
@@ -107,9 +110,11 @@ class FullScreenDialog(
             isSystemBarsTranslucentCompat = true
 
             // The moving foreground must stay opaque above the destination snapshot.
-            findViewById<FrameLayout>(android.R.id.content).setBackgroundResource(
-                context.resolveThemedResourceId(android.R.attr.windowBackground)
-            )
+            findViewById<FrameLayout>(android.R.id.content).getChildAt(0)?.apply {
+                if (background == null) setBackgroundResource(
+                    context.resolveThemedResourceId(android.R.attr.windowBackground)
+                )
+            }
             setLayout(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT

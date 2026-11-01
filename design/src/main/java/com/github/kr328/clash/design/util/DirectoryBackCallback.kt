@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.FrameLayout
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -14,7 +15,7 @@ import java.io.ByteArrayOutputStream
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** A read-only preview of the parent directory. No navigation happens until commit. */
+/** A read-only destination snapshot. No navigation happens until commit. */
 class DirectoryBackCallback(
     private val current: () -> View,
     private val destination: () -> ByteArray?,
@@ -34,7 +35,8 @@ class DirectoryBackCallback(
         complete()
         val bytes = destination() ?: return
         val foreground = current()
-        val parent = foreground.parent as? ViewGroup ?: return
+        // The destination must overlay, rather than change a LinearLayout's child positions.
+        val parent = foreground.parent as? FrameLayout ?: return
         val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return
         bitmap = decoded
         view = foreground

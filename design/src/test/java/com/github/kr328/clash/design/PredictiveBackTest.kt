@@ -144,13 +144,21 @@ class PredictiveBackTest {
     @Test fun fullScreenDialogCancelDoesNotDismissAndNonCancelableDialogStaysOpen() {
         val activity = activity()
         val dialog = FullScreenDialog(activity)
-        dialog.setContentView(FrameLayout(activity))
+        val editor = FrameLayout(activity)
+        dialog.setContentView(editor)
+        activity.window.decorView.apply {
+            measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY))
+            layout(0, 0, 400, 800)
+        }
         var canceled = 0
         dialog.setOnCancelListener { canceled++ }
         dialog.show()
         dialog.onBackPressedDispatcher.dispatchOnBackStarted(event(0f))
         dialog.onBackPressedDispatcher.dispatchOnBackProgressed(event(0.6f))
+        assertEquals(2, (editor.parent as FrameLayout).childCount)
         dialog.onBackPressedDispatcher.dispatchOnBackCancelled()
+        assertEquals(1, (editor.parent as FrameLayout).childCount)
         assertTrue(dialog.isShowing)
         assertEquals(0, canceled)
         dialog.onBackPressedDispatcher.onBackPressed()
