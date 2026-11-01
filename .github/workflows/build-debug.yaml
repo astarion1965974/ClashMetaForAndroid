@@ -9,6 +9,7 @@ on:
 
 jobs:
   BuildDebug:
+    if: github.repository == 'MetaCubeX/ClashMetaForAndroid'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
