@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="coui_home_title">Clash Meta</string>
-    <string name="coui_home_subtitle">连接状态，一目了然</string>
-    <string name="coui_home_connected">已安全连接</string>
+    <string name="coui_home_subtitle">轻松管理网络连接</string>
+    <string name="coui_home_connected">已连接</string>
     <string name="coui_home_disconnected">准备连接</string>
     <string name="coui_home_section_connection">连接管理</string>
     <string name="coui_home_section_actions">快捷操作</string>
