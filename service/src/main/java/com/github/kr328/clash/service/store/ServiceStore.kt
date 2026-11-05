@@ -75,4 +75,9 @@ class ServiceStore(context: Context) {
         key = "notification_proxy_group",
         defaultValue = ""
     )
+
+    var defaultProfileSeeded by store.boolean(
+        key = "default_profile_seeded",
+        defaultValue = false
+    )
 }
