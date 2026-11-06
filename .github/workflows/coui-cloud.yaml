@@ -2,6 +2,8 @@ name: Build COUI APK
 
 on:
   push:
+    branches:
+      - 'feat/coui-cloud'
     tags:
       - 'coui-r*'
 
@@ -26,8 +28,12 @@ jobs:
           persist-credentials: false
       - name: Set version and package
         run: |
-          [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
-          revision="${BASH_REMATCH[1]}"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
+            revision="${BASH_REMATCH[1]}"
+          else
+            revision="$GITHUB_RUN_NUMBER"
+          fi
           echo "COUI_REVISION=$revision" >> "$GITHUB_ENV"
           echo "COUI_APPLICATION_ID=com.astarion.clash.live.coui.cloud.r$revision" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v6.1.0
@@ -98,7 +104,6 @@ jobs:
           if-no-files-found: ignore
 
   publish:
-    if: github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -114,9 +119,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           (cd release && sha256sum --check SHA256SUMS.txt)
-          if assets=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'); then
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            release_tag="$GITHUB_REF_NAME"
+          else
+            release_tag="coui-r$GITHUB_RUN_NUMBER"
+            if tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$release_tag" --jq '.object.sha' 2>/dev/null); then
+              [[ "$tag_sha" == "$GITHUB_SHA" ]] || { echo '::error::Release tag already points to a different commit.'; exit 1; }
+            else
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$release_tag" -f "sha=$GITHUB_SHA" > /dev/null
+            fi
+          fi
+          if assets=$(gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'); then
             if [[ -z "$assets" ]]; then
-              gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release/*
+              gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" release/*
             elif grep -Fxq ClashMeta-COUI-arm64-debug.apk <<< "$assets" && grep -Fxq SHA256SUMS.txt <<< "$assets"; then
               echo 'The verified APK and checksum were already published for this tag.'
             else
@@ -124,7 +139,8 @@ jobs:
               exit 1
             fi
           else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --latest=false \
-              --title "Clash Meta COUI ${GITHUB_REF_NAME#coui-} (Cloud)" \
+            gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --latest=false \
+              --title "Clash Meta COUI ${release_tag#coui-} (Cloud)" \
               --notes 'GitHub Actions 编译的 ARM64 调试测试包。云端测试版采用独立包名，可与本地 COUI R4 并存。' release/*
           fi
+
