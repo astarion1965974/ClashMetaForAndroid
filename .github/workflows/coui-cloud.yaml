@@ -2,6 +2,8 @@ name: Build COUI APK
 
 on:
   push:
+    branches:
+      - 'feat/coui-cloud'
     tags:
       - 'coui-r*'
 
@@ -59,8 +61,12 @@ jobs:
           GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1
       - name: Build and verify ARM64 APK
         run: |
-          [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
-          revision="${BASH_REMATCH[1]}"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
+            revision="${BASH_REMATCH[1]}"
+          else
+            revision=6
+          fi
           ./gradlew --no-daemon --console=plain --max-workers=2 \
             design:testAlphaDebugUnitTest service:testAlphaDebugUnitTest app:testAlphaDebugUnitTest \
             app:assembleAlphaDebug -Pcmfa.abis=arm64-v8a "-Pcmfa.couiRevision=$revision"
@@ -80,6 +86,7 @@ jobs:
           if-no-files-found: error
 
   publish:
+    if: github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

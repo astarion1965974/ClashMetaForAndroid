@@ -418,7 +418,7 @@ private fun PageRow(
 }
 
 @Composable
-private fun ToolbarIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
+internal fun ToolbarIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
     if (Build.VERSION.SDK_INT >= 34) {
         val renderer = remember { createFloatingRenderer { CouiFloatingRenderer.standalone() } }
         if (renderer != null) {

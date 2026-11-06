@@ -16,11 +16,12 @@
         android:orientation="horizontal"
         android:paddingVertical="@dimen/item_padding_vertical">
 
-        <View
+        <ImageView
             android:layout_width="@dimen/item_header_component_size"
             android:layout_height="@dimen/item_header_component_size"
             android:layout_marginHorizontal="@dimen/item_header_margin"
-            android:background="@{provider.icon}" />
+            android:src="@{provider.icon}"
+            android:scaleType="fitCenter" />
 
         <LinearLayout
             android:layout_width="wrap_content"

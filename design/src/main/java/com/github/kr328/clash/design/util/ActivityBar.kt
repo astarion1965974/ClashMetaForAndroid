@@ -5,8 +5,19 @@ import androidx.activity.OnBackPressedDispatcherOwner
 import android.content.Context
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.github.kr328.clash.design.R
+import com.github.kr328.clash.design.ToolbarIcon
 import com.github.kr328.clash.design.view.ActivityBarLayout
+import com.itos.coui.icons.CouiIcons
+import com.itos.coui.layout.Scaffold
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
+import com.itos.coui.theme.CouiTheme
+import com.itos.coui.topappbar.TopAppBar
 
 fun ActivityBarLayout.applyFrom(context: Context) {
     if (context is Activity) {
@@ -18,6 +29,34 @@ fun ActivityBarLayout.applyFrom(context: Context) {
         }
         findViewById<TextView>(R.id.activity_bar_title_view)?.apply {
             text = context.title
+        }
+        findViewById<ComposeView>(R.id.coui_activity_bar)?.setContent {
+            val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+            CouiTheme(darkTheme = dark) {
+                Scaffold(
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        TopAppBar(
+                            windowInsets = WindowInsets(0, 0, 0, 0),
+                            title = {
+                                Text(
+                                    text = context.title.toString(),
+                                    kind = CouiTextKind.Toolbar,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            navigationIcon = {
+                                ToolbarIcon(
+                                    icon = CouiIcons.Back,
+                                    label = stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                                    onClick = { findViewById<ImageView>(R.id.activity_bar_close_view)?.performClick() },
+                                )
+                            },
+                        )
+                    },
+                ) { }
+            }
         }
     }
 }

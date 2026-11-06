@@ -21,13 +21,14 @@
         android:paddingVertical="8dp"
         android:paddingEnd="@dimen/item_tailing_margin">
 
-        <View
+        <ImageView
             android:id="@+id/icon_view"
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:layout_centerVertical="true"
             android:layout_marginHorizontal="@dimen/item_header_margin"
-            android:background="@{app.icon}"
+            android:src="@{app.icon}"
+            android:scaleType="fitCenter"
             android:clickable="false"
             android:focusable="false" />
 

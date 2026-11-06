@@ -21,9 +21,9 @@ class ActionLabel @JvmOverloads constructor(
         .inflate(context.layoutInflater, this, true)
 
     var icon: Drawable?
-        get() = binding.iconView.background
+        get() = binding.iconView.drawable
         set(value) {
-            binding.iconView.background = value
+            binding.iconView.setImageDrawable(value)
         }
 
     var text: CharSequence?
