@@ -134,7 +134,7 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		if cfg.DNS.NameServerPolicy == nil {
 			cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
 		}
-		cfg.DNS.NameServerPolicy.Set("rule-set,live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"})
+		cfg.DNS.NameServerPolicy.Set("rule-set:live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"})
 	}
 	// DNS policies and group filters may still reference original providers.
 	old := map[string]map[string]any{}
@@ -155,11 +155,16 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 			if _, ok := old[x]; ok {
 				keep[x] = true
 			}
-			if strings.Contains(strings.ToLower(x), "rule-set,") {
-				for _, token := range strings.Split(x, ",") {
-					if _, ok := old[strings.TrimSpace(token)]; ok {
-						keep[strings.TrimSpace(token)] = true
-					}
+			lower := strings.ToLower(x)
+			if strings.HasPrefix(lower, "rule-set:") {
+				x = x[len("rule-set:"):]
+			} else if !strings.Contains(lower, "rule-set,") {
+				return
+			}
+			for _, token := range strings.Split(x, ",") {
+				name := strings.TrimSpace(token)
+				if _, ok := old[name]; ok {
+					keep[name] = true
 				}
 			}
 		case []any:

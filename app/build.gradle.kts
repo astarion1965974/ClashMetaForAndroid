@@ -46,6 +46,21 @@ android {
     }
 }
 
+val couiRevision = providers.gradleProperty("cmfa.couiRevision").map { revision ->
+    require(revision.matches(Regex("[1-9][0-9]{0,6}"))) { "Invalid COUI revision" }
+    revision.toInt()
+}
+
+if (couiRevision.isPresent) {
+    androidComponents.onVariants(androidComponents.selector().withBuildType("debug")) { variant ->
+        val revision = couiRevision.get()
+        variant.outputs.forEach { output ->
+            output.versionCode.set(211042 + revision)
+            output.versionName.set("2.11.36.Live.Mobile.1-COUI.$revision")
+        }
+    }
+}
+
 tasks.getByName("clean", type = Delete::class) {
     delete(file("release"))
 }

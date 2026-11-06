@@ -2,14 +2,12 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
-import androidx.appcompat.app.AlertDialog
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficTotal
-import com.github.kr328.clash.design.databinding.DesignAboutBinding
-import com.github.kr328.clash.design.databinding.DesignMainBinding
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.resolveThemedColor
-import com.github.kr328.clash.design.util.root
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -19,45 +17,56 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         OpenProxy,
         OpenProfiles,
         OpenProviders,
-        OpenLogs,
         OpenSettings,
-        OpenAppRouting,
-        OpenRouting,
-        OpenHelp,
-        OpenAbout,
     }
 
-    private val binding = DesignMainBinding
-        .inflate(context.layoutInflater, context.root, false)
+    private var profileName by mutableStateOf<String?>(null)
+    private var running by mutableStateOf(false)
+    private var forwarded by mutableStateOf<String?>(null)
+    private var modeLabel by mutableStateOf<String?>(null)
+    private var hasProviders by mutableStateOf(false)
+    var pausedAtHome by mutableStateOf(false)
+        private set
 
-    override val root: View
-        get() = binding.root
-
-    suspend fun setProfileName(name: String?) {
-        withContext(Dispatchers.Main) {
-            binding.profileName = name
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            ClashHome(
+                running = running,
+                paused = pausedAtHome,
+                profileName = profileName,
+                forwarded = forwarded,
+                mode = modeLabel,
+                hasProviders = hasProviders,
+                onRequest = ::request,
+            )
         }
     }
 
-    var pausedAtHome: Boolean = false
-        private set
-    fun setHomePaused(paused: Boolean) { pausedAtHome = paused; binding.homePaused = paused }
+    suspend fun setProfileName(name: String?) {
+        withContext(Dispatchers.Main) {
+            profileName = name
+        }
+    }
+
+    fun setHomePaused(paused: Boolean) {
+        pausedAtHome = paused
+    }
 
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
-            binding.clashRunning = running
+            this@MainDesign.running = running
         }
     }
 
     suspend fun setForwarded(value: Long) {
         withContext(Dispatchers.Main) {
-            binding.forwarded = value.trafficTotal()
+            forwarded = value.trafficTotal()
         }
     }
 
     suspend fun setMode(mode: TunnelState.Mode) {
         withContext(Dispatchers.Main) {
-            binding.mode = when (mode) {
+            modeLabel = when (mode) {
                 TunnelState.Mode.Direct -> context.getString(R.string.direct_mode)
                 TunnelState.Mode.Global -> context.getString(R.string.global_mode)
                 TunnelState.Mode.Rule -> context.getString(R.string.rule_mode)
@@ -68,27 +77,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
 
     suspend fun setHasProviders(has: Boolean) {
         withContext(Dispatchers.Main) {
-            binding.hasProviders = has
+            hasProviders = has
         }
-    }
-
-    suspend fun showAbout(versionName: String) {
-        withContext(Dispatchers.Main) {
-            val binding = DesignAboutBinding.inflate(context.layoutInflater).apply {
-                this.versionName = versionName
-            }
-
-            AlertDialog.Builder(context)
-                .setView(binding.root)
-                .show()
-        }
-    }
-
-    init {
-        binding.self = this
-
-        binding.colorClashStarted = context.resolveThemedColor(R.attr.colorLiveSuccess)
-        binding.colorClashStopped = context.resolveThemedColor(R.attr.colorLiveMuted)
     }
 
     fun request(request: Request) {

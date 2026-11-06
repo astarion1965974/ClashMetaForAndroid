@@ -12,8 +12,7 @@ Feature of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
 
 ### Requirement
 
-- Android 5.0+ (minimum)
-- Android 7.0+ (recommend)
+- Android 12+ (minimum)
 - `armeabi-v7a` , `arm64-v8a`, `x86` or `x86_64` Architecture
 
 ### Build
@@ -24,7 +23,7 @@ Feature of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
    git submodule update --init --recursive
    ```
 
-2. Install **OpenJDK 11**, **Android SDK**, **CMake** and **Golang**
+2. Install **OpenJDK 21**, **Android SDK Platform 37.0**, **CMake** and **Golang**
 
 3. Create `local.properties` in project root with
 

@@ -2,12 +2,18 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("com.android.library")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures.compose = true
 }
 
 dependencies {
     implementation(project(":common"))
     implementation(project(":core"))
     implementation(project(":service"))
+    implementation(libs.coui)
 
     implementation(libs.kotlin.coroutine)
     implementation(libs.androidx.core)
@@ -22,6 +28,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
 }
 
 android {

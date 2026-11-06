@@ -155,7 +155,9 @@ func Apply(cfg *config.RawConfig, s Settings) error {
 			cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
 		}
 		if _, ok := cfg.RuleProvider["live-cn"]; ok {
-			cfg.DNS.NameServerPolicy.Set("rule-set,live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT"})
+			if _, configured := cfg.DNS.NameServerPolicy.Get("rule-set:live-cn"); !configured {
+				cfg.DNS.NameServerPolicy.Set("rule-set:live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT"})
+			}
 			exit := "Live · 默认代理"
 			if stable {
 				exit = StableGroup
@@ -164,7 +166,7 @@ func Apply(cfg *config.RawConfig, s Settings) error {
 			if ai {
 				for _, name := range []string{"live-openai", "live-anthropic", "live-gemini"} {
 					if _, exists := cfg.RuleProvider[name]; exists {
-						cfg.DNS.NameServerPolicy.Set("rule-set,"+name, []string{"https://1.1.1.1/dns-query#" + AIGroup})
+						cfg.DNS.NameServerPolicy.Set("rule-set:"+name, []string{"https://1.1.1.1/dns-query#" + AIGroup})
 					}
 				}
 			}

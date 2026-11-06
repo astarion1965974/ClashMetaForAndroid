@@ -4,22 +4,46 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
-import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.dp
 import androidx.recyclerview.widget.RecyclerView
-import androidx.databinding.DataBindingUtil
-import com.github.kr328.clash.design.databinding.DesignMainBinding
+import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ManagedRoutingSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.junit.Assert.*
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Robolectric
+import org.robolectric.RuntimeEnvironment
 import androidx.appcompat.app.AppCompatActivity
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
@@ -31,7 +55,10 @@ import java.io.File
 @Config(sdk = [35], qualifiers = "zh-rCN-w412dp-h915dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class LiveUiTest {
-    private fun context(dark: Boolean): Context {
+    @get:Rule
+    val compose = createEmptyComposeRule()
+
+    private fun context(dark: Boolean): AppCompatActivity {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java)
         controller.get().setTheme(if (dark) R.style.AppThemeDark else R.style.AppThemeLight)
         controller.setup()
@@ -61,15 +88,28 @@ class LiveUiTest {
         }
         settle(parent)
         parent.draw(Canvas(bitmap))
-        val directory = File("build/ui-previews").apply { mkdirs() }
-        File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        savePreview(bitmap, name)
         assertTrue(view.measuredWidth > 0)
     }
+
+    private fun savePreview(bitmap: Bitmap, name: String) {
+        val directory = File("build/ui-previews").apply { mkdirs() }
+        File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    private fun updateHome(update: suspend () -> Unit) {
+        val job = CoroutineScope(Dispatchers.Main).launch { update() }
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(job.isCompleted && !job.isCancelled)
+    }
+
+    private fun nodeWithResourceName(context: Context, name: String) =
+        compose.onNodeWithTag("${context.packageName}:id/$name")
 
     @Test fun mobileSettingsBothThemesAndHomePauseStatus() {
         for(dark in listOf(false,true)) {
             val ctx=context(dark)
-            (ctx as android.app.Activity).title=ctx.getString(R.string.mobile_title)
+            ctx.title=ctx.getString(R.string.mobile_title)
             val settings=com.github.kr328.clash.service.store.MobileNetworkSettings()
             val design=MobileNetworkDesign(ctx,settings,listOf("东京 1","东京 2"),true)
             render(design.root,if(dark) "mobile-dark" else "mobile-light")
@@ -78,39 +118,73 @@ class LiveUiTest {
             assertTrue(design.dirty)
             assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
             val home=MainDesign(ctx)
-            val binding=DataBindingUtil.getBinding<DesignMainBinding>(home.root)!!
-            binding.clashRunning=true;home.setHomePaused(true);binding.executePendingBindings()
-            assertEquals(ctx.getString(R.string.mobile_home_stop),binding.toggleView.text.toString())
+            updateHome {
+                home.setClashRunning(true)
+                home.setHomePaused(true)
+            }
+            ctx.setContentView(home.root)
+            nodeWithResourceName(ctx, "toggle_view").assertTextContains(ctx.getString(R.string.mobile_home_stop))
+            ctx.setContentView(View(ctx))
         }
     }
 
     @Test fun homeReflectsConnectionAndRoutesActions() {
         for (dark in listOf(false, true)) {
-            val design = MainDesign(context(dark))
-            val binding = DataBindingUtil.getBinding<DesignMainBinding>(design.root)!!
-            binding.clashRunning = true
-            binding.forwarded = "128.4 MiB"
-            binding.mode = "规则模式"
-            binding.profileName = "我的日常订阅"
-            binding.hasProviders = true
-            binding.executePendingBindings()
-            assertTrue(binding.toggleView.isEnabled)
-            render(design.root, if (dark) "home-dark" else "home-light")
-            binding.toggleView.performClick()
+            val ctx = context(dark)
+            val design = MainDesign(ctx)
+            updateHome {
+                design.setClashRunning(true)
+                design.setForwarded(128L * 1024 * 1024)
+                design.setMode(TunnelState.Mode.Rule)
+                design.setProfileName("我的日常订阅")
+                design.setHasProviders(true)
+            }
+            ctx.setContentView(design.root)
+            val toggle = nodeWithResourceName(ctx, "toggle_view")
+            toggle.assertTextContains(ctx.getString(R.string.live_disconnect))
+            savePreview(compose.onRoot().captureToImage().asAndroidBitmap(), if (dark) "home-dark" else "home-light")
+            compose.onNodeWithText("我的日常订阅").assertIsDisplayed().assertHasNoClickAction()
+            nodeWithResourceName(ctx, "app_routing_view").assertDoesNotExist()
+            nodeWithResourceName(ctx, "rule_routing_view").assertDoesNotExist()
+            val bottomBar = hasAnyAncestor(hasTestTag("${ctx.packageName}:id/home_navigation"))
+            compose.onNode(bottomBar and hasText(ctx.getString(R.string.coui_home_tab))).assertIsSelected()
+            compose.onNode(bottomBar and hasText(ctx.getString(R.string.profiles))).performClick()
+            assertEquals(MainDesign.Request.OpenProfiles, design.requests.tryReceive().getOrNull())
+            compose.onNode(bottomBar and hasText(ctx.getString(R.string.settings))).performClick()
+            assertEquals(MainDesign.Request.OpenSettings, design.requests.tryReceive().getOrNull())
+            toggle.performClick()
             assertEquals(MainDesign.Request.ToggleStatus, design.requests.tryReceive().getOrNull())
-            binding.appRoutingView.performClick()
-            assertEquals(MainDesign.Request.OpenAppRouting, design.requests.tryReceive().getOrNull())
-            binding.ruleRoutingView.performClick()
-            assertEquals(MainDesign.Request.OpenRouting, design.requests.tryReceive().getOrNull())
-            binding.clashRunning = false
-            binding.executePendingBindings()
-            assertEquals(context(dark).getString(R.string.live_connect), binding.toggleView.text.toString())
+            compose.onNodeWithText(ctx.getString(R.string.coui_home_nodes_title)).performClick()
+            assertEquals(MainDesign.Request.OpenProxy, design.requests.tryReceive().getOrNull())
+            compose.onNodeWithText(ctx.getString(R.string.coui_home_providers_title)).performClick()
+            assertEquals(MainDesign.Request.OpenProviders, design.requests.tryReceive().getOrNull())
+            updateHome { design.setClashRunning(false) }
+            toggle.assertTextContains(ctx.getString(R.string.live_connect))
+            compose.onNodeWithText(ctx.getString(R.string.coui_home_nodes_title)).assertDoesNotExist()
+            ctx.setContentView(View(ctx))
         }
+    }
+
+    @Test fun settingsRoutesMovedActions() {
+        val ctx = context(false)
+        val design = SettingsDesign(ctx)
+        ctx.setContentView(design.root)
+
+        nodeWithResourceName(ctx, "app_routing_view").performScrollTo().performClick()
+        assertEquals(SettingsDesign.Request.OpenAppRouting, design.requests.tryReceive().getOrNull())
+        nodeWithResourceName(ctx, "rule_routing_view").performScrollTo().performClick()
+        assertEquals(SettingsDesign.Request.OpenRouting, design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.logs)).performScrollTo().performClick()
+        assertEquals(SettingsDesign.Request.OpenLogs, design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.help)).performScrollTo().performClick()
+        assertEquals(SettingsDesign.Request.OpenHelp, design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.about)).performScrollTo().performClick()
+        assertEquals(SettingsDesign.Request.OpenAbout, design.requests.tryReceive().getOrNull())
     }
 
     @Test fun appRoutingPreservesSelectionAndSaveState() {
         val ctx = context(true)
-        (ctx as android.app.Activity).title = ctx.getString(R.string.live_app_routing)
+        ctx.title = ctx.getString(R.string.live_app_routing)
         val selected = mutableSetOf("org.example.chat")
         val design = AccessControlDesign(ctx, UiStore(ctx), selected, AccessControlMode.AcceptSelected, true)
         design.patchApps(listOf(
@@ -132,7 +206,7 @@ class LiveUiTest {
     @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {
         for (dark in listOf(false, true)) {
             val ctx = context(dark)
-            (ctx as android.app.Activity).title = ctx.getString(R.string.live_rules)
+            ctx.title = ctx.getString(R.string.live_rules)
             val design = ManagedRoutingDesign(ctx, ManagedRoutingSettings(), listOf("自动选择", "香港节点"), false)
             render(design.root, if (dark) "rules-dark" else "rules-light")
             val save = design.root.findViewById<View>(R.id.save_view)
@@ -153,15 +227,18 @@ class LiveUiTest {
 
     @Test @Config(qualifiers = "zh-rCN-w320dp-h640dp-mdpi")
     fun homeSupportsNarrowScreensAndLargeText() {
+        RuntimeEnvironment.setFontScale(1.3f)
         val ctx = context(false)
-        val configuration = android.content.res.Configuration(ctx.resources.configuration).apply { fontScale = 1.3f }
-        val scaled = ContextThemeWrapper(ctx.createConfigurationContext(configuration), R.style.AppThemeLight)
-        val design = MainDesign(scaled)
-        val binding = DataBindingUtil.getBinding<DesignMainBinding>(design.root)!!
-        binding.profileName = "一个很长的订阅配置名称，用于检查窄屏文字"
-        binding.executePendingBindings()
-        render(design.root, "home-small-large-font", 320, 640)
-        assertTrue(binding.toggleView.height >= 48)
-        assertTrue(binding.toggleView.width > 0)
+        val design = MainDesign(ctx)
+        updateHome { design.setProfileName("一个很长的订阅配置名称，用于检查窄屏文字") }
+        ctx.setContentView(design.root)
+        nodeWithResourceName(ctx, "toggle_view").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        savePreview(compose.onRoot().captureToImage().asAndroidBitmap(), "home-small-large-font")
+        compose.onRoot().performTouchInput {
+            swipeUp(startY = height * 0.74f, endY = height * 0.30f)
+        }
+        val metric = compose.onAllNodesWithText("—")[1].getUnclippedBoundsInRoot()
+        val bottomBar = nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot()
+        assertTrue("The overview should scroll above the floating navigation", metric.bottom <= bottomBar.top)
     }
 }

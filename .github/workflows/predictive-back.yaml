@@ -35,8 +35,6 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v6.4.1
-        with:
-          gradle-version: '8.10.2'
       - name: Install project Android tools
         run: |
           python3 - <<'PY'
@@ -45,7 +43,7 @@ jobs:
           sdk = os.environ['ANDROID_HOME']
           manager = sdk + '/cmdline-tools/latest/bin/sdkmanager'
           subprocess.run([manager, '--licenses'], input='y\n' * 200, text=True, stdout=subprocess.DEVNULL, check=True)
-          subprocess.run([manager, 'platforms;android-36', 'build-tools;35.0.0', 'ndk;29.0.14206865', 'cmake;3.22.1'], check=True)
+          subprocess.run([manager, 'platforms;android-37.0', 'build-tools;36.0.0', 'ndk;29.0.14206865', 'cmake;3.22.1'], check=True)
           Path('local.properties').write_text(f'sdk.dir={sdk}\ncustom.application.id=com.astarion.clash.live\ncustom.application.name=Clash Meta Live\nremove.suffix=true\n')
           PY
       - name: Install patched project Go toolchain
@@ -68,9 +66,9 @@ jobs:
       - name: Android back, UI, service regressions and ARM64 release build
         env:
           GOMAXPROCS: '2'
-        run: gradle --no-daemon --console=plain --max-workers=2 design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+        run: ./gradlew --no-daemon --console=plain --max-workers=2 design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:testAlphaReleaseUnitTest app:assembleAlphaRelease -Pcmfa.abis=arm64-v8a
       - name: Record resolved navigation dependencies
-        run: gradle --no-daemon --console=plain app:dependencies --configuration alphaReleaseRuntimeClasspath -Pcmfa.abis=arm64-v8a -Pandroid.suppressUnsupportedCompileSdk=36
+        run: ./gradlew --no-daemon --console=plain app:dependencies --configuration alphaReleaseRuntimeClasspath -Pcmfa.abis=arm64-v8a
       - name: Retain test reports and candidate (not Live signed)
         if: always()
         uses: actions/upload-artifact@v7.0.2
@@ -85,7 +83,7 @@ jobs:
       - name: Build emulator test APKs
         env:
           GOMAXPROCS: '2'
-        run: gradle --no-daemon --console=plain --max-workers=2 app:assembleAlphaDebug app:assembleAlphaDebugAndroidTest -Pcmfa.abis=x86_64 -Pandroid.suppressUnsupportedCompileSdk=36
+        run: ./gradlew --no-daemon --console=plain --max-workers=2 app:assembleAlphaDebug app:assembleAlphaDebugAndroidTest -Pcmfa.abis=x86_64
       - name: Retain emulator APKs for independent device checks
         uses: actions/upload-artifact@v7.0.2
         with:

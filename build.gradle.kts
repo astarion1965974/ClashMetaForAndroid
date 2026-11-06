@@ -14,6 +14,7 @@ buildscript {
     dependencies {
         classpath(libs.build.android)
         classpath(libs.build.kotlin.common)
+        classpath(libs.build.kotlin.compose)
         classpath(libs.build.kotlin.serialization)
         classpath(libs.build.ksp)
         classpath(libs.build.golang)
@@ -48,6 +49,7 @@ subprojects {
 
     extensions.configure<BaseExtension> {
         buildFeatures.buildConfig = true
+        buildFeatures.resValues = true
         defaultConfig {
             if (isApp) {
                 val customApplicationId = queryConfigProperty("custom.application.id") as? String?
@@ -59,7 +61,7 @@ subprojects {
                 else "com.github.kr328.clash.$name"
             }
 
-            minSdk = 21
+            minSdk = 31
             targetSdk = 35
 
             versionName = "2.11.36.Live.Mobile.1"
@@ -81,15 +83,16 @@ subprojects {
             if (!isApp) {
                 consumerProguardFiles("consumer-rules.pro")
             } else {
-                setProperty("archivesBaseName", "cmfa-$versionName")
+                project.extensions.configure<org.gradle.api.plugins.BasePluginExtension> {
+                    archivesName.set("cmfa-$versionName")
+                }
             }
         }
 
         ndkVersion = "29.0.14206865"
 
-        // Live Updates are a platform API from Android 16 (API 36).
-        // Keep targetSdk unchanged to avoid unrelated behavior changes.
-        compileSdkVersion(36)
+        // COUI-Kit requires API 37 at compile time. Keep targetSdk independent.
+        compileSdkVersion(37)
 
         if (isApp) {
             packagingOptions {

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="coui_home_title">Clash Meta</string>
+    <string name="coui_home_tab">首页</string>
+    <string name="coui_home_overview">连接概览</string>
     <string name="coui_home_subtitle">轻松管理网络连接</string>
     <string name="coui_home_connected">已连接</string>
     <string name="coui_home_disconnected">准备连接</string>
     <string name="coui_home_section_connection">连接管理</string>
-    <string name="coui_home_section_actions">快捷操作</string>
     <string name="coui_home_status_hint">实时状态</string>
-    <string name="coui_home_settings_shortcut">打开设置</string>
     <string name="coui_home_profile_title">当前配置</string>
     <string name="coui_home_nodes_title">代理节点</string>
     <string name="coui_home_providers_title">规则提供者</string>
-    <string name="coui_home_help_about">帮助与信息</string>
+    <string name="coui_settings_routing">分流</string>
+    <string name="coui_settings_support">工具与帮助</string>
 </resources>

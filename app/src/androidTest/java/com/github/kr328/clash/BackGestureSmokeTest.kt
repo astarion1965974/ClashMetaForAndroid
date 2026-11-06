@@ -94,7 +94,9 @@ class BackGestureSmokeTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             var main: MainActivity? = null
             scenario.onActivity { main = it }
-            device.wait(Until.hasObject(By.res("com.astarion.clash.live", "toggle_view")), 15_000)
+            val packageName = instrumentation.targetContext.packageName
+            assertTrue("Home connection button is missing",
+                device.wait(Until.hasObject(By.res(packageName, "toggle_view")), 15_000))
             // Grant is supplied by CI before instrumentation, so no permission window covers gestures.
             val settings = open(main!!, SettingsActivity::class.java)
             screenshot("settings-before")

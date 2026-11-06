@@ -34,7 +34,7 @@ import org.robolectric.shadows.ShadowDialog
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28, 35], application = Application::class)
+@Config(sdk = [31, 35], application = Application::class)
 class BackGuardTest {
     private val dispatcher = StandardTestDispatcher()
     private val cleanup = mutableListOf<() -> Unit>()
