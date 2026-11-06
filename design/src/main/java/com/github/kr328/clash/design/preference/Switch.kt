@@ -11,6 +11,8 @@ import com.github.kr328.clash.common.compat.getDrawableCompat
 import com.itos.coui.`switch`.Switch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.reflect.KMutableProperty0
 
@@ -29,6 +31,7 @@ fun PreferenceScreen.switch(
     configure: SwitchPreference.() -> Unit = {},
 ): SwitchPreference {
     val row = CouiPreferenceView(context)
+    val updateMutex = Mutex()
     val impl = object : SwitchPreference {
         override val view: View = row
         override var icon: Drawable? by mutableStateOf(icon?.let(context::getDrawableCompat))
@@ -43,8 +46,10 @@ fun PreferenceScreen.switch(
         if (!row.contentEnabled || !impl.loaded || checked == impl.checked) return
         impl.checked = checked
         launch(Dispatchers.Main) {
-            withContext(Dispatchers.IO) { value.set(checked) }
-            impl.listener?.onChanged()
+            updateMutex.withLock {
+                withContext(Dispatchers.IO) { value.set(checked) }
+                impl.listener?.onChanged()
+            }
         }
     }
 

@@ -6,9 +6,14 @@ import android.content.Context
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.ToolbarIcon
 import com.github.kr328.clash.design.view.ActivityBarLayout
@@ -32,8 +37,10 @@ fun ActivityBarLayout.applyFrom(context: Context) {
         }
         findViewById<ComposeView>(R.id.coui_activity_bar)?.setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+            val screenWidth = LocalConfiguration.current.screenWidthDp.coerceAtLeast(1).dp
             CouiTheme(darkTheme = dark) {
                 Scaffold(
+                    modifier = Modifier.widthIn(max = screenWidth).height(56.dp),
                     windowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         TopAppBar(

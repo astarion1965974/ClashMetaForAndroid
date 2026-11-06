@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.appcompat.R as AppCompatR
@@ -66,6 +67,7 @@ internal fun CouiPreferenceRow(
     title: CharSequence?,
     summary: CharSequence?,
     icon: Drawable?,
+    iconSize: Dp = 24.dp,
     leading: (@Composable () -> Unit)? = null,
     enabled: Boolean,
     onClick: (() -> Unit)?,
@@ -81,7 +83,8 @@ internal fun CouiPreferenceRow(
     Item(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp)
             .clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
-        icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable) } },
+        icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable, iconSize) } },
+        iconSize = iconSize,
         summary = summary?.takeIf { it.isNotEmpty() }?.let { value ->
             {
                 Text(
@@ -122,9 +125,9 @@ internal fun CouiRowAction(
 }
 
 @Composable
-private fun PreferenceIcon(drawable: Drawable) {
+private fun PreferenceIcon(drawable: Drawable, size: Dp) {
     AndroidView(
-        modifier = Modifier.size(24.dp),
+        modifier = Modifier.size(size),
         factory = { context ->
             ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER

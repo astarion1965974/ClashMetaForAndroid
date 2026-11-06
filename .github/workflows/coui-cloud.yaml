@@ -93,6 +93,13 @@ jobs:
             **/build/reports/tests/
             **/build/test-results/
           if-no-files-found: ignore
+      - name: Retain UI previews
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: coui-ui-previews-${{ github.run_id }}
+          path: design/build/ui-previews/
+          if-no-files-found: ignore
 
   publish:
     if: github.ref_type == 'tag'
