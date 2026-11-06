@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="coui_provider_updating">Updating…</string>
     <string name="coui_home_tab">Home</string>
     <string name="coui_home_overview">Connection overview</string>
     <string name="coui_home_subtitle">Connection, simplified</string>

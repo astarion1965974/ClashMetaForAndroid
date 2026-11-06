@@ -4,10 +4,18 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.common.compat.getDrawableCompat
+import com.github.kr328.clash.design.R
+import com.itos.coui.theme.CouiTheme
 
 interface ClickablePreference : Preference {
     var title: CharSequence
@@ -43,6 +51,16 @@ fun PreferenceScreen.clickable(
             icon = impl.icon,
             enabled = row.contentEnabled,
             onClick = impl.onClick,
+            trailing = {
+                if (impl.onClick != null) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_live_chevron),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurfaceVariant),
+                    )
+                }
+            },
         )
     }
     impl.configure()

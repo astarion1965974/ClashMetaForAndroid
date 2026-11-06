@@ -84,6 +84,15 @@ jobs:
           name: coui-arm64
           path: release/
           if-no-files-found: error
+      - name: Retain failed test reports
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: coui-test-reports-${{ github.run_id }}
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          if-no-files-found: ignore
 
   publish:
     if: github.ref_type == 'tag'

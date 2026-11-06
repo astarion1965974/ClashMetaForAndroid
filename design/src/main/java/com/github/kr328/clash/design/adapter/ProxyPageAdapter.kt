@@ -52,7 +52,7 @@ class ProxyPageAdapter(
 
     fun requestRedrawVisible() {
         factory.fromRoot(parent?.firstVisibleView ?: return)
-            .recyclerView.invalidateChildren()
+            .recyclerView.adapter?.notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProxyPageFactory.Holder {

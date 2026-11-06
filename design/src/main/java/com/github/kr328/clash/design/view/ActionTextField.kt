@@ -3,75 +3,62 @@ package com.github.kr328.clash.design.view
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.view.View
 import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.databinding.ComponentActionTextFieldBinding
-import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.github.kr328.clash.design.preference.CouiPreferenceView
 
 class ActionTextField @JvmOverloads constructor(
     context: Context,
     attributeSet: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = 0,
-    @StyleRes defStyleRes: Int = 0
+    @StyleRes defStyleRes: Int = 0,
 ) : FrameLayout(context, attributeSet, defStyleAttr, defStyleRes) {
-    private val binding = ComponentActionTextFieldBinding
-        .inflate(context.layoutInflater, this, true)
+    private lateinit var row: CouiPreferenceView
+    private var hasClick by mutableStateOf(false)
 
-    var icon: Drawable?
-        get() = binding.iconView.drawable
-        set(value) {
-            binding.iconView.setImageDrawable(value)
-        }
-
-    var title: CharSequence?
-        get() = binding.titleView.text
-        set(value) {
-            binding.titleView.text = value
-        }
-
-    var text: CharSequence?
-        get() = binding.textView.text
-        set(value) {
-            if (isEnabled)
-                binding.textView.text = value
-            else
-                binding.textView.text = context.getText(R.string.unavailable)
-        }
-
-    var placeholder: CharSequence?
-        get() = binding.textView.hint
-        set(value) {
-            binding.textView.hint = value
-        }
+    var icon: Drawable? by mutableStateOf(null)
+    var title: CharSequence? by mutableStateOf(null)
+    var text: CharSequence? by mutableStateOf(null)
+    var placeholder: CharSequence? by mutableStateOf(null)
 
     override fun setEnabled(enabled: Boolean) {
         super.setEnabled(enabled)
-
-        if (enabled) {
-            binding.root.alpha = 1.0f
-            binding.actionView.isFocusable = true
-            binding.actionView.isClickable = true
-        } else {
-            binding.root.alpha = 0.33f
-            binding.actionView.isFocusable = false
-            binding.actionView.isClickable = false
-        }
-
-        text = text
+        if (::row.isInitialized) row.isEnabled = enabled
     }
 
-    override fun setOnClickListener(l: OnClickListener?) {
-        binding.actionView.setOnClickListener(l)
+    override fun setOnClickListener(listener: View.OnClickListener?) {
+        super.setOnClickListener(listener)
+        hasClick = listener != null
     }
 
     init {
+        row = CouiPreferenceView(context)
+        row.isEnabled = isEnabled
+        row.setContent {
+            val summary = if (row.contentEnabled) {
+                text?.takeIf { it.isNotEmpty() } ?: placeholder
+            } else {
+                context.getText(R.string.unavailable)
+            }
+            CouiPreferenceRow(
+                title = title,
+                summary = summary,
+                icon = icon,
+                enabled = row.contentEnabled,
+                onClick = if (hasClick) ({ performClick() }) else null,
+            )
+        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
         context.theme.obtainStyledAttributes(
-            attributeSet,
-            R.styleable.ActionTextField,
-            defStyleAttr,
-            defStyleRes
+            attributeSet, R.styleable.ActionTextField, defStyleAttr, defStyleRes,
         ).apply {
             try {
                 isEnabled = getBoolean(R.styleable.ActionTextField_enabled, true)

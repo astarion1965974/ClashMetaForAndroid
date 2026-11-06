@@ -5,18 +5,27 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.appcompat.R as AppCompatR
@@ -52,19 +61,27 @@ internal class CouiPreferenceView(context: Context) : FrameLayout(context) {
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 internal fun CouiPreferenceRow(
     title: CharSequence?,
     summary: CharSequence?,
     icon: Drawable?,
+    leading: (@Composable () -> Unit)? = null,
     enabled: Boolean,
     onClick: (() -> Unit)?,
+    onLongClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
     val colors = CouiTheme.colorScheme
+    val longClickModifier = if (onClick != null && onLongClick != null) {
+        Modifier.combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick)
+    } else {
+        Modifier
+    }
     Item(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp)
-            .clip(CouiPageDefaults.shape).background(colors.card),
-        icon = icon?.let { drawable -> { PreferenceIcon(drawable) } },
+            .clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
+        icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable) } },
         summary = summary?.takeIf { it.isNotEmpty() }?.let { value ->
             {
                 Text(
@@ -76,12 +93,31 @@ internal fun CouiPreferenceRow(
         },
         trailing = trailing,
         enabled = enabled,
-        onClick = onClick,
+        onClick = if (onLongClick == null) onClick else null,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
         if (!title.isNullOrEmpty()) {
             Text(text = title.toString(), kind = CouiTextKind.PreferenceTitle)
         }
+    }
+}
+
+@Composable
+internal fun CouiRowAction(
+    @DrawableRes icon: Int,
+    description: String,
+    onClick: () -> Unit,
+) {
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = description,
+            modifier = Modifier.size(24.dp),
+            colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurfaceVariant),
+        )
     }
 }
 

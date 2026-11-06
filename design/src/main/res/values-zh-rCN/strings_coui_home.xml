@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="coui_provider_updating">更新中…</string>
     <string name="coui_home_tab">首页</string>
     <string name="coui_home_overview">连接概览</string>
     <string name="coui_home_subtitle">轻松管理网络连接</string>
