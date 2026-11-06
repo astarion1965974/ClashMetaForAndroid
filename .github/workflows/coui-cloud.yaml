@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: coui-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
 
 jobs:
   build:
@@ -143,4 +143,3 @@ jobs:
               --title "Clash Meta COUI ${release_tag#coui-} (Cloud)" \
               --notes 'GitHub Actions 编译的 ARM64 调试测试包。云端测试版采用独立包名，可与本地 COUI R4 并存。' release/*
           fi
-

@@ -17,17 +17,23 @@ import androidx.compose.ui.test.performClick
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.github.kr328.clash.design.adapter.ProfileAdapter
+import com.github.kr328.clash.design.adapter.ProxyAdapter
+import com.github.kr328.clash.design.component.ProxyViewConfig
+import com.github.kr328.clash.design.component.ProxyViewState
+import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.preference.OnChangedListener
 import com.github.kr328.clash.design.preference.SwitchPreference
 import com.github.kr328.clash.design.preference.preferenceScreen
 import com.github.kr328.clash.design.preference.switch
 import com.github.kr328.clash.design.view.ActionLabel
 import com.github.kr328.clash.service.model.Profile
+import com.github.kr328.clash.core.model.Proxy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -144,5 +150,25 @@ class CouiPreferenceTest {
         assertEquals(profile, menu)
         assertEquals(null, activated)
         activity.setContentView(View(activity))
+    }
+
+    @Test fun selectableProxyKeepsItsClickAction() {
+        val activity = activity()
+        val config = ProxyViewConfig(activity, 2)
+        val proxy = Proxy("node-a", "Node A", "Tokyo", "Selector", 30, false)
+        var selected: String? = null
+        val adapter = ProxyAdapter(config) { selected = it }
+        adapter.states = listOf(ProxyViewState(config, proxy, ProxyState(""), null))
+        adapter.selectable = true
+        val holder = adapter.onCreateViewHolder(RecyclerView(activity), 0)
+        adapter.onBindViewHolder(holder, 0)
+
+        assertTrue(holder.view.isClickable)
+        holder.view.performClick()
+        assertEquals("node-a", selected)
+
+        adapter.selectable = false
+        adapter.onBindViewHolder(holder, 0)
+        assertFalse(holder.view.isClickable)
     }
 }
