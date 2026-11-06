@@ -37,12 +37,17 @@ class LogcatDesign(
 
     suspend fun patchMessages(messages: List<LogMessage>, removed: Int, appended: Int) {
         withContext(Dispatchers.Main) {
+            val oldSize = adapter.messages.size
             adapter.messages = messages
 
-            adapter.notifyItemRangeInserted(adapter.messages.size, appended)
-            adapter.notifyItemRangeRemoved(0, removed)
+            if (removed in 0..oldSize && appended >= 0 && oldSize - removed + appended == messages.size) {
+                if (removed > 0) adapter.notifyItemRangeRemoved(0, removed)
+                if (appended > 0) adapter.notifyItemRangeInserted(oldSize - removed, appended)
+            } else {
+                adapter.notifyDataSetChanged()
+            }
 
-            if (streaming && binding.recyclerList.isTop) {
+            if (streaming && messages.isNotEmpty() && binding.recyclerList.isTop) {
                 binding.recyclerList.scrollToPosition(messages.size - 1)
             }
         }

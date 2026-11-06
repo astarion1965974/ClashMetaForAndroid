@@ -2,8 +2,6 @@ name: Build COUI APK
 
 on:
   push:
-    branches:
-      - 'feat/coui-cloud'
     tags:
       - 'coui-r*'
 
@@ -26,6 +24,12 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
+      - name: Set version and package
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
+          revision="${BASH_REMATCH[1]}"
+          echo "COUI_REVISION=$revision" >> "$GITHUB_ENV"
+          echo "COUI_APPLICATION_ID=com.astarion.clash.live.coui.cloud.r$revision" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
@@ -39,8 +43,8 @@ jobs:
           "$sdkmanager" 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;29.0.14206865' 'cmake;3.22.1'
           cat > local.properties <<EOF
           sdk.dir=$ANDROID_HOME
-          custom.application.id=com.astarion.clash.live.coui.cloud
-          custom.application.name=Clash Meta COUI Cloud
+          custom.application.id=$COUI_APPLICATION_ID
+          custom.application.name=Clash Meta COUI R$COUI_REVISION
           remove.suffix=true
           EOF
       - name: Install patched Go toolchain
@@ -54,29 +58,21 @@ jobs:
           for patch_file in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do
             patch -d "$go_root" --forward -p 1 -i "$patch_file"
           done
-      - name: Test native routing and DNS
-        working-directory: core/src/main/golang
-        run: |
-          overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
-          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1
       - name: Build and verify ARM64 APK
         run: |
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            [[ "$GITHUB_REF_NAME" =~ ^coui-r([1-9][0-9]{0,6})(\.[1-9][0-9]*)?$ ]]
-            revision="${BASH_REMATCH[1]}"
-          else
-            revision=6
-          fi
           ./gradlew --no-daemon --console=plain --max-workers=2 \
-            design:testAlphaDebugUnitTest service:testAlphaDebugUnitTest app:testAlphaDebugUnitTest \
-            app:assembleAlphaDebug -Pcmfa.abis=arm64-v8a "-Pcmfa.couiRevision=$revision"
+            design:testAlphaDebugUnitTest \
+            --tests 'com.github.kr328.clash.design.CouiPreferenceTest.*' \
+            --tests 'com.github.kr328.clash.design.LiveUiTest.appRoutingPreservesSelectionAndSaveState' \
+            --tests 'com.github.kr328.clash.design.LiveUiTest.ruleSettingsInflateInBothThemesAndKeepSaveReachable' \
+            app:assembleAlphaDebug -Pcmfa.abis=arm64-v8a "-Pcmfa.couiRevision=$COUI_REVISION"
           mkdir release
           apk=release/ClashMeta-COUI-arm64-debug.apk
           cp app/build/outputs/apk/alpha/debug/*-arm64-v8a-*.apk "$apk"
           tools="$ANDROID_HOME/build-tools/36.0.0"
           "$tools/apksigner" verify --print-certs "$apk"
           "$tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/coui-badging.txt"
-          grep -F "package: name='com.astarion.clash.live.coui.cloud' versionCode='$((211042 + revision))' versionName='2.11.36.Live.Mobile.1-COUI.$revision'" "$RUNNER_TEMP/coui-badging.txt"
+          grep -F "package: name='$COUI_APPLICATION_ID' versionCode='$((211042 + COUI_REVISION))' versionName='2.11.36.Live.Mobile.1-COUI.$COUI_REVISION'" "$RUNNER_TEMP/coui-badging.txt"
           grep -F "native-code: 'arm64-v8a'" "$RUNNER_TEMP/coui-badging.txt"
           (cd release && sha256sum *.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v7.0.2

@@ -12,6 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -72,6 +74,7 @@ internal fun CouiPreferenceRow(
     enabled: Boolean,
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)? = null,
+    afterSummary: (@Composable () -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
     val colors = CouiTheme.colorScheme
@@ -85,15 +88,20 @@ internal fun CouiPreferenceRow(
             .clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
         icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable, iconSize) } },
         iconSize = iconSize,
-        summary = summary?.takeIf { it.isNotEmpty() }?.let { value ->
+        summary = if (!summary.isNullOrEmpty() || afterSummary != null) {
             {
-                Text(
-                    text = value.toString(),
-                    kind = CouiTextKind.PreferenceSummary,
-                    color = colors.onSurfaceVariant,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (!summary.isNullOrEmpty()) {
+                        Text(
+                            text = summary.toString(),
+                            kind = CouiTextKind.PreferenceSummary,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    afterSummary?.invoke()
+                }
             }
-        },
+        } else null,
         trailing = trailing,
         enabled = enabled,
         onClick = if (onLongClick == null) onClick else null,

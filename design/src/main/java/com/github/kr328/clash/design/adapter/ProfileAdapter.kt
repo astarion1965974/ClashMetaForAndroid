@@ -2,12 +2,21 @@ package com.github.kr328.clash.design.adapter
 
 import android.content.Context
 import android.view.ViewGroup
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.progressSemantics
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.recyclerview.widget.RecyclerView
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.model.ProfilePageState
@@ -20,6 +29,7 @@ import com.github.kr328.clash.design.util.toDateStr
 import com.github.kr328.clash.design.util.toString
 import com.github.kr328.clash.service.model.Profile
 import com.itos.coui.radiobutton.RadioButton
+import com.itos.coui.theme.CouiTheme
 
 class ProfileAdapter(
     private val context: Context,
@@ -51,10 +61,10 @@ class ProfileAdapter(
                     profile.type.toString(context)
                 }
                 val elapsed = (currentTime - profile.updatedAt).elapsedIntervalString(context)
+                val uploaded = profile.upload.coerceAtLeast(0)
+                val downloaded = profile.download.coerceAtLeast(0)
+                val used = uploaded + downloaded.coerceAtMost(Long.MAX_VALUE - uploaded)
                 val quota = if (profile.total > 1) {
-                    val uploaded = profile.upload.coerceAtLeast(0)
-                    val downloaded = profile.download.coerceAtLeast(0)
-                    val used = uploaded + downloaded.coerceAtMost(Long.MAX_VALUE - uploaded)
                     "\n${used.toBytesString()} / ${profile.total.toBytesString()}"
                 } else {
                     ""
@@ -67,6 +77,18 @@ class ProfileAdapter(
                     leading = { RadioButton(selected = profile.active) },
                     enabled = true,
                     onClick = { onClicked(profile) },
+                    afterSummary = if (profile.total > 1) {
+                        {
+                            val progress = (used.toDouble() / profile.total).toFloat().coerceIn(0f, 1f)
+                            val colors = CouiTheme.colorScheme
+                            Box(
+                                Modifier.fillMaxWidth().height(4.dp).clip(CircleShape)
+                                    .progressSemantics(progress).background(colors.outlineVariant),
+                            ) {
+                                Box(Modifier.fillMaxWidth(progress).height(4.dp).background(colors.accent))
+                            }
+                        }
+                    } else null,
                     trailing = {
                         CouiRowAction(R.drawable.ic_baseline_more_vert, stringResource(R.string.more)) {
                             onMenuClicked(profile)
