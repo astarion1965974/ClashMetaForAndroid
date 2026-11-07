@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -16,7 +17,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.github.kr328.clash.design.adapter.ProfileAdapter
+import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.adapter.ProxyAdapter
 import com.github.kr328.clash.design.component.ProxyViewConfig
 import com.github.kr328.clash.design.component.ProxyViewState
@@ -28,6 +29,7 @@ import com.github.kr328.clash.design.preference.switch
 import com.github.kr328.clash.design.view.ActionLabel
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.core.model.Proxy
+import com.itos.coui.theme.CouiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -138,13 +140,18 @@ class CouiPreferenceTest {
         )
         var activated: Profile? = null
         var menu: Profile? = null
-        val adapter = ProfileAdapter(activity, { activated = it }, { menu = it })
-        adapter.profiles = listOf(profile)
-        val list = RecyclerView(activity).apply {
-            layoutManager = LinearLayoutManager(activity)
-            this.adapter = adapter
-        }
-        activity.setContentView(list)
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    ProfileListItem(
+                        profile = profile,
+                        currentTime = System.currentTimeMillis(),
+                        onClicked = { activated = it },
+                        onMenuClicked = { menu = it },
+                    )
+                }
+            }
+        })
 
         compose.onNodeWithText(profile.name).assertIsDisplayed().performClick()
         assertEquals(profile, activated)
