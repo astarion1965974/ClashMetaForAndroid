@@ -5,6 +5,29 @@ Target component library: [ItosEO/COUI-Kit](https://github.com/ItosEO/COUI-Kit),
 sampling / progressive top-bar blur / floating-glass controls on supported
 devices, not a flat Compose imitation.
 
+## Shared COUI host migration (in progress)
+
+The Activity's normal XML Design roots are now wrapped by
+`wrapLegacyCouiPage`: a single **COUI Scaffold** contains the legacy page
+body and an independently composed `TopAppBar`. This applies to the
+legacy Activity pages for App Routing, Profiles, New Profile, Properties,
+Proxy, Providers, Files, Logs, Logcat, App/Network/Override/Meta Settings,
+Mobile Network, Managed Routing, Help and error screens. Main/Settings
+already use COUI Compose directly.
+
+The original toolbar remains invisible but laid out to preserve old
+scroll offsets. Action View instances move to toolbar slots rather than
+reimplementing request handlers, retaining data binding and click actions.
+The proxy delay-test FAB is hosted in Scaffold's `floatingActionButton` with
+the library's one-surface renderer and the old `show()`/`hide()` bridge.
+Legacy popup-list rows are replaced with actual COUI Item/RadioButton rows.
+
+**Important:** the body still contains AndroidView and XML adapters; this
+is a shared-shell migration, not proof of a completed full-Compose UI.
+Real-device recording of AndroidView into COUI's graphics backdrop, and
+material transparency on dialogs/menus, are not proven by JVM tests.
+Visual acceptance remains a release blocker.
+
 ## Current implementation and remaining gaps
 
 | Page / element | Current implementation | Status |

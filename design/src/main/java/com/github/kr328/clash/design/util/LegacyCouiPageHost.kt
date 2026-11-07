@@ -1,5 +1,7 @@
 package com.github.kr328.clash.design.util
 
+import android.os.Build
+import android.util.Log
 import android.app.Activity
 import android.content.Context
 import android.view.View
@@ -7,15 +9,25 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
@@ -25,6 +37,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.ToolbarIcon
 import com.github.kr328.clash.design.view.ActivityBarLayout
+import com.github.kr328.clash.design.view.CouiFabView
+import com.itos.coui.effect.CouiFloatingRenderer
+import com.itos.coui.floatingactionbutton.Fab
 import com.itos.coui.icons.CouiIcons
 import com.itos.coui.layout.Scaffold
 import com.itos.coui.text.CouiTextKind
@@ -77,6 +92,12 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
     // height; CoordinatorLayouts still keep their scroll/header contracts.
     toolbar.visibility = View.INVISIBLE
 
+    val oldFloatingFab = original.findViewById<CouiFabView>(R.id.url_test_float_view)
+    oldFloatingFab?.let {
+        it.beginHost()
+        (it.parent as? ViewGroup)?.removeView(it)
+    }
+
     return ComposeView(context).apply {
         setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
@@ -121,6 +142,46 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
                             },
                         )
                     },
+                    floatingActionButton = if (oldFloatingFab != null) {
+                        {
+                            if (oldFloatingFab.visibleInHost) {
+                                val renderer = if (Build.VERSION.SDK_INT >= 34) remember {
+                                    runCatching { CouiFloatingRenderer.standalone() }
+                                        .onFailure { Log.w("LegacyCouiHost", "COUI FAB unavailable", it) }
+                                        .getOrNull()
+                                } else null
+                                val buttonModifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                                if (renderer != null) {
+                                    Fab(
+                                        modifier = buttonModifier,
+                                        renderer = renderer,
+                                        onClick = { oldFloatingFab.performClick() },
+                                    ) {
+                                        if (oldFloatingFab.iconForHost != 0) Image(
+                                            painterResource(oldFloatingFab.iconForHost),
+                                            oldFloatingFab.labelForHost,
+                                            modifier = Modifier.size(24.dp),
+                                            colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent),
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        buttonModifier.size(56.dp).clip(CircleShape)
+                                            .background(CouiTheme.colorScheme.accent)
+                                            .clickable { oldFloatingFab.performClick() },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (oldFloatingFab.iconForHost != 0) Image(
+                                            painterResource(oldFloatingFab.iconForHost),
+                                            oldFloatingFab.labelForHost,
+                                            modifier = Modifier.size(24.dp),
+                                            colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else null,
                 ) { _ ->
                     // Keep the View under the whole viewport, including
                     // COUI top-bar gradient. Existing XML already accounts

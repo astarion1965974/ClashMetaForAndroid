@@ -1,59 +1,54 @@
 package com.github.kr328.clash.design.adapter
 
 import android.content.Context
-import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
-import android.widget.TextView
-import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.resolveThemedColor
+import android.widget.FrameLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.github.kr328.clash.design.preference.CouiPreferenceView
+import com.itos.coui.radiobutton.RadioButton
 
+/**
+ * Legacy ListView bridge using real COUI rows instead of platform
+ * simple_list_item_1 with an opaque Material accent rectangle.
+ */
 class PopupListAdapter(
     private val context: Context,
     private val texts: List<CharSequence>,
     private val selected: Int,
 ) : BaseAdapter() {
-    private val colorPrimary = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
-    private val colorOnPrimary = context.resolveThemedColor(com.google.android.material.R.attr.colorOnPrimary)
-    private val colorControlNormal = context.resolveThemedColor(com.google.android.material.R.attr.colorControlNormal)
+    private class Row(context: Context) : FrameLayout(context) {
+        var label by mutableStateOf("")
+        var checked by mutableStateOf(false)
 
-    override fun getCount(): Int {
-        return texts.size
+        init {
+            val view = CouiPreferenceView(context)
+            view.setContent {
+                CouiPreferenceRow(
+                    title = label,
+                    summary = null,
+                    icon = null,
+                    leading = { RadioButton(selected = checked) },
+                    enabled = true,
+                    onClick = null,
+                )
+            }
+            addView(view, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
     }
 
-    override fun getItem(position: Int): Any {
-        return texts[position]
-    }
-
-    override fun getItemId(position: Int): Long {
-        return texts[position].hashCode().toLong()
-    }
+    override fun getCount(): Int = texts.size
+    override fun getItem(position: Int): Any = texts[position]
+    override fun getItemId(position: Int): Long = position.toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view = convertView ?: context.layoutInflater
-            .inflate(android.R.layout.simple_list_item_1, parent, false)
-
-        val text: TextView = view.findViewById(android.R.id.text1)
-
-        text.text = texts[position]
-
-        if (position == selected) {
-            text.setBackgroundColor(
-                Color.argb(
-                    200,
-                    Color.red(colorPrimary),
-                    Color.green(colorPrimary),
-                    Color.blue(colorPrimary)
-                )
-            )
-            text.setTextColor(colorOnPrimary)
-        } else {
-            text.setBackgroundColor(Color.TRANSPARENT)
-            text.setTextColor(colorControlNormal)
-        }
-
-        return view
+        val row = (convertView as? Row) ?: Row(context)
+        row.label = texts[position].toString()
+        row.checked = position == selected
+        return row
     }
 }

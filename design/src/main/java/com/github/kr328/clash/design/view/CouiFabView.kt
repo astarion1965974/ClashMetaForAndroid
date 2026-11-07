@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +38,17 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     // nested Compose lambdas (avoids Kotlin IR symbol-mapping failures).
     private val fabIcon: Int
     private val fabLabel: String?
+
+    // COUI Scaffold hosts this action in its floatingActionButton slot.
+    // A Compose state bridge preserves the existing View show()/hide() API.
+    internal val iconForHost get() = fabIcon
+    internal val labelForHost get() = fabLabel
+    internal var visibleInHost by mutableStateOf(true)
+        private set
+
+    internal fun beginHost() {
+        visibleInHost = visibility == View.VISIBLE
+    }
 
     init {
         val a = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.src, android.R.attr.contentDescription))
@@ -72,6 +86,6 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
             }
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
-    fun show() { visibility = View.VISIBLE }
-    fun hide() { visibility = View.GONE }
+    fun show() { visibleInHost = true; visibility = View.VISIBLE }
+    fun hide() { visibleInHost = false; visibility = View.GONE }
 }
