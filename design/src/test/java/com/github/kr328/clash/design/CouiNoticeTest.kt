@@ -1,6 +1,7 @@
 package com.github.kr328.clash.design
 
 import android.view.View
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -16,6 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -40,9 +42,12 @@ class CouiNoticeTest {
 
         compose.onNodeWithText("COUI 状态消息").assertIsDisplayed()
         compose.onNodeWithTag("coui-notice-action").performClick()
-        // Compose semantics actions can be dispatched on the next idle frame.
-        // Verify the actual callback, rather than allowing a silent click.
-        compose.waitUntil(timeoutMillis = 5_000) { actions.get() == 1 }
+        // Robolectric pauses the Android main Looper, while Compose's click
+        // action can be posted to it after the accessibility event.
+        compose.waitUntil(timeoutMillis = 5_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            actions.get() == 1
+        }
         assertEquals(1, actions.get())
 
         controller.pause().stop().destroy()
