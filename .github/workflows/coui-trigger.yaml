@@ -1,0 +1,36 @@
+name: COUI Build Trigger
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build COUI APK", "Weekly Live Upstream Build"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  trigger:
+    if: >-
+      github.repository == 'astarion1965974/ClashMetaForAndroid' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        ((github.event.workflow_run.name == 'Build COUI APK' && github.event.workflow_run.head_branch == 'feat/coui-cloud') ||
+         (github.event.workflow_run.name == 'Weekly Live Upstream Build' && github.event.workflow_run.head_branch == 'main'))))
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      actions: write
+    steps:
+      - name: Register a ready trigger
+        if: github.event_name == 'workflow_run' && github.run_attempt == 1
+        run: echo 'Ready. Re-run this job to dispatch the current feat/coui-cloud build.'
+      - name: Start the latest COUI build
+        if: github.event_name == 'workflow_dispatch' || github.run_attempt > 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/coui-cloud.yaml/dispatches" \
+            -f ref=feat/coui-cloud
+
