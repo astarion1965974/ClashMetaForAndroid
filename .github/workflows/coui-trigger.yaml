@@ -1,7 +1,16 @@
+# A completed run provides a small Actions job that the connected GitHub app
+# can rerun. A rerun dispatches the current feature branch, not the old SHA.
+# The existing weekly workflow and each dispatch provide fresh standby runs.
 name: COUI Build Trigger
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Start a build or only prepare a reusable trigger
+        type: choice
+        options: [build, standby]
+        default: build
   workflow_run:
     workflows: ["Build COUI APK", "Weekly Live Upstream Build", "Build Debug"]
     types: [completed]
@@ -22,14 +31,19 @@ jobs:
     permissions:
       actions: write
     steps:
+      # Attempt 2 of this already-skipped Build Debug run bootstraps the first build.
       - name: Register a ready trigger
         if: >-
-          github.event_name == 'workflow_run' && github.run_attempt == 1 &&
-          !(github.event.workflow_run.id == 41977599721 && github.event.workflow_run.run_attempt == 2)
+          github.run_attempt == 1 &&
+          ((github.event_name == 'workflow_run' &&
+            !(github.event.workflow_run.id == 41977599721 && github.event.workflow_run.run_attempt == 2)) ||
+           (github.event_name == 'workflow_dispatch' && inputs.mode == 'standby'))
         run: echo 'Ready. Re-run this job to dispatch the current feat/coui-cloud build.'
       - name: Start the latest COUI build
+        id: start
         if: >-
-          github.event_name == 'workflow_dispatch' || github.run_attempt > 1 ||
+          github.run_attempt > 1 ||
+          (github.event_name == 'workflow_dispatch' && inputs.mode != 'standby') ||
           (github.event.workflow_run.id == 41977599721 && github.event.workflow_run.run_attempt == 2)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,4 +52,14 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/workflows/coui-cloud.yaml/dispatches" \
             -f ref=feat/coui-cloud
+      - name: Prepare the next reusable trigger
+        if: steps.start.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/coui-trigger.yaml/dispatches" \
+            -f ref=main -f 'inputs[mode]=standby'
 
