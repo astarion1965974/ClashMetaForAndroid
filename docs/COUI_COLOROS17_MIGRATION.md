@@ -100,3 +100,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Added `ColorOsFormPage` with a fixed COUI Save bar, shared large collapsing glass title, primary back action, and insets-aware scrollable content.
 - `MobileNetworkDesign` no longer inflates `design_mobile_network.xml` or legacy `PreferenceScreen`. It now uses native COUI groups/switches/actions and the reusable form scaffold.
 - Preserved in-memory editable settings model, dirty/back interception, Save/BindWifi/Permissions/AppRouting events, Wi-Fi bind/unbind, node multi-select (max five), save disabled and reconnect labels.
+
+## Native managed routing form
+
+- Converted `ManagedRoutingDesign` from legacy `DesignManagedRoutingBinding`/View-based `preferenceScreen` to the shared native `ColorOsFormPage`, preserving fixed Save, dirty-state back handling, running/update lockout and provider timestamps.
+- All seven routing category targets use COUI `Group`/`Item`, retaining the existing target-menu contract and `DIRECT`/`REJECT`/default semantics. Exceptions edit in the existing COUI validation dialog, and reset uses COUI confirm.
+- Existing rule-provider refresh/update and save requests still flow through `ManagedRoutingActivity`; backend logic unchanged.
