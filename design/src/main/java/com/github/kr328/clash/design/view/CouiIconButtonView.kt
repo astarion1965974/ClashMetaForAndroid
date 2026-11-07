@@ -35,10 +35,13 @@ import com.itos.coui.topappbar.TopAppBarSurface
 
 class CouiIconButtonView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
     private var contentEnabled by mutableStateOf(true)
+    // Avoid captured initializer locals in nested Compose lambdas (Kotlin IR).
+    private val fabIcon: Int
+    private val fabLabel: String?
     init {
         val a = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.src, android.R.attr.contentDescription))
-        val icon = a.getResourceId(0, 0)
-        val label = a.getString(1)
+        fabIcon = a.getResourceId(0, 0)
+        fabLabel = a.getString(1)
         a.recycle()
         background = null
         setPadding(0, 0, 0, 0)
@@ -55,7 +58,7 @@ class CouiIconButtonView @JvmOverloads constructor(context: Context, attrs: Attr
                             TopAppBarSurface(backdrop = backdrop, gradientColor = Color.Transparent) {
                                 TopAppBarButton(onClick = { this@CouiIconButtonView.performClick() },
                                     enabled = contentEnabled, renderer = renderer) {
-                                    if (icon != 0) Image(painterResource(icon), label, Modifier.size(24.dp),
+                                    if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                         colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurface))
                                 }
                             }
@@ -63,7 +66,7 @@ class CouiIconButtonView @JvmOverloads constructor(context: Context, attrs: Attr
                             Box(Modifier.size(48.dp).clip(CircleShape)
                                 .clickable(enabled = contentEnabled, role = Role.Button) { this@CouiIconButtonView.performClick() },
                                 contentAlignment = Alignment.Center) {
-                                if (icon != 0) Image(painterResource(icon), label, Modifier.size(24.dp),
+                                if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                     colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurface))
                             }
                         }
