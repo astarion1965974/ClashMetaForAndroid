@@ -132,3 +132,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Existing `ProxyActivity` requests (`ReloadAll`, `Reload`, `Select`, `UrlTest`, `PatchMode`, `ReLaunch`) and mutable parent/linked group states are retained. `requestRedrawVisible()` explicitly triggers Compose recomposition after a selector changes.
 - Removed the unused legacy menu View argument from `ProxyMenu`; filter, mode, layout and sorting options still use COUI dialog menus.
 - The former floating URL-test FAB is represented by the same COUI glass top-bar button; a dedicated bottom-floating FAB can be restored if necessary after ColorOS 17 visual verification.
+
+## Dead XML screen layouts removed
+
+- Deleted 12 old `design_*.xml` screen layouts after migrating their owners to Compose; these layouts no longer have active UI callers. This prevents stale Data Binding generation from compiling classes/method references for eliminated View controllers.
+- Remaining layouts are retained until their actual owning pages and dialogs are migrated and audited; the legacy adapter and View resources are not deleted wholesale.
