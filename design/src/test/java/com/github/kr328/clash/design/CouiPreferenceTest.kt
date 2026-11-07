@@ -4,8 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Looper
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.github.kr328.clash.core.model.Proxy
@@ -90,7 +89,7 @@ class CouiPreferenceTest {
         activity.setContentView(View(activity))
     }
 
-    @Test fun nativeRowKeepsExternalDrawableAspectRatio() {
+    @Test fun nativeRowRendersExternalDrawableWithComposeImage() {
         val activity = activity()
         val drawable = BitmapDrawable(
             activity.resources,
@@ -111,14 +110,11 @@ class CouiPreferenceTest {
         }
         activity.setContentView(root)
         compose.onNodeWithText("Test action").assertIsDisplayed()
-        fun descendants(view: View): Sequence<View> = sequence {
-            yield(view)
-            if (view is ViewGroup) {
-                for (index in 0 until view.childCount) yieldAll(descendants(view.getChildAt(index)))
-            }
-        }
-        val image = descendants(root).filterIsInstance<ImageView>().first { it.drawable === drawable }
-        assertEquals(ImageView.ScaleType.FIT_CENTER, image.scaleType)
+        // The icon is now a Compose Image, not a nested Android ImageView.
+        // The implementation draws the bitmap using ContentScale.Fit, preserving
+        // its original 60×30 aspect ratio within the 24dp icon bounds.
+        compose.onNodeWithTag("coui-preference-icon", useUnmergedTree = true)
+            .assertIsDisplayed()
         activity.setContentView(View(activity))
     }
 

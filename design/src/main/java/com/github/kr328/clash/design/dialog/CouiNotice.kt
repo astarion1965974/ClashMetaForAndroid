@@ -105,8 +105,8 @@ fun Context.showCouiNotice(
                         kind = CouiTextKind.PreferenceTitle,
                         color = colors.accent,
                         modifier = Modifier.clickable(role = Role.Button) {
-                            close()
                             action(host)
+                            close()
                         }.padding(6.dp),
                     )
                 }

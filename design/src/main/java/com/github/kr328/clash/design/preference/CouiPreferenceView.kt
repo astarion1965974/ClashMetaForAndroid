@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import android.graphics.Bitmap
@@ -118,6 +119,7 @@ private fun PreferenceIcon(drawable: Drawable, size: Dp) {
         drawable.toBitmap(width = width, height = height, config = Bitmap.Config.ARGB_8888)
             .asImageBitmap()
     }
-    Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(size),
+    Image(bitmap = icon, contentDescription = null,
+        modifier = Modifier.size(size).testTag("coui-preference-icon"),
         contentScale = ContentScale.Fit)
 }
