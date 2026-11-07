@@ -4,15 +4,6 @@ import android.content.Context
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.lazy.itemsIndexed
-import com.itos.coui.layout.CouiPageDefaults
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
-import com.itos.coui.theme.CouiTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
