@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design.component
 
 import android.content.Context
-import android.view.View
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.ProxyDesign
@@ -13,7 +12,6 @@ import kotlinx.coroutines.channels.Channel
 
 class ProxyMenu(
     private val context: Context,
-    @Suppress("UNUSED_PARAMETER") menuView: View,
     private val mode: TunnelState.Mode?,
     private val uiStore: UiStore,
     private val requests: Channel<ProxyDesign.Request>,

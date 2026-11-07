@@ -125,3 +125,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `ColorOsSubPage` now accepts an optional COUI toolbar action slot, reused by properties and future subordinate pages.
 - The progress and fetch-status callback contract is unchanged; the page's `progressing` flag now uses Compose state instead of an XML binding boolean.
 - The mobile network UI test's old XML `save_view` assertion was updated to use the COUI save-label semantics.
+
+## Native proxy selection screen
+
+- `ProxyDesign` uses a full Compose COUI scaffold, collapsible blurred large title, shared glass toolbar buttons, COUI chip tab groups, and a virtualized proxy card grid for 1/2/3 columns, replacing the legacy ViewPager2 + RecyclerView UI tree.
+- Existing `ProxyActivity` requests (`ReloadAll`, `Reload`, `Select`, `UrlTest`, `PatchMode`, `ReLaunch`) and mutable parent/linked group states are retained. `requestRedrawVisible()` explicitly triggers Compose recomposition after a selector changes.
+- Removed the unused legacy menu View argument from `ProxyMenu`; filter, mode, layout and sorting options still use COUI dialog menus.
+- The former floating URL-test FAB is represented by the same COUI glass top-bar button; a dedicated bottom-floating FAB can be restored if necessary after ColorOS 17 visual verification.
