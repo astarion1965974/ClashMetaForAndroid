@@ -258,8 +258,17 @@ class LiveUiTest {
             render(design.root, if (dark) "rules-dark" else "rules-light")
             assertFalse(design.dirty)
             compose.waitForIdle()
-            compose.onNodeWithText(ctx.getString(R.string.route_save), useUnmergedTree = true)
-                .assertExists()
+            // The COUI text may appear in merged and unmerged semantics, or in
+            // multiple attached Robolectric Activity roots. Assert that the
+            // current screen exposes a save label without requiring uniqueness.
+            assertTrue(
+                "Native COUI Save action should remain reachable",
+                compose.onAllNodesWithText(
+                    ctx.getString(R.string.route_save), useUnmergedTree = true,
+                ).fetchSemanticsNodes().isNotEmpty(),
+            )
+            ctx.setContentView(View(ctx))
+            compose.waitForIdle()
         }
     }
 
