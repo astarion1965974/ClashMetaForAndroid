@@ -146,3 +146,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 ## Data Binding KAPT compatibility cleanup
 
 - The obsolete `dialog_files_menu.xml` still referenced deleted `FilesDesign.requestRename/requestExport/requestImport/requestDelete` Java methods after the page moved to `showCouiMenu`. The old dialog is now removed to prevent Data Binding from generating invalid callbacks. No active screen imports `DialogFilesMenuBinding`.
+
+## Native advanced override settings
+
+- `OverrideSettingsDesign` now renders all **34** general + DNS override controls using the new native COUI nullable value, enum choice, list and map editors. The original `ConfigurationOverride` instance and deferred persistence are unchanged.
+- DNS child controls are disabled when DNS strategy is explicitly false; the Reset header action still requests activity-level confirmation and override clearing.
+- Old `DesignSettingsOverideBinding` and XML `PreferenceScreen` are no longer used by this controller; its resource can be removed after confirming no other owner.

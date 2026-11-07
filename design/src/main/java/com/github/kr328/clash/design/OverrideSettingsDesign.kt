@@ -2,403 +2,279 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.core.model.LogMessage
 import com.github.kr328.clash.core.model.TunnelState
-import com.github.kr328.clash.design.databinding.DesignSettingsOverideBinding
-import com.github.kr328.clash.design.databinding.DialogPreferenceListBinding
-import com.github.kr328.clash.design.dialog.FullScreenDialog
 import com.github.kr328.clash.design.dialog.requestCouiConfirm
-import com.github.kr328.clash.design.model.AppInfo
-import com.github.kr328.clash.design.preference.*
-import com.github.kr328.clash.design.util.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
+import com.github.kr328.clash.design.preference.NativeCouiNullablePort
+import com.github.kr328.clash.design.preference.NativeCouiNullableString
+import com.github.kr328.clash.design.preference.NativeCouiStringList
+import com.github.kr328.clash.design.preference.NativeCouiStringMap
+import com.github.kr328.clash.design.preference.NativeCouiSelect
+import com.itos.coui.layout.Divider
+import com.itos.coui.layout.Group
 
+/**
+ * All 34 override controls rendered as native COUI preferences.
+ * The mutable ConfigurationOverride instance is still persisted by the Activity's defer hook.
+ */
 class OverrideSettingsDesign(
     context: Context,
-    configuration: ConfigurationOverride
+    configuration: ConfigurationOverride,
 ) : Design<OverrideSettingsDesign.Request>(context) {
-    enum class Request {
-        ResetOverride
-    }
+    enum class Request { ResetOverride }
 
-    private val binding = DesignSettingsOverideBinding
-        .inflate(context.layoutInflater, context.root, false)
+    private var revision by mutableIntStateOf(0)
 
-    override val root: View
-        get() = binding.root
-
-    suspend fun requestResetConfirm(): Boolean {
-        return context.requestCouiConfirm(R.string.reset_override_settings, R.string.reset_override_settings_message)
-    }
-
-    init {
-        binding.self = this
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.scrollRoot.bindAppBarElevation(binding.activityBarLayout)
-
-        val booleanValues: Array<Boolean?> = arrayOf(
-            null,
-            true,
-            false
-        )
-        val booleanValuesText: Array<Int> = arrayOf(
-            R.string.dont_modify,
-            R.string.enabled,
-            R.string.disabled
-        )
-
-        val screen = preferenceScreen(context) {
-            category(R.string.general)
-
-            editableText(
-                value = configuration::httpPort,
-                adapter = NullableTextAdapter.Port,
-                title = R.string.http_port,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-            )
-
-            editableText(
-                value = configuration::socksPort,
-                adapter = NullableTextAdapter.Port,
-                title = R.string.socks_port,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-            )
-
-            editableText(
-                value = configuration::redirectPort,
-                adapter = NullableTextAdapter.Port,
-                title = R.string.redirect_port,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-            )
-
-            editableText(
-                value = configuration::tproxyPort,
-                adapter = NullableTextAdapter.Port,
-                title = R.string.tproxy_port,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-            )
-
-            editableText(
-                value = configuration::mixedPort,
-                adapter = NullableTextAdapter.Port,
-                title = R.string.mixed_port,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-            )
-
-            editableTextList(
-                value = configuration::authentication,
-                adapter = TextAdapter.String,
-                title = R.string.authentication,
-                placeholder = R.string.dont_modify,
-            )
-
-            selectableList(
-                value = configuration::allowLan,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.allow_lan,
-            )
-
-            selectableList(
-                value = configuration::ipv6,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.ipv6,
-            )
-
-            editableText(
-                value = configuration::bindAddress,
-                adapter = NullableTextAdapter.String,
-                title = R.string.bind_address,
-                placeholder = R.string.dont_modify,
-                empty = R.string.default_
-            )
-
-            editableText(
-                value = configuration::externalController,
-                adapter = NullableTextAdapter.String,
-                title = R.string.external_controller,
-                placeholder = R.string.dont_modify,
-                empty = R.string.default_
-            )
-
-            editableText(
-                value = configuration::externalControllerTLS,
-                adapter = NullableTextAdapter.String,
-                title = R.string.external_controller_tls,
-                placeholder = R.string.dont_modify,
-                empty = R.string.default_
-            )
-
-            editableTextList(
-                value = configuration.externalControllerCors::allowOrigins,
-                adapter = TextAdapter.String,
-                title = R.string.allow_origins,
-                placeholder = R.string.dont_modify,
-            )
-
-            selectableList(
-                value = configuration.externalControllerCors::allowPrivateNetwork,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.allow_private_network,
-            )
-
-            editableText(
-                value = configuration::secret,
-                adapter = NullableTextAdapter.String,
-                title = R.string.secret,
-                placeholder = R.string.dont_modify,
-                empty = R.string.default_
-            )
-
-            selectableList(
-                value = configuration::mode,
-                values = arrayOf(
-                    null,
-                    TunnelState.Mode.Direct,
-                    TunnelState.Mode.Global,
-                    TunnelState.Mode.Rule
-                ),
-                valuesText = arrayOf(
-                    R.string.dont_modify,
-                    R.string.direct_mode,
-                    R.string.global_mode,
-                    R.string.rule_mode
-                ),
-                title = R.string.mode
-            )
-
-            selectableList(
-                value = configuration::logLevel,
-                values = arrayOf(
-                    null,
-                    LogMessage.Level.Info,
-                    LogMessage.Level.Warning,
-                    LogMessage.Level.Error,
-                    LogMessage.Level.Debug,
-                    LogMessage.Level.Silent,
-                ),
-                valuesText = arrayOf(
-                    R.string.dont_modify,
-                    R.string.info,
-                    R.string.warning,
-                    R.string.error,
-                    R.string.debug,
-                    R.string.silent,
-                ),
-                title = R.string.log_level,
-            )
-
-            editableTextMap(
-                value = configuration::hosts,
-                keyAdapter = TextAdapter.String,
-                valueAdapter = TextAdapter.String,
-                title = R.string.hosts,
-                placeholder = R.string.dont_modify,
-            )
-
-            category(R.string.dns)
-
-            val dnsDependencies: MutableList<Preference> = mutableListOf()
-
-            val dns = selectableList(
-                value = configuration.dns::enable,
-                values = arrayOf(
-                    null,
-                    true,
-                    false
-                ),
-                valuesText = arrayOf(
-                    R.string.dont_modify,
-                    R.string.force_enable,
-                    R.string.use_built_in,
-                ),
-                title = R.string.strategy
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            revision
+            val dnsEditable = configuration.dns.enable != false
+            ColorOsSubPage(
+                title = stringResource(R.string.override),
+                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                actions = {
+                    ToolbarIcon(
+                        ImageVector.vectorResource(R.drawable.ic_baseline_replay),
+                        stringResource(R.string.reset),
+                    ) { requestClear() }
+                },
             ) {
-                listener = OnChangedListener {
-                    if (configuration.dns.enable == false) {
-                        dnsDependencies.forEach {
-                            it.enabled = false
-                        }
-                    } else {
-                        dnsDependencies.forEach {
-                            it.enabled = true
-                        }
-                    }
+                Group(title = stringResource(R.string.general)) {
+                    NativeCouiNullablePort(
+                        title = stringResource(R.string.http_port), property = configuration::httpPort,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullablePort(
+                        title = stringResource(R.string.socks_port), property = configuration::socksPort,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullablePort(
+                        title = stringResource(R.string.redirect_port), property = configuration::redirectPort,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullablePort(
+                        title = stringResource(R.string.tproxy_port), property = configuration::tproxyPort,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullablePort(
+                        title = stringResource(R.string.mixed_port), property = configuration::mixedPort,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.authentication), property = configuration::authentication,
+                        placeholder = stringResource(R.string.dont_modify),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.allow_lan), value = configuration::allowLan,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.ipv6), value = configuration::ipv6,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.bind_address), property = configuration::bindAddress,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.external_controller), property = configuration::externalController,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.external_controller_tls), property = configuration::externalControllerTLS,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.allow_origins), property = configuration.externalControllerCors::allowOrigins,
+                        placeholder = stringResource(R.string.dont_modify),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.allow_private_network), value = configuration.externalControllerCors::allowPrivateNetwork,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.secret), property = configuration::secret,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.mode), value = configuration::mode,
+                        values = listOf<TunnelState.Mode?>(null, TunnelState.Mode.Direct, TunnelState.Mode.Global, TunnelState.Mode.Rule),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.direct_mode), stringResource(R.string.global_mode), stringResource(R.string.rule_mode)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.log_level), value = configuration::logLevel,
+                        values = listOf<LogMessage.Level?>(null, LogMessage.Level.Info, LogMessage.Level.Warning, LogMessage.Level.Error, LogMessage.Level.Debug, LogMessage.Level.Silent),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.info), stringResource(R.string.warning), stringResource(R.string.error), stringResource(R.string.debug), stringResource(R.string.silent)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringMap(
+                        title = stringResource(R.string.hosts), property = configuration::hosts,
+                        placeholder = stringResource(R.string.dont_modify),
+                        onChanged = { revision++ },
+                    )
+                }
+                Group(title = stringResource(R.string.dns)) {
+                    NativeCouiSelect(
+                        title = stringResource(R.string.strategy), value = configuration.dns::enable,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.force_enable), stringResource(R.string.use_built_in)),
+                        onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.prefer_h3), value = configuration.dns::preferH3,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.listen), property = configuration.dns::listen,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.append_system_dns), value = configuration.app::appendSystemDns,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.ipv6), value = configuration.dns::ipv6,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.use_hosts), value = configuration.dns::useHosts,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.enhanced_mode), value = configuration.dns::enhancedMode,
+                        values = listOf<ConfigurationOverride.DnsEnhancedMode?>(null, ConfigurationOverride.DnsEnhancedMode.None, ConfigurationOverride.DnsEnhancedMode.FakeIp, ConfigurationOverride.DnsEnhancedMode.Mapping),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.disabled), stringResource(R.string.fakeip), stringResource(R.string.mapping)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.name_server), property = configuration.dns::nameServer,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.fallback), property = configuration.dns::fallback,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.default_name_server), property = configuration.dns::defaultServer,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.fakeip_filter), property = configuration.dns::fakeIpFilter,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.fakeip_filter_mode), value = configuration.dns::fakeIPFilterMode,
+                        values = listOf<ConfigurationOverride.FilterMode?>(null, ConfigurationOverride.FilterMode.BlackList, ConfigurationOverride.FilterMode.WhiteList, ConfigurationOverride.FilterMode.Rule),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.blacklist), stringResource(R.string.whitelist), stringResource(R.string.rule)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.geoip_fallback), value = configuration.dns.fallbackFilter::geoIp,
+                        values = listOf<Boolean?>(null, true, false),
+                        labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiNullableString(
+                        title = stringResource(R.string.geoip_fallback_code), property = configuration.dns.fallbackFilter::geoIpCode,
+                        placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.raw_cn),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.domain_fallback), property = configuration.dns.fallbackFilter::domain,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringList(
+                        title = stringResource(R.string.ipcidr_fallback), property = configuration.dns.fallbackFilter::ipcidr,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
+                    Divider()
+                    NativeCouiStringMap(
+                        title = stringResource(R.string.name_server_policy), property = configuration.dns::nameserverPolicy,
+                        placeholder = stringResource(R.string.dont_modify),
+                        enabled = dnsEditable, onChanged = { revision++ },
+                    )
                 }
             }
-
-            selectableList(
-                value = configuration.dns::preferH3,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.prefer_h3,
-                configure = dnsDependencies::add,
-            )
-
-            editableText(
-                value = configuration.dns::listen,
-                adapter = NullableTextAdapter.String,
-                title = R.string.listen,
-                placeholder = R.string.dont_modify,
-                empty = R.string.disabled,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.app::appendSystemDns,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.append_system_dns,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.dns::ipv6,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.ipv6,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.dns::useHosts,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.use_hosts,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.dns::enhancedMode,
-                values = arrayOf(
-                    null,
-                    ConfigurationOverride.DnsEnhancedMode.None,
-                    ConfigurationOverride.DnsEnhancedMode.FakeIp,
-                    ConfigurationOverride.DnsEnhancedMode.Mapping
-                ),
-                valuesText = arrayOf(
-                    R.string.dont_modify,
-                    R.string.disabled,
-                    R.string.fakeip,
-                    R.string.mapping
-                ),
-                title = R.string.enhanced_mode,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns::nameServer,
-                adapter = TextAdapter.String,
-                title = R.string.name_server,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns::fallback,
-                adapter = TextAdapter.String,
-                title = R.string.fallback,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns::defaultServer,
-                adapter = TextAdapter.String,
-                title = R.string.default_name_server,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns::fakeIpFilter,
-                adapter = TextAdapter.String,
-                title = R.string.fakeip_filter,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.dns::fakeIPFilterMode,
-                values = arrayOf(
-                    null,
-                    ConfigurationOverride.FilterMode.BlackList,
-                    ConfigurationOverride.FilterMode.WhiteList,
-                    ConfigurationOverride.FilterMode.Rule
-                ),
-                valuesText = arrayOf(
-                    R.string.dont_modify,
-                    R.string.blacklist,
-                    R.string.whitelist,
-                    R.string.rule
-                ),
-                title = R.string.fakeip_filter_mode,
-                configure = dnsDependencies::add,
-            )
-
-            selectableList(
-                value = configuration.dns.fallbackFilter::geoIp,
-                values = booleanValues,
-                valuesText = booleanValuesText,
-                title = R.string.geoip_fallback,
-                configure = dnsDependencies::add,
-            )
-
-            editableText(
-                value = configuration.dns.fallbackFilter::geoIpCode,
-                adapter = NullableTextAdapter.String,
-                title = R.string.geoip_fallback_code,
-                placeholder = R.string.dont_modify,
-                empty = R.string.raw_cn,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns.fallbackFilter::domain,
-                adapter = TextAdapter.String,
-                title = R.string.domain_fallback,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextList(
-                value = configuration.dns.fallbackFilter::ipcidr,
-                adapter = TextAdapter.String,
-                title = R.string.ipcidr_fallback,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            editableTextMap(
-                value = configuration.dns::nameserverPolicy,
-                keyAdapter = TextAdapter.String,
-                valueAdapter = TextAdapter.String,
-                title = R.string.name_server_policy,
-                placeholder = R.string.dont_modify,
-                configure = dnsDependencies::add,
-            )
-
-            dns.listener?.onChanged()
         }
-
-        binding.content.addView(screen.root)
     }
 
-    fun requestClear() {
-        requests.trySend(Request.ResetOverride)
-    }
+    suspend fun requestResetConfirm(): Boolean =
+        context.requestCouiConfirm(
+            R.string.reset_override_settings, R.string.reset_override_settings_message,
+        )
+
+    fun requestClear() { requests.trySend(Request.ResetOverride) }
 }
