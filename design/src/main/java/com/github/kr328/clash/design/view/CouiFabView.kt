@@ -53,11 +53,9 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(Color.Transparent))
                         if (Build.VERSION.SDK_INT >= 34 && renderer != null) {
-                            // This View is layered over the legacy page, so compose only
-                            // the COUI foreground rather than writing back a transparent
-                            // local backdrop over the page below.
+                            // COUI-Kit alpha7 requires a one-surface renderer for Fab.
+                            // This legacy View still needs a future full-page backdrop host.
                             Fab(backdrop = backdrop, renderer = renderer,
-                                foregroundComposition = true,
                                 onClick = { this@CouiFabView.performClick() }) {
                                 if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                     colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent))
