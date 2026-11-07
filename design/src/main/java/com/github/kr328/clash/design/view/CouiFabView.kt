@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design.view
 
 import android.content.Context
-import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
@@ -59,14 +58,14 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
             setContent {
                 CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
                     val backdrop = rememberCouiBackdrop()
-                    val renderer = if (Build.VERSION.SDK_INT >= 34) remember {
+                    val renderer = remember {
                         runCatching { CouiFloatingRenderer.standalone() }
                             .onFailure { android.util.Log.e("COUI-FAB", "Native COUI FAB material unavailable", it) }
                             .getOrNull()
-                    } else null
+                    }
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(Color.Transparent))
-                        if (Build.VERSION.SDK_INT >= 34 && renderer != null) {
+                        if (renderer != null) {
                             // COUI-Kit alpha7 requires a one-surface renderer for Fab.
                             // This legacy View still needs a future full-page backdrop host.
                             Fab(backdrop = backdrop, renderer = renderer,

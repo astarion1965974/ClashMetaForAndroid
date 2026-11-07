@@ -328,9 +328,8 @@ internal fun ClashPrimaryTabs(
                         }
                         // Robolectric emulates Android's graphics APIs but cannot
                         // execute the actual RenderEffect backend.
-                        val blur = if (Build.VERSION.SDK_INT >= 31 &&
-                            !Build.FINGERPRINT.equals("robolectric", ignoreCase = true)
-                        ) Modifier.blur(blurRadius) else Modifier
+                        val blur = if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true))
+                            Modifier.blur(blurRadius) else Modifier
                         Box(Modifier.fillMaxSize().then(blur)) {
                             when (page) {
                                 0 -> Column(
@@ -343,7 +342,7 @@ internal fun ClashPrimaryTabs(
                                         dnsLoading, forwarded, mode, hasProviders, onHomeRequest,
                                     )
                                 }
-                                1 -> profiles.PrimaryTabContent()
+                                1 -> profiles.PrimaryTabContent(padding)
                                 2 -> Column(
                                     Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
                                         .padding(padding).consumeWindowInsets(padding)
@@ -422,18 +421,16 @@ internal fun PrimaryBottomBar(
         selectedIndex = index
         if (index != selected) onSelection(index)
     }
-    if (Build.VERSION.SDK_INT >= 34) {
-        val renderer = remember { createFloatingRenderer { CouiFloatingRenderer() } }
-        if (renderer != null) {
-            NavigationBar(
-                modifier = modifier,
-                renderer = renderer,
-                items = items,
-                selectedIndex = selectedIndex,
-                onSelection = select,
-            )
-            return
-        }
+    val renderer = remember { createFloatingRenderer { CouiFloatingRenderer() } }
+    if (renderer != null) {
+        NavigationBar(
+            modifier = modifier,
+            renderer = renderer,
+            items = items,
+            selectedIndex = selectedIndex,
+            onSelection = select,
+        )
+        return
     }
 
     Box(
@@ -604,15 +601,13 @@ private fun PageRow(
 
 @Composable
 internal fun ToolbarIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
-    if (Build.VERSION.SDK_INT >= 34) {
-        val renderer = remember { createFloatingRenderer { CouiFloatingRenderer.standalone() } }
-        if (renderer != null) {
-            TopAppBarButton(onClick = onClick, renderer = renderer) {
-                Image(icon, label, Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(LocalCouiContentColor.current))
-            }
-            return
+    val renderer = remember { createFloatingRenderer { CouiFloatingRenderer.standalone() } }
+    if (renderer != null) {
+        TopAppBarButton(onClick = onClick, renderer = renderer) {
+            Image(icon, label, Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(LocalCouiContentColor.current))
         }
+        return
     }
     Box(
         modifier = Modifier.size(48.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onClick),

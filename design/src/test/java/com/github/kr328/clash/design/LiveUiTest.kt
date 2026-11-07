@@ -296,6 +296,28 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun primaryProfilesListUsesScaffoldInsets() {
+        val ctx = context(false)
+        val main = MainDesign(ctx)
+        val profiles = ProfilesDesign(ctx)
+        val settings = SettingsDesign(ctx)
+        main.installPrimaryTabs(profiles, settings)
+        val profile = com.github.kr328.clash.service.model.Profile(
+            uuid = java.util.UUID.randomUUID(), name = "COUI布局测试配置",
+            type = com.github.kr328.clash.service.model.Profile.Type.Url,
+            source = "https://example.com", active = true, interval = 0,
+            upload = 0, download = 0, total = 0, expire = 0,
+            updatedAt = 0, imported = true, pending = false,
+        )
+        updateHome { profiles.patchProfiles(listOf(profile)) }
+        main.selectPrimaryTab(1)
+        ctx.setContentView(main.root)
+        val profileTitle = compose.onNodeWithText("COUI布局测试配置").assertIsDisplayed()
+        assertTrue("Profile content must be below the COUI top bar",
+            profileTitle.getUnclippedBoundsInRoot().top >= 60.dp)
+        ctx.setContentView(View(ctx))
+    }
+
     @Test @Config(qualifiers = "zh-rCN-w320dp-h640dp-mdpi")
     fun homeSupportsNarrowScreensAndLargeText() {
         RuntimeEnvironment.setFontScale(1.3f)

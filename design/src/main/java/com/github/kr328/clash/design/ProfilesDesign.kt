@@ -5,8 +5,14 @@ import android.content.Context
 import android.app.Activity
 import android.graphics.Rect
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
@@ -29,6 +35,7 @@ import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import com.github.kr328.clash.design.adapter.ProfileAdapter
+import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.databinding.DesignProfilesBinding
 import com.github.kr328.clash.design.databinding.DialogProfilesMenuBinding
 import com.github.kr328.clash.design.databinding.DialogProfileQrCodeBinding
@@ -85,6 +92,8 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     private val rotateAnimation : Animation = AnimationUtils.loadAnimation(context, R.anim.rotate_infinite)
     private var canUpdate by mutableStateOf(false)
+    private var visibleProfiles by mutableStateOf<List<Profile>>(emptyList())
+    private var displayedTime by mutableLongStateOf(System.currentTimeMillis())
 
     // The existing RecyclerView stays as content under a real native COUI
     // Scaffold. Its toolbar and navigation now sample the same page source.
@@ -131,19 +140,17 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     }
 
-    /**
-     * Renders the existing profile RecyclerView in MainActivity's shared
-     * COUI Scaffold without a nested top or bottom navigation bar.
-     */
+    /** Render COUI profile rows within the main tab's single Scaffold. */
     @androidx.compose.runtime.Composable
-    internal fun PrimaryTabContent() {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = {
-                (binding.root.parent as? ViewGroup)?.removeView(binding.root)
-                binding.root
-            },
-        )
+    internal fun PrimaryTabContent(padding: PaddingValues) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
+            items(visibleProfiles, key = { it.uuid.toString() }) { profile ->
+                ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu)
+            }
+        }
     }
 
     @androidx.compose.runtime.Composable
@@ -171,6 +178,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
         withContext(Dispatchers.Main) {
             canUpdate = updatable
+            visibleProfiles = profiles
             binding.updateView.visibility = if (updatable) View.VISIBLE else View.GONE
         }
     }
@@ -185,6 +193,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
     fun updateElapsed() {
         adapter.updateElapsed()
+        displayedTime = System.currentTimeMillis()
     }
 
     init {

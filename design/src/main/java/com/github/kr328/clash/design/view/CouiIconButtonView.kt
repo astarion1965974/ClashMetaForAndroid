@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design.view
 
 import android.content.Context
-import android.os.Build
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import androidx.compose.foundation.Image
@@ -53,12 +52,12 @@ class CouiIconButtonView @JvmOverloads constructor(context: Context, attrs: Attr
             setContent {
                 CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
                     val backdrop = rememberCouiBackdrop()
-                    val renderer = if (Build.VERSION.SDK_INT >= 34) remember {
+                    val renderer = remember {
                         runCatching { CouiFloatingRenderer.standalone() }.getOrNull()
-                    } else null
+                    }
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(Color.Transparent))
-                        if (Build.VERSION.SDK_INT >= 34 && renderer != null) {
+                        if (renderer != null) {
                             TopAppBarSurface(backdrop = backdrop, gradientColor = Color.Transparent) {
                                 TopAppBarButton(onClick = { this@CouiIconButtonView.performClick() },
                                     enabled = contentEnabled, renderer = renderer) {

@@ -1,6 +1,5 @@
 package com.github.kr328.clash.design.util
 
-import android.os.Build
 import android.util.Log
 import android.app.Activity
 import android.content.Context
@@ -139,11 +138,11 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
                     floatingActionButton = if (oldFloatingFab != null) {
                         {
                             if (oldFloatingFab.visibleInHost) {
-                                val renderer = if (Build.VERSION.SDK_INT >= 34) remember {
+                                val renderer = remember {
                                     runCatching { CouiFloatingRenderer.standalone() }
                                         .onFailure { Log.w("LegacyCouiHost", "COUI FAB unavailable", it) }
                                         .getOrNull()
-                                } else null
+                                }
                                 val buttonModifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
                                 if (renderer != null) {
                                     Fab(
