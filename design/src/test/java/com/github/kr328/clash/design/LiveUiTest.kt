@@ -301,6 +301,7 @@ class LiveUiTest {
         var opened: android.net.Uri? = null
         val help = HelpDesign(ctx) { opened = it }
         ctx.setContentView(help.root)
+        compose.onNodeWithText("<strong>", substring = true).assertDoesNotExist()
         compose.onNodeWithText(ctx.getString(R.string.clash_wiki)).performClick()
         assertEquals(ctx.getString(R.string.clash_wiki_url), opened.toString())
         val recovery = ApkBrokenDesign(ctx)

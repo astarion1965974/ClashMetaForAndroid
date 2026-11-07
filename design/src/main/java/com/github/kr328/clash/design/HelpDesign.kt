@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.github.kr328.clash.design.preference.CouiRichText
+import com.github.kr328.clash.design.util.getHtml
 import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.layout.Item
@@ -27,9 +29,8 @@ class HelpDesign(
                 title = stringResource(R.string.help),
                 onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
             ) {
-                Text(
-                    text = stringResource(R.string.tips_help),
-                    kind = CouiTextKind.PreferenceSummary,
+                CouiRichText(
+                    value = context.getHtml(R.string.tips_help),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                 )
                 Group(title = stringResource(R.string.document)) {

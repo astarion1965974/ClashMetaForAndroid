@@ -51,3 +51,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 ## Main tab state retention
 
 - The configuration tab now hoists `LazyListState` to the stable three-tab host alongside the existing home and settings scroll states. Switching the translucent bottom navigation away and back no longer recreates the configuration scroll position.
+
+## Shared legacy preference elements now rendered in COUI
+
+- Converted `PreferenceScreen.category()` from `PreferenceCategoryBinding` to COUI `GroupTitle` inside `CouiPreferenceView`.
+- Converted `PreferenceScreen.tips()` from `PreferenceTipsBinding` to COUI typography, preserving its mutable `TipsPreference.text` contract.
+- Added `CouiRichText` to convert Android `Spanned` bold/italic formatting into Compose `AnnotatedString`; the native Help page no longer displays literal HTML tags from translated `<strong>` strings.
+- Other XML preference methods retain their existing COUI row wrappers for now. Do not delete XML resources until references and build verification confirm that they are unused.
