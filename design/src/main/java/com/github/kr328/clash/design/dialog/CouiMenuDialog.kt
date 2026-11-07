@@ -6,6 +6,7 @@ import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
+import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import androidx.compose.runtime.mutableStateListOf
@@ -47,6 +48,31 @@ internal fun Context.showCouiMultiChoice(
                 Item(onClick = { if (value in chosen) chosen.remove(value) else chosen.add(value) },
                     trailing = { Checkbox(checked = value in chosen) }) {
                     Text(text = value, kind = CouiTextKind.PreferenceTitle)
+                }
+            }
+        }
+    }
+}
+
+/** Native COUI single-choice menu reusable by the application activity. */
+fun Context.showCouiSingleChoice(
+    title: String,
+    labels: List<String>,
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit,
+) {
+    showCouiContent { dismiss ->
+        Dialog(
+            onDismissRequest = dismiss,
+            title = title,
+            confirmAction = CouiDialogAction(getString(R.string.cancel), dismiss),
+        ) {
+            labels.forEachIndexed { index, label ->
+                Item(
+                    onClick = { dismiss(); onSelected(index) },
+                    trailing = { RadioButton(selected = index == selectedIndex) },
+                ) {
+                    Text(text = label, kind = CouiTextKind.PreferenceTitle)
                 }
             }
         }

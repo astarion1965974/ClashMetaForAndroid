@@ -170,3 +170,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `ProfilesDesign.root` no longer inflates `design_profiles.xml` via `AndroidView`; both standalone and primary configuration tabs render the same pure COUI `ProfileListItem` lazy list with shared collapse behavior, floating bottom navigation and glass actions.
 - Removed `ProfileAdapter` RecyclerView and obsolete XML dialogs/row resources. `ProfileListItem` now lives in its own reusable Composable file.
 - Updated list state is Compose-observed, including update-all progress, elapsed time and active profile. QR sharing remains a native COUI dialog with bitmap rendering; old Data Binding menu callbacks are eliminated.
+
+## Native COUI Activity-layer dialogs
+
+- Converted unsaved changes confirmations in managed routing, application routing and mobile network activities to suspendable COUI dialogs with explicit Continue Editing/Discard labels.
+- Converted ColorOS-only mobile background-location permission prompt, Wi-Fi SSID binding, notification strategy-group picker and GeoX file validation warning to COUI `Dialog` / `showCouiSingleChoice` / `showCouiAlert`.
+- Removed two old Android SDK UI appearance guards from BaseActivity (ColorOS 17 target only). No change to VPN or core logic.

@@ -16,7 +16,7 @@ import com.github.kr328.clash.service.model.AppAccessPolicy
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.restartForRouting
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import kotlinx.coroutines.*
 import kotlinx.coroutines.selects.select
 
@@ -25,12 +25,16 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
     private var saving = false
 
     private fun confirmBack() {
-        if (saving) return
-        if (!saved && design?.dirty == true) {
-            MaterialAlertDialogBuilder(this).setTitle(R.string.route_unsaved)
-                .setMessage(R.string.route_unsaved_hint)
-                .setNegativeButton(R.string.route_keep_editing, null)
-                .setPositiveButton(R.string.route_discard) { _, _ -> saved = true; finish() }.show()
+        if (saving || saved || design?.dirty != true) return
+        launch {
+            if (requestCouiConfirm(
+                    R.string.route_unsaved, R.string.route_unsaved_hint,
+                    positive = R.string.route_discard,
+                    negative = R.string.route_keep_editing,
+                )) {
+                saved = true
+                finish()
+            }
         }
     }
 

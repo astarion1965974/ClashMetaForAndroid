@@ -7,7 +7,7 @@ import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.service.store.ManagedRoutingStore
 import com.github.kr328.clash.util.restartForRouting
 import com.github.kr328.clash.util.withClash
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import kotlinx.coroutines.*
 import kotlinx.coroutines.selects.select
 
@@ -17,11 +17,16 @@ class ManagedRoutingActivity : BaseActivity<ManagedRoutingDesign>() {
     private var updating = false
 
     private fun confirmBack() {
-        if (saving || updating) return
-        if (!leaving && design?.dirty == true) {
-            MaterialAlertDialogBuilder(this).setTitle(R.string.route_unsaved).setMessage(R.string.route_unsaved_hint)
-                .setNegativeButton(R.string.route_keep_editing, null)
-                .setPositiveButton(R.string.route_discard) { _, _ -> leaving = true; finish() }.show()
+        if (saving || updating || leaving || design?.dirty != true) return
+        launch {
+            if (requestCouiConfirm(
+                    R.string.route_unsaved, R.string.route_unsaved_hint,
+                    positive = R.string.route_discard,
+                    negative = R.string.route_keep_editing,
+                )) {
+                leaving = true
+                finish()
+            }
         }
     }
 
