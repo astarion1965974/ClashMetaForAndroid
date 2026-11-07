@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: mainline-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -91,7 +91,7 @@ jobs:
 
   publish:
     needs: build
-    if: github.repository == 'astarion1965974/ClashMetaForAndroid' && github.ref == 'refs/heads/main'
+    if: github.repository == 'astarion1965974/ClashMetaForAndroid' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
