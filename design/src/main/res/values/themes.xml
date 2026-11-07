@@ -4,7 +4,7 @@
         <item name="android:background">@drawable/bg_bottom_sheet</item>
     </style>
 
-    <style name="AppFullScreenDialogLightBase" parent="Theme.MaterialComponents.Light.Dialog">
+    <style name="AppFullScreenDialogLightBase" parent="Theme.AppCompat.Light.Dialog">
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowNoTitle">true</item>
@@ -34,11 +34,9 @@
         <item name="android:textColorPrimary">#1A1D25</item>
         <item name="android:textColorSecondary">#737988</item>
         <item name="colorSurface">@android:color/white</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
-    <style name="AppFullScreenDialogDarkBase" parent="Theme.MaterialComponents.Dialog">
+    <style name="AppFullScreenDialogDarkBase" parent="Theme.AppCompat.Dialog">
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowNoTitle">true</item>
@@ -67,8 +65,6 @@
         <item name="colorOnSurface">#F7F9FC</item>
         <item name="android:textColorPrimary">#F7F9FC</item>
         <item name="android:textColorSecondary">#A4ABB7</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
     <style name="AppFullScreenDialogLight" parent="AppFullScreenDialogLightBase">
@@ -81,7 +77,7 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <style name="AppBottomSheetDialogLightBase" parent="Theme.MaterialComponents.Light.BottomSheetDialog">
+    <style name="AppBottomSheetDialogLightBase" parent="Theme.AppCompat.Light.Dialog">
         <item name="android:windowIsFloating">false</item>
         <item name="paddingRightSystemWindowInsets">false</item>
         <item name="paddingBottomSystemWindowInsets">false</item>
@@ -109,11 +105,9 @@
         <item name="android:textColorPrimary">#1A1D25</item>
         <item name="android:textColorSecondary">#737988</item>
         <item name="colorSurface">@android:color/white</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
-    <style name="AppBottomSheetDialogDarkBase" parent="Theme.MaterialComponents.BottomSheetDialog">
+    <style name="AppBottomSheetDialogDarkBase" parent="Theme.AppCompat.Dialog">
         <item name="android:windowIsFloating">false</item>
         <item name="paddingRightSystemWindowInsets">false</item>
         <item name="paddingBottomSystemWindowInsets">false</item>
@@ -140,8 +134,6 @@
         <item name="colorOnSurface">#F7F9FC</item>
         <item name="android:textColorPrimary">#F7F9FC</item>
         <item name="android:textColorSecondary">#A4ABB7</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
     <style name="AppBottomSheetDialogLight" parent="AppBottomSheetDialogLightBase">
@@ -154,7 +146,7 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <style name="AppThemeLightBase" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="AppThemeLightBase" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/color_light_background</item>
         <item name="android:ambientShadowAlpha">0.08</item>
         <item name="android:spotShadowAlpha">0.08</item>
@@ -183,11 +175,9 @@
         <item name="android:textColorPrimary">#1A1D25</item>
         <item name="android:textColorSecondary">#737988</item>
         <item name="colorSurface">@android:color/white</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
-    <style name="AppThemeDarkBase" parent="Theme.MaterialComponents.NoActionBar">
+    <style name="AppThemeDarkBase" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/color_dark_background</item>
         <item name="android:ambientShadowAlpha">0.08</item>
         <item name="android:spotShadowAlpha">0.08</item>
@@ -216,8 +206,6 @@
         <item name="colorOnSurface">#F7F9FC</item>
         <item name="android:textColorPrimary">#F7F9FC</item>
         <item name="android:textColorSecondary">#A4ABB7</item>
-        <item name="materialButtonStyle">@style/Widget.Live.Button</item>
-        <item name="textInputStyle">@style/Widget.Live.Input</item>
 </style>
 
     <style name="AppThemeLight" parent="AppThemeLightBase">

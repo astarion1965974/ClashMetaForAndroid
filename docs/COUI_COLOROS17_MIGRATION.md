@@ -199,3 +199,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 
 - Central `Context.colorOsNavigateBack()` uses AndroidX `OnBackPressedDispatcherOwner` from the hosting Activity so COUI back buttons follow the same dirty/save interceptors as system back. The first two callers (mobile network, settings) now use it; remaining COUI back callbacks are in the final consistency audit.
 - The CI now prints failed JUnit XML assertions to distinguish navigation and semantic-node issues from code compilation errors.
+
+## Remove Material-based screen themes and widget styles
+
+- Window roots for main/light/dark/full-screen/bottom-sheet dialogs now inherit from AndroidX AppCompat themes, while all visible screen controls remain in Compose/COUI. Removes the previous `Theme.MaterialComponents.*` parent for app windows.
+- The unused Material button and text-input style attributes and old `TextAppearance.Live.*` / `Widget.Live.*` XML definitions were removed. Historical ColorOS color tokens remain until callers are audited.
+- The Material library dependency is temporarily retained for legacy named bottom-sheet resources and color attributes, to avoid eliminating transitive resources without a successful build audit.
