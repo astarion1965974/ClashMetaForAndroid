@@ -142,9 +142,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
     /** Render COUI profile rows within the main tab's single Scaffold. */
     @androidx.compose.runtime.Composable
-    internal fun PrimaryTabContent(padding: PaddingValues) {
+    internal fun PrimaryTabContent(padding: PaddingValues, contentPadding: PaddingValues = padding) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
+            modifier = Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
             items(visibleProfiles, key = { it.uuid.toString() }) { profile ->

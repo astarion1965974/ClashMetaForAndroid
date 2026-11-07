@@ -30,3 +30,13 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Verify exact COUI alpha7 TopAppBar API before implementing a scroll-linked large-title collapse across every page; don't substitute similarly named APIs from a different COUI library.
 - Verify ColorOS 17 visual fidelity of header gradient, glass buttons, settings navigation, dialogs and dark theme **on the user's device**.
 - This changes source only; no signed release is published by this branch. Run CI / device build and review test output before merging into main.
+
+## Second batch: COUI large titles and scroll linkage
+
+- Main home, configuration and settings tabs now use the real `LargeTopAppBar` from **ItosEO/COUI-Kit alpha7** with `CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()`.
+- Separate remembered behaviors preserve large-title scroll progress per tab; the shared Scaffold receives the selected `nestedScrollConnection`.
+- Home, settings and the COUI profile `LazyColumn` now apply `state.contentPadding(padding, density)`, preserving correct card position during bar collapse. Each page still consumes original system insets.
+- Standalone home/settings hosts also use native COUI large titles.
+- `ColorOsLargeTopBar` adjusts visual title typography from 32sp expanded toward 24dp collapsed, instead of inheriting COUI Kit's oversized default 40sp HomeTitle.
+- This does **not** complete secondary/tertiary XML page migration, which is intentionally tracked separately.
+
