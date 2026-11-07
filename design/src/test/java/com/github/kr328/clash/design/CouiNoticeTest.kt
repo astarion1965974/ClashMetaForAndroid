@@ -22,10 +22,12 @@ import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /** Validate the overlay host separately from its composable click target. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "zh-rCN-w412dp-h915dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CouiNoticeTest {
     @get:Rule val compose = createEmptyComposeRule()
 
