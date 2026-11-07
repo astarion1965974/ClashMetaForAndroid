@@ -113,7 +113,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                     async { domain to runCatching { withClash { queryDnsDiagnostic(domain) } }.getOrDefault("{}") }
                 }.awaitAll()
             }
-            setDnsResults(results)
+            if (clashRunning && !pausedAtHome) setDnsResults(results)
         } finally {
             updateDnsLoading(false)
         }

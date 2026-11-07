@@ -8,6 +8,8 @@ import com.github.kr328.clash.design.databinding.DesignFilesBinding
 import com.github.kr328.clash.design.databinding.DialogFilesMenuBinding
 import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
 import com.github.kr328.clash.design.dialog.requestModelTextInput
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiMenu
 import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.design.util.*
 import kotlinx.coroutines.Dispatchers
@@ -109,17 +111,14 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
     }
 
     private fun requestMore(file: File) {
-        val dialog = AppBottomSheetDialog(context)
-
-        val binding = DialogFilesMenuBinding.inflate(context.layoutInflater)
-
-        binding.master = this
-        binding.self = dialog
-        binding.file = file
-        binding.currentInBase = this.binding.currentInBaseDir
-        binding.configurationEditable = this.binding.configurationEditable
-
-        dialog.setContentView(binding.root)
-        dialog.show()
+        val options = mutableListOf<CouiMenuOption>()
+        fun add(res: Int, request: Request) { options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) }) }
+        if (!file.isDirectory && (!binding.currentInBaseDir || binding.configurationEditable)) add(R.string.import_, Request.ImportFile(file))
+        if (!file.isDirectory && file.size > 0) add(R.string.export, Request.ExportFile(file))
+        if (!binding.currentInBaseDir) {
+            add(R.string.rename, Request.RenameFile(file))
+            add(R.string.delete, Request.DeleteFile(file))
+        }
+        context.showCouiMenu(options)
     }
 }

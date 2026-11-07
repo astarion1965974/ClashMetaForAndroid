@@ -1,11 +1,11 @@
 package com.github.kr328.clash.design
 
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.ComposeView
 import com.github.kr328.clash.design.databinding.DesignAboutBinding
 import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.dialog.showCouiAlert
 
 class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request>(context) {
     enum class Request {
@@ -14,10 +14,7 @@ class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request
     }
 
     fun showAbout(versionName: String) {
-        val binding = DesignAboutBinding.inflate(context.layoutInflater).apply {
-            this.versionName = versionName
-        }
-        AlertDialog.Builder(context).setView(binding.root).show()
+        context.showCouiAlert(context.getText(R.string.application_name), versionName)
     }
 
     override val root: View = ComposeView(context).apply {

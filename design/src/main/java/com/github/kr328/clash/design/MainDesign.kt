@@ -93,6 +93,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     }
 
     fun setHomePaused(paused: Boolean) {
+        if (pausedAtHome != paused) dns = emptyList()
         pausedAtHome = paused
     }
 

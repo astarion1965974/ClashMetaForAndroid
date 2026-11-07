@@ -43,6 +43,7 @@ class AccessControlDesign(
     val dirty get() = selected != original || mode != originalMode
     private var loaded = false
     private var saving by mutableStateOf(false)
+    private var isRunning = running
     private var keyword by mutableStateOf("")
     private var selectedOnly by mutableStateOf(false)
     private var showSystem by mutableStateOf(uiStore.accessControlSystemApp)
@@ -55,6 +56,7 @@ class AccessControlDesign(
     fun rebindAll() = refresh()
     fun setSaving(value: Boolean) { saving = value; adapter.saving = value; refresh() }
     fun updateRunning(running: Boolean) {
+        isRunning = running
         binding.saveView.setText(if (running) R.string.route_save_reconnect else R.string.route_save)
     }
     fun select(action: AppAccessPolicy.Selection) {
@@ -89,7 +91,11 @@ class AccessControlDesign(
         })
         binding.saveView.isEnabled = dirty && !saving && loaded
         binding.mainList.isEnabled = !saving
-        if (saving) binding.saveView.setText(R.string.route_saving)
+        binding.saveView.setText(when {
+            saving -> R.string.route_saving
+            isRunning -> R.string.route_save_reconnect
+            else -> R.string.route_save
+        })
     }
 
     init {

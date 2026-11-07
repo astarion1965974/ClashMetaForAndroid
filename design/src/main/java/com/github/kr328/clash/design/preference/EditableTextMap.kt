@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.adapter.EditableTextMapAdapter
+import com.github.kr328.clash.design.dialog.requestModelTextInput
 import com.github.kr328.clash.design.databinding.DialogEditableMapTextFieldBinding
 import com.github.kr328.clash.design.util.layoutInflater
 import com.github.kr328.clash.design.util.root
@@ -120,30 +121,10 @@ private suspend fun requestModelInputEntry(
     context: Context,
     title: CharSequence
 ): Pair<String, String>? {
-    return suspendCancellableCoroutine { ctx ->
-        val binding = DialogEditableMapTextFieldBinding
-            .inflate(context.layoutInflater, context.root, false)
-
-        val dialog = MaterialAlertDialogBuilder(context)
-            .setTitle(title)
-            .setNegativeButton(R.string.cancel) { _, _ -> }
-            .setPositiveButton(R.string.ok) { _, _ ->
-                val k = binding.keyView.text?.toString()?.trim() ?: ""
-                val v = binding.valueView.text?.toString()?.trim() ?: ""
-
-                if (k.isNotEmpty() && v.isNotEmpty()) {
-                    ctx.resume(k to v)
-                }
-            }
-            .setView(binding.root)
-            .create()
-
-        dialog.setOnCancelListener {
-            if (!ctx.isCompleted) {
-                ctx.resume(null)
-            }
-        }
-
-        dialog.show()
-    }
+    val key = context.requestModelTextInput(initial = "", title = title,
+        hint = context.getText(R.string.key)).trim()
+    if (key.isEmpty()) return null
+    val value = context.requestModelTextInput(initial = "", title = title,
+        hint = context.getText(R.string.value)).trim()
+    return if (value.isEmpty()) null else key to value
 }

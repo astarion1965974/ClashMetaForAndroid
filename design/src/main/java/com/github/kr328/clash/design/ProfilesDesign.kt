@@ -13,6 +13,20 @@ import com.github.kr328.clash.design.databinding.DesignProfilesBinding
 import com.github.kr328.clash.design.databinding.DialogProfilesMenuBinding
 import com.github.kr328.clash.design.databinding.DialogProfileQrCodeBinding
 import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiMenu
+import com.github.kr328.clash.design.dialog.showCouiContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog as CouiDialog
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.*
 import com.github.kr328.clash.service.model.Profile
@@ -90,17 +104,14 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     }
 
     private fun showMenu(profile: Profile) {
-        val dialog = AppBottomSheetDialog(context)
-
-        val binding = DialogProfilesMenuBinding
-            .inflate(context.layoutInflater, dialog.window?.decorView as ViewGroup?, false)
-
-        binding.master = this
-        binding.self = dialog
-        binding.profile = profile
-
-        dialog.setContentView(binding.root)
-        dialog.show()
+        val options = mutableListOf<CouiMenuOption>()
+        fun add(res: Int, request: Request) { options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) }) }
+        if (profile.imported && profile.type != Profile.Type.File) add(R.string.update, Request.Update(profile))
+        add(R.string.edit, Request.Edit(profile))
+        if (profile.imported) add(R.string.duplicate, Request.Duplicate(profile))
+        if (profile.imported && profile.type == Profile.Type.Url && profile.source.isNotEmpty()) add(R.string.share_qr_code, Request.ShareQrCode(profile))
+        add(R.string.delete, Request.Delete(profile))
+        context.showCouiMenu(options)
     }
 
     fun requestUpdateAll() {
@@ -172,20 +183,20 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
 
         withContext(Dispatchers.Main) {
-            val binding = DialogProfileQrCodeBinding.inflate(context.layoutInflater)
-            binding.qrCode.setImageBitmap(bitmap)
-
             suspendCancellableCoroutine<Unit> { continuation ->
-                val dialog = MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.share_qr_code)
-                    .setView(binding.root)
-                    .setPositiveButton(R.string.close) { _, _ -> }
-                    .setOnDismissListener {
+                val close = context.showCouiContent { dismiss ->
+                    val finish = {
+                        dismiss()
                         if (continuation.isActive) continuation.resume(Unit)
                     }
-                    .show()
-
-                continuation.invokeOnCancellation { dialog.dismiss() }
+                    CouiDialog(onDismissRequest = finish, title = context.getString(R.string.share_qr_code),
+                        confirmAction = CouiDialogAction(context.getString(R.string.close), finish)) {
+                        Image(bitmap.asImageBitmap(), contentDescription = context.getString(R.string.share_qr_code),
+                            modifier = Modifier.fillMaxWidth().padding(24.dp).height(240.dp).background(androidx.compose.ui.graphics.Color.White),
+                            contentScale = ContentScale.Fit)
+                    }
+                }
+                continuation.invokeOnCancellation { close() }
             }
         }
     }
