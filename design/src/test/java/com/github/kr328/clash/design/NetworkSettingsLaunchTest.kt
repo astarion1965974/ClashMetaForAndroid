@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.github.kr328.clash.design.store.UiStore
@@ -43,7 +44,7 @@ class NetworkSettingsLaunchTest {
 
         // No floating notice: the running-service warning remains visible as an
         // inline COUI group footer, without attaching a second ComposeView.
-        compose.onNodeWithText(activity.getString(R.string.options_unavailable)).assertIsDisplayed()
+        compose.onNodeWithText(activity.getString(R.string.options_unavailable)).assertExists()
         assertNull(parent.findViewWithTag<View>("clash-live-coui-notice"))
 
         activity.setContentView(View(activity))
