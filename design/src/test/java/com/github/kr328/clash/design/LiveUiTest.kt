@@ -242,14 +242,12 @@ class LiveUiTest {
             AppInfo("org.example.music", "音乐", android.graphics.drawable.ColorDrawable(0xffbd5b6e.toInt()), 0, 0)
         ))
         render(design.root, "apps-dark")
-        assertFalse(design.root.findViewById<View>(R.id.save_view).isEnabled)
+        assertFalse(design.dirty)
         assertTrue(selected.contains("org.example.chat"))
-        val list = design.root.findViewById<RecyclerView>(R.id.main_list)
-        val second = list.findViewHolderForAdapterPosition(1)!!
-        second.itemView.performClick()
+        compose.onNodeWithText("浏览器").performClick()
         assertTrue(selected.contains("org.example.browser"))
-        assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
-        assertEquals(ctx.getString(R.string.route_save_reconnect), design.root.findViewById<com.github.kr328.clash.design.view.CouiButtonView>(R.id.save_view).text)
+        assertTrue(design.dirty)
+        compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
     }
 
     @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {
@@ -258,10 +256,8 @@ class LiveUiTest {
             ctx.title = ctx.getString(R.string.live_rules)
             val design = ManagedRoutingDesign(ctx, ManagedRoutingSettings(), listOf("自动选择", "香港节点"), false)
             render(design.root, if (dark) "rules-dark" else "rules-light")
-            val save = design.root.findViewById<View>(R.id.save_view)
-            assertFalse(save.isEnabled)
-            assertTrue(save.bottom <= design.root.height)
-            assertTrue(save.height >= 48)
+            assertFalse(design.dirty)
+            compose.onNodeWithText(ctx.getString(R.string.route_save)).assertIsDisplayed()
         }
     }
 
@@ -270,8 +266,8 @@ class LiveUiTest {
         val ctx = context(false)
         val design = AccessControlDesign(ctx, UiStore(ctx), mutableSetOf(), AccessControlMode.DenySelected, false)
         render(design.root, "apps-landscape", 800, 360)
-        assertTrue(design.root.findViewById<View>(R.id.main_list).height >= 100)
-        assertTrue(design.root.findViewById<View>(R.id.save_view).bottom <= 360)
+        compose.onNodeWithText(ctx.getString(R.string.route_save)).assertIsDisplayed()
+        compose.onNodeWithText(ctx.getString(R.string.app_mode_bypass)).assertIsDisplayed()
     }
 
     @Test fun primaryTabsKeepOneCOUINavigationAndSwitchWithinHost() {

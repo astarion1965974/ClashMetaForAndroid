@@ -106,3 +106,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Converted `ManagedRoutingDesign` from legacy `DesignManagedRoutingBinding`/View-based `preferenceScreen` to the shared native `ColorOsFormPage`, preserving fixed Save, dirty-state back handling, running/update lockout and provider timestamps.
 - All seven routing category targets use COUI `Group`/`Item`, retaining the existing target-menu contract and `DIRECT`/`REJECT`/default semantics. Exceptions edit in the existing COUI validation dialog, and reset uses COUI confirm.
 - Existing rule-provider refresh/update and save requests still flow through `ManagedRoutingActivity`; backend logic unchanged.
+
+## Native app routing access control
+
+- `AccessControlDesign` now renders COUI `ColorOsLazyFormPage` with the existing Compose `AccessControls` filters and a lazy list of COUI checkbox rows. Removed XML `DesignAccessControlBinding` and legacy RecyclerView adapter from the screen.
+- Bulk operations, installed-app filtering, sorting, import/export, VPN selection modes, live selected count and save/reconnect requests continue using the original `AccessControlActivity` contract.
+- Removed the unused View constructor parameter from `AccessControlMenu`; its COUI dialog options and request channel are untouched.
+- Tests for application routing and the managed-routing save footer were migrated from XML View-ID assumptions to Compose semantics.

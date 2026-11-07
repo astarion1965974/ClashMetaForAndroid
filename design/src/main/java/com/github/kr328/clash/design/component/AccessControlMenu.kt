@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design.component
 
 import android.content.Context
-import android.view.View
 import com.github.kr328.clash.design.AccessControlDesign.Request
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.dialog.CouiMenuOption
@@ -12,7 +11,6 @@ import kotlinx.coroutines.channels.Channel
 
 class AccessControlMenu(
     private val context: Context,
-    @Suppress("UNUSED_PARAMETER") menuView: View,
     private val uiStore: UiStore,
     private val requests: Channel<Request>,
 ) {

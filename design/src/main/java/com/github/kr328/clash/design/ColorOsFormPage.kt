@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,6 +97,67 @@ internal fun ColorOsFormPage(
                     .padding(scrollPadding).consumeWindowInsets(padding)
                     .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.Top,
+                content = content,
+            )
+        }
+    }
+}
+
+/** Large mutable collections share the same COUI form frame, but virtualize rows. */
+@Composable
+internal fun ColorOsLazyFormPage(
+    title: String,
+    saveLabel: String,
+    canSave: Boolean,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+    content: LazyListScope.() -> Unit,
+) {
+    val context = LocalContext.current
+    val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+    val density = LocalDensity.current
+    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val state = rememberLazyListState()
+    CouiTheme(darkTheme = dark) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
+            topBar = {
+                ColorOsLargeTopBar(title = title, scrollBehavior = behavior, navigationIcon = {
+                    ToolbarIcon(
+                        CouiIcons.Back,
+                        stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                        onBack,
+                    )
+                })
+            },
+            bottomBar = {
+                val colors = CouiTheme.colorScheme
+                Box(
+                    Modifier.fillMaxWidth().navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Item(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                            .clip(CouiPageDefaults.shape)
+                            .background(colors.accent.copy(alpha = if (canSave) 1f else .38f)),
+                        enabled = canSave, onClick = onSave,
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    ) {
+                        Text(
+                            text = saveLabel, kind = CouiTextKind.PreferenceTitle,
+                            color = colors.onAccent, modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            },
+        ) { padding ->
+            val scrollingPadding = behavior.state.contentPadding(padding, density)
+            LazyColumn(
+                state = state,
+                modifier = Modifier.fillMaxSize().padding(scrollingPadding).consumeWindowInsets(padding),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 content = content,
             )
         }
