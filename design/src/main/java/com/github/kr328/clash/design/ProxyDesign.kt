@@ -243,7 +243,7 @@ internal fun ProxyNodeCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 6.dp, vertical = 6.dp)
-            .height(112.dp)
+            .height(96.dp)
             .clip(shape)
             .background(if (selected) colors.accent.copy(alpha = 0.12f) else colors.card)
             .border(
