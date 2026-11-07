@@ -81,6 +81,20 @@ COUI text or buttons.
   is still pending; this is a release of tested code, not a claim of device
   visual certification.
 
+## Network settings startup crash guard (2026-11-07)
+
+- When VPN is running, opening Network settings no longer creates an indefinite
+  COUI notice overlay in the design constructor before the Activity installs its
+  content. The "settings unavailable while running" message is displayed as
+  native COUI group footer text instead.
+- The network settings rows, enabled/disabled rules and navigation actions are
+  unchanged.
+- Regression coverage renders the network screen while the VPN state is
+  active, confirms no premature overlay host is added, and verifies the inline
+  warning exists. PR #10 passed the design, service and app JVM test workflow.
+- Recheck on ColorOS 17 hardware, and collect the Android FATAL EXCEPTION
+  log if the crash remains; the device-specific crash stack is not yet known.
+
 ## Manual acceptance before a new stable release
 
 On real ColorOS/Android 17 hardware (light and dark themes):
