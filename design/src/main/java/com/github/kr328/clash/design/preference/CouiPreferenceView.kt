@@ -1,15 +1,12 @@
 package com.github.kr328.clash.design.preference
 
-import android.content.Context
 import android.graphics.drawable.Drawable
-import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
@@ -19,50 +16,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.appcompat.R as AppCompatR
-import com.github.kr328.clash.design.util.resolveThemedBoolean
+import android.graphics.Bitmap
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
-/** Hosts a COUI row while retaining the View enabled state used by existing screens. */
-internal class CouiPreferenceView(context: Context) : FrameLayout(context) {
-    var contentEnabled by mutableStateOf(true)
-        private set
-
-    private val composeView = ComposeView(context)
-
-    init {
-        addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-    }
-
-    override fun setEnabled(enabled: Boolean) {
-        super.setEnabled(enabled)
-        contentEnabled = enabled
-    }
-
-    fun setContent(content: @Composable () -> Unit) {
-        composeView.setContent {
-            val dark = !context.resolveThemedBoolean(AppCompatR.attr.isLightTheme)
-            CouiTheme(darkTheme = dark, content = content)
-        }
-    }
-}
-
+/** Reusable native COUI preference row; no legacy ComposeView wrapper. */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 internal fun CouiPreferenceRow(
@@ -119,8 +94,11 @@ internal fun CouiRowAction(
     description: String,
     onClick: () -> Unit,
 ) {
+    val source = remember { MutableInteractionSource() }
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick),
+        modifier = Modifier.size(48.dp).clip(CircleShape)
+            .couiButtonFeedback(CouiTheme.isDark, source, enabled = true, list = false)
+            .clickable(source, null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Image(
@@ -132,16 +110,16 @@ internal fun CouiRowAction(
     }
 }
 
+/** Render Android icon drawables as Compose bitmaps; never mount a legacy ImageView. */
 @Composable
 private fun PreferenceIcon(drawable: Drawable, size: Dp) {
-    AndroidView(
-        modifier = Modifier.size(size),
-        factory = { context ->
-            ImageView(context).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-        },
-        update = { it.setImageDrawable(drawable) },
-    )
+    val icon = remember(drawable) {
+        val width = drawable.intrinsicWidth.takeIf { it > 0 }?.coerceAtMost(144) ?: 96
+        val height = drawable.intrinsicHeight.takeIf { it > 0 }?.coerceAtMost(144) ?: 96
+        drawable.toBitmap(width = width, height = height, config = Bitmap.Config.ARGB_8888)
+            .asImageBitmap()
+    }
+    Image(bitmap = icon, contentDescription = null,
+        modifier = Modifier.size(size).testTag("coui-preference-icon"),
+        contentScale = ContentScale.Fit)
 }

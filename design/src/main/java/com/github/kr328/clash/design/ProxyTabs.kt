@@ -1,6 +1,5 @@
 package com.github.kr328.clash.design
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,12 +31,12 @@ import com.itos.coui.theme.CouiTheme
 @Composable
 internal fun ProxyTabs(titles: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val backdrop = rememberCouiBackdrop()
-    val renderers = if (Build.VERSION.SDK_INT >= 34) remember(titles) {
+    val renderers = remember(titles) {
         runCatching { titles.map { CouiFloatingRenderer.standalone() } }.getOrNull()
-    } else null
+    }
     Box(Modifier.fillMaxWidth()) {
         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(CouiTheme.colorScheme.background))
-        if (Build.VERSION.SDK_INT >= 34 && renderers != null && titles.isNotEmpty()) {
+        if (renderers != null && titles.isNotEmpty()) {
             ChipTabRow(items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },
                 selectedKey = selected.coerceIn(titles.indices), onSelectedKeyChange = { onSelect(it as Int) },
                 backdrop = backdrop, renderers = renderers)

@@ -2,47 +2,48 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
-import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
-import com.github.kr328.clash.design.preference.category
-import com.github.kr328.clash.design.preference.clickable
-import com.github.kr328.clash.design.preference.preferenceScreen
-import com.github.kr328.clash.design.preference.tips
-import com.github.kr328.clash.design.util.applyFrom
-import com.github.kr328.clash.design.util.bindAppBarElevation
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.root
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.itos.coui.layout.Group
+import com.itos.coui.layout.Item
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
 
+/** COUI error and recovery page; retaining the original request channel. */
 class ApkBrokenDesign(context: Context) : Design<ApkBrokenDesign.Request>(context) {
     data class Request(val url: String)
 
-    private val binding = DesignSettingsCommonBinding
-        .inflate(context.layoutInflater, context.root, false)
-
-    override val root: View
-        get() = binding.root
-
-    init {
-        binding.surface = surface
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.scrollRoot.bindAppBarElevation(binding.activityBarLayout)
-
-        val screen = preferenceScreen(context) {
-            tips(R.string.application_broken_tips)
-
-            category(R.string.reinstall)
-
-            clickable(
-                title = R.string.github_releases,
-                summary = R.string.meta_github_url
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            ColorOsSubPage(
+                title = (context as? AppCompatActivity)?.title?.toString()
+                    ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.application_name),
+                onBack = { context.colorOsNavigateBack() },
             ) {
-                clicked {
-                    requests.trySend(Request(context.getString(R.string.meta_github_url)))
+                Text(
+                    text = stringResource(R.string.application_broken_tips),
+                    kind = CouiTextKind.PreferenceSummary,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                )
+                Group(title = stringResource(R.string.reinstall)) {
+                    Item(
+                        onClick = {
+                            requests.trySend(Request(context.getString(R.string.meta_github_url)))
+                        },
+                        summary = {
+                            Text(text = stringResource(R.string.meta_github_url),
+                                kind = CouiTextKind.PreferenceSummary)
+                        },
+                    ) {
+                        Text(text = stringResource(R.string.github_releases),
+                            kind = CouiTextKind.PreferenceTitle)
+                    }
                 }
             }
         }
-
-        binding.content.addView(screen.root)
     }
 }

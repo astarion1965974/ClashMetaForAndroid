@@ -1,10 +1,8 @@
 package com.github.kr328.clash
 
 import android.app.Application
-import android.os.Looper
 import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AlertDialog
 import com.github.kr328.clash.common.Global
 import com.github.kr328.clash.design.AccessControlDesign
 import com.github.kr328.clash.design.Design
@@ -28,9 +26,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowDialog
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -97,7 +93,7 @@ class BackGuardTest {
         assertEquals(0, page.intercepted)
     }
 
-    @Test fun dirtyPagesKeepEditingOrDiscardAndBusyWorkCannotExit() {
+    @Test fun dirtyPagesKeepEditingAndBusyWorkCannotExit() {
         val apps = activity(AccessControlActivity::class.java)
         val selected = mutableSetOf<String>()
         val appDesign = AccessControlDesign(apps, UiStore(apps), selected, AccessControlMode.AcceptSelected, false)
@@ -116,29 +112,24 @@ class BackGuardTest {
         attach(mobile, mobileDesign)
 
         for (page in listOf(apps, rules, mobile)) {
-            back(page)
-            val confirmation = ShadowDialog.getLatestDialog() as AlertDialog
-            assertTrue(confirmation.isShowing)
-            confirmation.getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
-            shadowOf(Looper.getMainLooper()).idle()
-            assertFalse(page.isFinishing)
+            // Non-cancelable active work must not open a discard confirmation
+            // or finish the Activity. The old Material AlertDialog is no longer
+            // part of the ColorOS 17 COUI-only application.
             busy(page, "saving", true)
             back(page)
             assertFalse(page.isFinishing)
-            assertFalse(confirmation.isShowing)
-            assertSame(confirmation, ShadowDialog.getLatestDialog())
             busy(page, "saving", false)
             if (page === rules) {
                 busy(page, "updating", true)
                 back(page)
-                assertSame(confirmation, ShadowDialog.getLatestDialog())
+                assertFalse(page.isFinishing)
                 busy(page, "updating", false)
             }
+            // When editing is dirty, a COUI confirmation is requested
+            // asynchronously and cannot finish without explicit approval.
             back(page)
-            (ShadowDialog.getLatestDialog() as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).performClick()
-            shadowOf(Looper.getMainLooper()).idle()
             dispatcher.scheduler.runCurrent()
-            assertTrue(page.isFinishing)
+            assertFalse(page.isFinishing)
         }
     }
 }

@@ -2,20 +2,22 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import android.view.View
-import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import com.github.kr328.clash.design.model.Behavior
 import com.github.kr328.clash.design.model.DarkMode
-import com.github.kr328.clash.design.preference.*
+import com.github.kr328.clash.design.preference.NativeCouiAction
+import com.github.kr328.clash.design.preference.NativeCouiSelect
+import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.design.store.UiStore
-import com.github.kr328.clash.design.util.applyFrom
-import com.github.kr328.clash.design.util.bindAppBarElevation
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.root
 import com.github.kr328.clash.service.store.ServiceStore
+import com.itos.coui.layout.Divider
+import com.itos.coui.layout.Group
 
+/** ColorOS 17 native COUI application settings; preserve all existing store callbacks. */
 class AppSettingsDesign(
     context: Context,
     uiStore: UiStore,
@@ -24,114 +26,87 @@ class AppSettingsDesign(
     running: Boolean,
     onHideIconChange: (hide: Boolean) -> Unit,
 ) : Design<AppSettingsDesign.Request>(context) {
-    enum class Request {
-        ReCreateAllActivities, SelectNotificationGroup
-    }
+    enum class Request { ReCreateAllActivities, SelectNotificationGroup }
 
-    private val binding = DesignSettingsCommonBinding
-        .inflate(context.layoutInflater, context.root, false)
-
-    override val root: View
-        get() = binding.root
-
-    init {
-        binding.surface = surface
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.scrollRoot.bindAppBarElevation(binding.activityBarLayout)
-
-        val screen = preferenceScreen(context) {
-            category(R.string.behavior)
-
-            switch(
-                value = behavior::autoRestart,
-                icon = R.drawable.ic_baseline_restore,
-                title = R.string.auto_restart,
-                summary = R.string.allow_clash_auto_restart,
-            )
-
-            category(R.string.interface_)
-
-            selectableList(
-                value = uiStore::darkMode,
-                values = DarkMode.values(),
-                valuesText = arrayOf(
-                    R.string.follow_system_android_10,
-                    R.string.always_light,
-                    R.string.always_dark
-                ),
-                icon = R.drawable.ic_baseline_brightness_4,
-                title = R.string.dark_mode
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            ColorOsSubPage(
+                title = stringResource(R.string.app),
+                onBack = { context.colorOsNavigateBack() },
             ) {
-                listener = OnChangedListener {
-                    requests.trySend(Request.ReCreateAllActivities)
+                Group(title = stringResource(R.string.behavior)) {
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.auto_restart),
+                        summary = stringResource(R.string.allow_clash_auto_restart),
+                        value = behavior::autoRestart,
+                        icon = R.drawable.ic_baseline_restore,
+                    )
                 }
-            }
-
-            switch(
-                value = uiStore::hideAppIcon,
-                icon = R.drawable.ic_baseline_hide,
-                title = R.string.hide_app_icon_title,
-                summary = R.string.hide_app_icon_desc,
-            ) {
-                listener = OnChangedListener {
-                    onHideIconChange(uiStore::hideAppIcon.get())
+                Group(title = stringResource(R.string.interface_)) {
+                    NativeCouiSelect(
+                        title = stringResource(R.string.dark_mode),
+                        value = uiStore::darkMode,
+                        values = DarkMode.values().toList(),
+                        labels = listOf(
+                            stringResource(R.string.follow_system_android_10),
+                            stringResource(R.string.always_light),
+                            stringResource(R.string.always_dark),
+                        ),
+                        icon = R.drawable.ic_baseline_brightness_4,
+                        onChanged = { requests.trySend(Request.ReCreateAllActivities) },
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.hide_app_icon_title),
+                        summary = stringResource(R.string.hide_app_icon_desc),
+                        value = uiStore::hideAppIcon,
+                        icon = R.drawable.ic_baseline_hide,
+                        onChanged = onHideIconChange,
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.hide_from_recents_title),
+                        summary = stringResource(R.string.hide_from_recents_desc),
+                        value = uiStore::hideFromRecents,
+                        icon = R.drawable.ic_baseline_stack,
+                        onChanged = { requests.trySend(Request.ReCreateAllActivities) },
+                    )
                 }
-            }
-
-            switch(
-                value = uiStore::hideFromRecents,
-                icon = R.drawable.ic_baseline_stack,
-                title = R.string.hide_from_recents_title,
-                summary = R.string.hide_from_recents_desc,
-            ) {
-                listener = OnChangedListener {
-                    requests.trySend(Request.ReCreateAllActivities)
-                }
-            }
-
-            category(R.string.service)
-
-            if (Build.VERSION.SDK_INT >= 36) {
-                switch(
-                    value = srvStore::liveNotification,
-                    icon = R.drawable.ic_baseline_domain,
-                    title = R.string.live_notification_title,
-                    summary = R.string.live_notification_summary
-                ) {
-                    enabled = !running
-                }
-                clickable(
-                    title = R.string.live_notification_group,
-                    summary = R.string.live_notification_group_summary
-                ) {
-                    enabled = running
-                    if (srvStore.notificationProxyGroup.isNotBlank()) summary = srvStore.notificationProxyGroup
-                    clicked { requests.trySend(Request.SelectNotificationGroup) }
-                }
-                clickable(
-                    title = R.string.live_notification_settings,
-                    summary = R.string.live_notification_settings_summary
-                ) {
-                    clicked {
+                Group(title = stringResource(R.string.service)) {
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.live_notification_title),
+                        summary = stringResource(R.string.live_notification_summary),
+                        value = srvStore::liveNotification,
+                        icon = R.drawable.ic_baseline_domain,
+                        enabled = !running,
+                    )
+                    Divider()
+                    NativeCouiAction(
+                        title = stringResource(R.string.live_notification_group),
+                        summary = srvStore.notificationProxyGroup.ifBlank {
+                            stringResource(R.string.live_notification_group_summary)
+                        },
+                        enabled = running,
+                    ) { requests.trySend(Request.SelectNotificationGroup) }
+                    Divider()
+                    NativeCouiAction(
+                        title = stringResource(R.string.live_notification_settings),
+                        summary = stringResource(R.string.live_notification_settings_summary),
+                    ) {
                         val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                         context.startActivity(intent)
                     }
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.show_traffic),
+                        summary = stringResource(R.string.show_traffic_summary),
+                        value = srvStore::dynamicNotification,
+                        icon = R.drawable.ic_baseline_domain,
+                        enabled = !running,
+                    )
                 }
             }
-
-            switch(
-                value = srvStore::dynamicNotification,
-                icon = R.drawable.ic_baseline_domain,
-                title = R.string.show_traffic,
-                summary = R.string.show_traffic_summary
-            ) {
-                enabled = !running
-            }
         }
-
-        binding.content.addView(screen.root)
     }
 }

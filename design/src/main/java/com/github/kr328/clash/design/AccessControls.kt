@@ -60,8 +60,7 @@ internal fun AccessControls(
             // Keep the native COUI glass search capsule on real Android devices.
             // Robolectric cannot create COUI-Kit's native MeshSpecification shader.
             // Only the headless test environment uses the basic search fallback.
-            if (Build.VERSION.SDK_INT >= 34 &&
-                !Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
+            if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
                 SearchBar(
                     state = searchState,
                     query = keyword,
@@ -88,8 +87,7 @@ internal fun AccessControls(
 
 
 /**
- * Accessible, non-shader fallback exclusively for API 31–33 and Robolectric.
- * Native devices on API 34+ use COUI-Kit's glass SearchBar above.
+ * Headless Robolectric test fallback only; ColorOS 17 uses native COUI glass search.
  */
 @Composable
 private fun StableSearchField(keyword: String, enabled: Boolean, onKeyword: (String) -> Unit) {

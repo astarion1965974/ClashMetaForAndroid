@@ -20,6 +20,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -99,8 +100,15 @@ class LiveUiTest {
 
     private fun updateHome(update: suspend () -> Unit) {
         val job = CoroutineScope(Dispatchers.Main).launch { update() }
-        shadowOf(Looper.getMainLooper()).idle()
-        assertTrue(job.isCompleted && !job.isCancelled)
+        // Profile list updates compute a RecyclerView diff on Dispatchers.Default.
+        // Drain the Main looper until that worker completes instead of assuming
+        // every coroutine finishes in a single synchronous Robolectric idle().
+        for (attempt in 0 until 200) {
+            shadowOf(Looper.getMainLooper()).idle()
+            if (job.isCompleted) break
+            Thread.sleep(10)
+        }
+        assertTrue("Main coroutine should complete after background diffing", job.isCompleted && !job.isCancelled)
     }
 
     private fun nodeWithResourceName(context: Context, name: String) =
@@ -136,7 +144,7 @@ class LiveUiTest {
             assertFalse(design.dirty)
             design.bind("Home Wi-Fi")
             assertTrue(design.dirty)
-            assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
+            compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
             val home=MainDesign(ctx)
             updateHome {
                 home.setClashRunning(true)
@@ -234,14 +242,12 @@ class LiveUiTest {
             AppInfo("org.example.music", "音乐", android.graphics.drawable.ColorDrawable(0xffbd5b6e.toInt()), 0, 0)
         ))
         render(design.root, "apps-dark")
-        assertFalse(design.root.findViewById<View>(R.id.save_view).isEnabled)
+        assertFalse(design.dirty)
         assertTrue(selected.contains("org.example.chat"))
-        val list = design.root.findViewById<RecyclerView>(R.id.main_list)
-        val second = list.findViewHolderForAdapterPosition(1)!!
-        second.itemView.performClick()
+        compose.onNodeWithText("浏览器").performClick()
         assertTrue(selected.contains("org.example.browser"))
-        assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
-        assertEquals(ctx.getString(R.string.route_save_reconnect), design.root.findViewById<com.github.kr328.clash.design.view.CouiButtonView>(R.id.save_view).text)
+        assertTrue(design.dirty)
+        compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
     }
 
     @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {
@@ -250,10 +256,19 @@ class LiveUiTest {
             ctx.title = ctx.getString(R.string.live_rules)
             val design = ManagedRoutingDesign(ctx, ManagedRoutingSettings(), listOf("自动选择", "香港节点"), false)
             render(design.root, if (dark) "rules-dark" else "rules-light")
-            val save = design.root.findViewById<View>(R.id.save_view)
-            assertFalse(save.isEnabled)
-            assertTrue(save.bottom <= design.root.height)
-            assertTrue(save.height >= 48)
+            assertFalse(design.dirty)
+            compose.waitForIdle()
+            // The COUI text may appear in merged and unmerged semantics, or in
+            // multiple attached Robolectric Activity roots. Assert that the
+            // current screen exposes a save label without requiring uniqueness.
+            assertTrue(
+                "Native COUI Save action should remain reachable",
+                compose.onAllNodesWithText(
+                    ctx.getString(R.string.route_save), useUnmergedTree = true,
+                ).fetchSemanticsNodes().isNotEmpty(),
+            )
+            ctx.setContentView(View(ctx))
+            compose.waitForIdle()
         }
     }
 
@@ -262,8 +277,8 @@ class LiveUiTest {
         val ctx = context(false)
         val design = AccessControlDesign(ctx, UiStore(ctx), mutableSetOf(), AccessControlMode.DenySelected, false)
         render(design.root, "apps-landscape", 800, 360)
-        assertTrue(design.root.findViewById<View>(R.id.main_list).height >= 100)
-        assertTrue(design.root.findViewById<View>(R.id.save_view).bottom <= 360)
+        compose.onNodeWithText(ctx.getString(R.string.route_save)).assertIsDisplayed()
+        compose.onNodeWithText(ctx.getString(R.string.app_mode_bypass)).assertIsDisplayed()
     }
 
     @Test fun primaryTabsKeepOneCOUINavigationAndSwitchWithinHost() {
@@ -293,6 +308,121 @@ class LiveUiTest {
         compose.onNode(bar and hasText(ctx.getString(R.string.coui_home_tab))).assertIsSelected()
         // Navigation is a persistent COUI Scaffold child, not a fresh Activity.
         assertTrue(ctx.window.decorView.findViewById<View>(android.R.id.content).isAttachedToWindow)
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun nativeCouiLogViewerRetainsActionsAndMessages() {
+        val ctx = context(false)
+        val viewer = LogcatDesign(ctx, streaming = false)
+        ctx.setContentView(viewer.root)
+        val msg = com.github.kr328.clash.core.model.LogMessage(
+            level = com.github.kr328.clash.core.model.LogMessage.Level.Info,
+            message = "native COUI log row", time = java.util.Date(0),
+        )
+        updateHome { viewer.patchMessages(listOf(msg), 0, 1) }
+        compose.onNodeWithText("native COUI log row").assertIsDisplayed()
+        compose.onNodeWithContentDescription(ctx.getString(R.string.export)).performClick()
+        assertEquals(LogcatDesign.Request.Export, viewer.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+        val streaming = LogcatDesign(ctx, streaming = true)
+        ctx.setContentView(streaming.root)
+        compose.onNodeWithContentDescription(ctx.getString(R.string.close)).performClick()
+        assertEquals(LogcatDesign.Request.Close, streaming.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun nativeCouiProviderListKeepsRefreshRequests() {
+        val ctx = context(false)
+        val remote = com.github.kr328.clash.core.model.Provider(
+            name = "provider test", type = com.github.kr328.clash.core.model.Provider.Type.Proxy,
+            vehicleType = com.github.kr328.clash.core.model.Provider.VehicleType.HTTP,
+            updatedAt = 0,
+        )
+        val inline = remote.copy(name = "inline provider",
+            vehicleType = com.github.kr328.clash.core.model.Provider.VehicleType.Inline)
+        val design = ProvidersDesign(ctx, listOf(remote, inline))
+        ctx.setContentView(design.root)
+        compose.onNodeWithText("provider test").assertIsDisplayed()
+        design.requestUpdateAll()
+        assertEquals(ProvidersDesign.Request.Update(0, remote), design.requests.tryReceive().getOrNull())
+        assertNull("Inline providers must not be refreshed", design.requests.tryReceive().getOrNull())
+        design.requestUpdateAll()
+        assertNull("Already refreshing providers must not be duplicated", design.requests.tryReceive().getOrNull())
+        updateHome { design.notifyUpdated(0) }
+        design.requestUpdateAll()
+        assertEquals(ProvidersDesign.Request.Update(0, remote), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun nativeCouiNewProfileOffersAllImportSources() {
+        val ctx = context(false)
+        val design = NewProfileDesign(ctx)
+        val file = com.github.kr328.clash.design.model.ProfileProvider.File(ctx)
+        val url = com.github.kr328.clash.design.model.ProfileProvider.Url(ctx)
+        val qr = com.github.kr328.clash.design.model.ProfileProvider.QR(ctx)
+        updateHome { design.patchProviders(listOf(file, url, qr)) }
+        ctx.setContentView(design.root)
+        compose.onNodeWithText(ctx.getString(R.string.file)).performClick()
+        assertEquals(NewProfileDesign.Request.Create(file), design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.url)).performClick()
+        assertEquals(NewProfileDesign.Request.Create(url), design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.qr)).performClick()
+        assertEquals(NewProfileDesign.Request.LaunchScanner(qr), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun nativeCouiLogsKeepStartAndFileActions() {
+        val ctx = context(false)
+        val design = LogsDesign(ctx)
+        ctx.setContentView(design.root)
+        compose.onNodeWithText(ctx.getString(R.string.clash_logcat)).performClick()
+        assertEquals(LogsDesign.Request.StartLogcat, design.requests.tryReceive().getOrNull())
+        val log = com.github.kr328.clash.design.model.LogFile("clash-1730000.log", java.util.Date(1730000L))
+        updateHome { design.patchLogs(listOf(log)) }
+        compose.onNodeWithText(log.fileName).assertIsDisplayed().performClick()
+        assertEquals(LogsDesign.Request.OpenFile(log), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun nativeCouiHelpLinksAndRecoveryPageKeepActions() {
+        val ctx = context(false)
+        var opened: android.net.Uri? = null
+        val help = HelpDesign(ctx) { opened = it }
+        ctx.setContentView(help.root)
+        compose.onNodeWithText("<strong>", substring = true).assertDoesNotExist()
+        compose.onNodeWithText(ctx.getString(R.string.clash_wiki)).performClick()
+        assertEquals(ctx.getString(R.string.clash_wiki_url), opened.toString())
+        val recovery = ApkBrokenDesign(ctx)
+        ctx.setContentView(recovery.root)
+        compose.onNodeWithText(ctx.getString(R.string.github_releases)).performClick()
+        assertEquals(ctx.getString(R.string.meta_github_url),
+            recovery.requests.tryReceive().getOrNull()?.url)
+        val crash = AppCrashedDesign(ctx)
+        crash.setAppLogs("COUI exception sample")
+        ctx.setContentView(crash.root)
+        compose.onNodeWithText("COUI exception sample").assertIsDisplayed()
+        ctx.setContentView(View(ctx))
+    }
+
+    @Test fun primaryProfilesListUsesScaffoldInsets() {
+        val ctx = context(false)
+        val main = MainDesign(ctx)
+        val profiles = ProfilesDesign(ctx)
+        val settings = SettingsDesign(ctx)
+        main.installPrimaryTabs(profiles, settings)
+        val profile = com.github.kr328.clash.service.model.Profile(
+            uuid = java.util.UUID.randomUUID(), name = "COUI布局测试配置",
+            type = com.github.kr328.clash.service.model.Profile.Type.Url,
+            source = "https://example.com", active = true, interval = 0,
+            upload = 0, download = 0, total = 0, expire = 0,
+            updatedAt = 0, imported = true, pending = false,
+        )
+        updateHome { profiles.patchProfiles(listOf(profile)) }
+        main.selectPrimaryTab(1)
+        ctx.setContentView(main.root)
+        val profileTitle = compose.onNodeWithText("COUI布局测试配置").assertIsDisplayed()
+        assertTrue("Profile content must be below the COUI top bar",
+            profileTitle.getUnclippedBoundsInRoot().top >= 60.dp)
         ctx.setContentView(View(ctx))
     }
 

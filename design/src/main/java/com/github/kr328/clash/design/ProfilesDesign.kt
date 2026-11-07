@@ -1,65 +1,61 @@
 package com.github.kr328.clash.design
 
-import android.app.Dialog
-import android.content.Context
 import android.app.Activity
-import android.graphics.Rect
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
+import com.github.kr328.clash.design.adapter.ProfileListItem
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiContent
+import com.github.kr328.clash.design.dialog.showCouiMenu
+import com.github.kr328.clash.design.ui.ToastDuration
+import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.github.kr328.clash.service.model.Profile
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.WriterException
+import com.google.zxing.qrcode.QRCodeWriter
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog as CouiDialog
 import com.itos.coui.icons.CouiIcons
 import com.itos.coui.layout.Scaffold
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
-import com.itos.coui.topappbar.TopAppBar
-import com.github.kr328.clash.design.util.resolveThemedBoolean
-import android.graphics.Bitmap
-import android.graphics.Color
-import android.view.View
-import android.view.ViewGroup
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
-import com.github.kr328.clash.design.adapter.ProfileAdapter
-import com.github.kr328.clash.design.databinding.DesignProfilesBinding
-import com.github.kr328.clash.design.databinding.DialogProfilesMenuBinding
-import com.github.kr328.clash.design.databinding.DialogProfileQrCodeBinding
-import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
-import com.github.kr328.clash.design.dialog.CouiMenuOption
-import com.github.kr328.clash.design.dialog.showCouiMenu
-import com.github.kr328.clash.design.dialog.showCouiContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
-import com.itos.coui.dialog.CouiDialogAction
-import com.itos.coui.dialog.Dialog as CouiDialog
-import com.github.kr328.clash.design.ui.ToastDuration
-import com.github.kr328.clash.design.util.*
-import com.github.kr328.clash.service.model.Profile
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.WriterException
-import com.google.zxing.qrcode.QRCodeWriter
+import com.itos.coui.topappbar.CouiTopAppBarDefaults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
+/** Both standalone and primary configuration tabs now share pure COUI list rows. */
 class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context) {
     sealed class Request {
         object OpenHome : Request()
@@ -74,104 +70,90 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         data class Delete(val profile: Profile) : Request()
     }
 
-    private val binding = DesignProfilesBinding
-        .inflate(context.layoutInflater, context.root, false)
-    private val adapter = ProfileAdapter(context, this::requestActive, this::showMenu)
-
-    private var allUpdating: Boolean
-        get() = adapter.states.allUpdating;
-        set(value) {
-            adapter.states.allUpdating = value
-        }
-    private val rotateAnimation : Animation = AnimationUtils.loadAnimation(context, R.anim.rotate_infinite)
+    private var allUpdating by mutableStateOf(false)
     private var canUpdate by mutableStateOf(false)
+    private var visibleProfiles by mutableStateOf<List<Profile>>(emptyList())
+    private var displayedTime by mutableLongStateOf(System.currentTimeMillis())
 
-    // The existing RecyclerView stays as content under a real native COUI
-    // Scaffold. Its toolbar and navigation now sample the same page source.
     override val root: View = ComposeView(context).apply {
         setContent {
-            CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
+            val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            val density = LocalDensity.current
+            val listState = rememberLazyListState()
+            CouiTheme(darkTheme = dark) {
                 Scaffold(
+                    modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
                     topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(text = context.getString(R.string.profiles), kind = CouiTextKind.Toolbar)
-                            },
+                        ColorOsLargeTopBar(
+                            title = context.getString(R.string.profiles),
+                            scrollBehavior = behavior,
                             navigationIcon = {
-                                ToolbarIcon(CouiIcons.Back,
-                                    context.getString(androidx.appcompat.R.string.abc_action_bar_up_description)) {
-                                    (context as? AppCompatActivity)?.onSupportNavigateUp()
+                                ToolbarIcon(
+                                    CouiIcons.Back,
+                                    context.getString(androidx.appcompat.R.string.abc_action_bar_up_description),
+                                ) {
+                                    context.colorOsNavigateBack()
                                         ?: (context as? Activity)?.finish()
                                 }
                             },
-                            actions = {
-                                if (canUpdate) {
-                                    ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_sync),
-                                        context.getString(R.string.update)) { requestUpdateAll() }
-                                }
-                                ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_add),
-                                    context.getString(R.string._new)) { requestCreate() }
-                            },
+                            actions = { PrimaryTabActions() },
                         )
                     },
                     bottomBar = {
-                        PrimaryBottomBar(selected = 1, modifier = Modifier.testTag("profiles_navigation")) { index ->
+                        PrimaryBottomBar(selected = 1) { index ->
                             when (index) {
                                 0 -> requests.trySend(Request.OpenHome)
                                 2 -> requests.trySend(Request.OpenSettings)
                             }
                         }
                     },
-                ) {
-                    // Keep the content behind native COUI floating surfaces.
-                    // The recycler's last-row decoration avoids hit overlap.
-                    AndroidView(factory = { binding.root }, modifier = Modifier.fillMaxSize())
+                ) { padding ->
+                    PrimaryTabContent(padding, behavior.state.contentPadding(padding, density), listState)
                 }
             }
         }
     }
 
-    /**
-     * Renders the existing profile RecyclerView in MainActivity's shared
-     * COUI Scaffold without a nested top or bottom navigation bar.
-     */
     @androidx.compose.runtime.Composable
-    internal fun PrimaryTabContent() {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = {
-                (binding.root.parent as? ViewGroup)?.removeView(binding.root)
-                binding.root
-            },
-        )
+    internal fun PrimaryTabContent(
+        padding: PaddingValues,
+        contentPadding: PaddingValues,
+        listState: LazyListState,
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
+            items(visibleProfiles, key = { it.uuid.toString() }) { profile ->
+                ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu)
+            }
+        }
     }
 
     @androidx.compose.runtime.Composable
     internal fun PrimaryTabActions() {
-        if (canUpdate) {
-            ToolbarIcon(
-                ImageVector.vectorResource(R.drawable.ic_baseline_sync),
-                context.getString(R.string.update),
-            ) { requestUpdateAll() }
+        if (allUpdating) {
+            Text(
+                text = context.getString(R.string.coui_provider_updating),
+                kind = CouiTextKind.PreferenceSummary,
+            )
+        } else if (canUpdate) {
+            ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_sync),
+                context.getString(R.string.update)) { requestUpdateAll() }
         }
-        ToolbarIcon(
-            ImageVector.vectorResource(R.drawable.ic_baseline_add),
-            context.getString(R.string._new),
-        ) { requestCreate() }
+        ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_add),
+            context.getString(R.string._new)) { requestCreate() }
     }
 
     suspend fun patchProfiles(profiles: List<Profile>) {
-        adapter.apply {
-            patchDataSet(this::profiles, profiles, id = { it.uuid })
-        }
-
         val updatable = withContext(Dispatchers.Default) {
             profiles.any { it.imported && it.type != Profile.Type.File }
         }
-
         withContext(Dispatchers.Main) {
             canUpdate = updatable
-            binding.updateView.visibility = if (updatable) View.VISIBLE else View.GONE
+            visibleProfiles = profiles
         }
     }
 
@@ -183,89 +165,32 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     }
 
-    fun updateElapsed() {
-        adapter.updateElapsed()
-    }
-
-    init {
-        binding.self = this
-
-        binding.activityBarLayout.visibility = View.GONE
-
-        binding.mainList.recyclerList.also {
-            it.bindAppBarElevation(binding.activityBarLayout)
-            it.applyLinearAdapter(context, adapter)
-            it.addItemDecoration(object : RecyclerView.ItemDecoration() {
-                override fun getItemOffsets(
-                    outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State,
-                ) {
-                    if (parent.getChildAdapterPosition(view) == (parent.adapter?.itemCount ?: 0) - 1) {
-                        outRect.bottom = (104f * context.resources.displayMetrics.density).toInt()
-                    }
-                }
-            })
-        }
-    }
+    fun updateElapsed() { displayedTime = System.currentTimeMillis() }
 
     private fun showMenu(profile: Profile) {
         val options = mutableListOf<CouiMenuOption>()
-        fun add(res: Int, request: Request) { options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) }) }
-        if (profile.imported && profile.type != Profile.Type.File) add(R.string.update, Request.Update(profile))
+        fun add(res: Int, request: Request) {
+            options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) })
+        }
+        if (profile.imported && profile.type != Profile.Type.File)
+            add(R.string.update, Request.Update(profile))
         add(R.string.edit, Request.Edit(profile))
         if (profile.imported) add(R.string.duplicate, Request.Duplicate(profile))
-        if (profile.imported && profile.type == Profile.Type.Url && profile.source.isNotEmpty()) add(R.string.share_qr_code, Request.ShareQrCode(profile))
+        if (profile.imported && profile.type == Profile.Type.Url && profile.source.isNotEmpty())
+            add(R.string.share_qr_code, Request.ShareQrCode(profile))
         add(R.string.delete, Request.Delete(profile))
         context.showCouiMenu(options)
     }
 
     fun requestUpdateAll() {
-        allUpdating = true;
-        changeUpdateAllButtonStatus()
+        if (allUpdating) return
+        allUpdating = true
         requests.trySend(Request.UpdateAll)
     }
 
-    fun finishUpdateAll() {
-        allUpdating = false;
-        changeUpdateAllButtonStatus()
-    }
-
-    fun requestCreate() {
-        requests.trySend(Request.Create)
-    }
-
-    private fun requestActive(profile: Profile) {
-        requests.trySend(Request.Active(profile))
-    }
-
-    fun requestUpdate(dialog: Dialog, profile: Profile) {
-        requests.trySend(Request.Update(profile))
-
-        dialog.dismiss()
-    }
-
-    fun requestEdit(dialog: Dialog, profile: Profile) {
-        requests.trySend(Request.Edit(profile))
-
-        dialog.dismiss()
-    }
-
-    fun requestDuplicate(dialog: Dialog, profile: Profile) {
-        requests.trySend(Request.Duplicate(profile))
-
-        dialog.dismiss()
-    }
-
-    fun requestDelete(dialog: Dialog, profile: Profile) {
-        requests.trySend(Request.Delete(profile))
-
-        dialog.dismiss()
-    }
-
-    fun requestShareQrCode(dialog: Dialog, profile: Profile) {
-        requests.trySend(Request.ShareQrCode(profile))
-
-        dialog.dismiss()
-    }
+    fun finishUpdateAll() { allUpdating = false }
+    fun requestCreate() { requests.trySend(Request.Create) }
+    private fun requestActive(profile: Profile) { requests.trySend(Request.Active(profile)) }
 
     suspend fun showProfileQrCode(profile: Profile) {
         if (profile.type != Profile.Type.Url || profile.source.isBlank()) return
@@ -305,11 +230,5 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     }
 
-    private fun changeUpdateAllButtonStatus() {
-        if (allUpdating) {
-            binding.updateView.startAnimation(rotateAnimation)
-        } else {
-            binding.updateView.clearAnimation()
-        }
-    }
+
 }

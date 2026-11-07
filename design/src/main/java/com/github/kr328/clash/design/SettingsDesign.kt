@@ -3,8 +3,6 @@ package com.github.kr328.clash.design
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.ComposeView
-import com.github.kr328.clash.design.databinding.DesignAboutBinding
-import com.github.kr328.clash.design.util.layoutInflater
 import com.github.kr328.clash.design.dialog.showCouiAlert
 
 class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request>(context) {
@@ -21,7 +19,7 @@ class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request
     override val root: View = ComposeView(context).apply {
         setContent {
             ClashSettings(
-                onBack = { context.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 onRequest = ::request,
             )
         }

@@ -2,7 +2,6 @@ package com.github.kr328.clash
 
 import android.app.ActivityManager
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.OnBackPressedCallback
@@ -18,7 +17,6 @@ import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.DarkMode
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.ui.DayNight
-import com.github.kr328.clash.design.util.wrapLegacyCouiPage
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.showExceptionToast
@@ -47,7 +45,7 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
         set(value) {
             field = value
             if (value != null) {
-                setContentView(wrapLegacyCouiPage(this, value.root))
+                setContentView(value.root)
             } else {
                 setContentView(View(this))
             }
@@ -226,13 +224,8 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
         window.statusBarColor = resolveThemedColor(android.R.attr.statusBarColor)
         window.navigationBarColor = resolveThemedColor(android.R.attr.navigationBarColor)
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            window.isLightStatusBarsCompat = resolveThemedBoolean(android.R.attr.windowLightStatusBar)
-        }
-
-        if (Build.VERSION.SDK_INT >= 27) {
-            window.isLightNavigationBarCompat = resolveThemedBoolean(android.R.attr.windowLightNavigationBar)
-        }
+        window.isLightStatusBarsCompat = resolveThemedBoolean(android.R.attr.windowLightStatusBar)
+        window.isLightNavigationBarCompat = resolveThemedBoolean(android.R.attr.windowLightNavigationBar)
 
         this.dayNight = dayNight
     }

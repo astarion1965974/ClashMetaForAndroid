@@ -2,26 +2,32 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.github.kr328.clash.design.adapter.AppAdapter
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import com.github.kr328.clash.design.component.AccessControlMenu
-import com.github.kr328.clash.design.databinding.DesignAccessControlBinding
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.model.AppInfo
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.store.UiStore
-import com.github.kr328.clash.design.util.*
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
+import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
-import com.itos.coui.theme.CouiTheme
+import androidx.compose.ui.unit.dp
 
+/** Native COUI application routing list, no legacy RecyclerView or XML controls. */
 class AccessControlDesign(
     context: Context,
     private val uiStore: UiStore,
@@ -30,55 +36,120 @@ class AccessControlDesign(
     running: Boolean,
 ) : Design<AccessControlDesign.Request>(context) {
     enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, Import, Export, Save }
-    private val binding = DesignAccessControlBinding.inflate(context.layoutInflater, context.root, false)
     private val original = selected.toSet()
-    private val adapter = AppAdapter(context, selected) { refresh() }
-    private val menu by lazy { AccessControlMenu(context, binding.menuView, uiStore, requests) }
-    var mode = initialMode
-        private set
     private val originalMode = initialMode
-    var allApps: List<AppInfo> = emptyList()
+    private val menu by lazy { AccessControlMenu(context, uiStore, requests) }
+
+    var mode by mutableStateOf(initialMode)
         private set
-    val apps get() = adapter.apps
+    var allApps by mutableStateOf<List<AppInfo>>(emptyList())
+        private set
+    private var filteredApps by mutableStateOf<List<AppInfo>>(emptyList())
+    val apps get() = filteredApps
     val dirty get() = selected != original || mode != originalMode
-    private var loaded = false
-    private var savingInProgress by mutableStateOf(false)
-    private var isRunning = running
+
+    private var loaded by mutableStateOf(false)
+    private var savingState by mutableStateOf(false)
+    private var isRunning by mutableStateOf(running)
     private var keyword by mutableStateOf("")
     private var selectedOnly by mutableStateOf(false)
     private var showSystem by mutableStateOf(uiStore.accessControlSystemApp)
+    private var version by mutableStateOf(0)
     private var count by mutableStateOf("")
     private var modeHint by mutableStateOf("")
     private var modeLabel by mutableStateOf("")
-    override val root: View get() = binding.root
+
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            version
+            val editable = !savingState && mode != AccessControlMode.AcceptAll
+            ColorOsLazyFormPage(
+                title = stringResource(R.string.live_app_routing),
+                saveLabel = stringResource(when {
+                    savingState -> R.string.route_saving
+                    isRunning -> R.string.route_save_reconnect
+                    else -> R.string.route_save
+                }),
+                canSave = dirty && loaded && !savingState,
+                onBack = { context.colorOsNavigateBack() },
+                onSave = { if (dirty && loaded && !savingState) requests.trySend(Request.Save) },
+            ) {
+                item(key = "app-filter-controls") {
+                    AccessControls(
+                        modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !savingState,
+                        onMode = ::chooseMode,
+                        onKeyword = { keyword = it; refresh() },
+                        onSelectedOnly = { selectedOnly = it; refresh() },
+                        onSystem = {
+                            showSystem = it
+                            uiStore.accessControlSystemApp = it
+                            refresh()
+                        },
+                    )
+                }
+                item(key = "app-list-actions") {
+                    ToolbarSectionBulk(
+                        onMore = { if (!savingState) menu.show(mode != AccessControlMode.AcceptAll) },
+                        enabled = !savingState,
+                    )
+                }
+                if (filteredApps.isEmpty()) {
+                    item(key = "app-empty") {
+                        Text(
+                            text = stringResource(if (loaded) R.string.app_empty else R.string.app_loading),
+                            kind = CouiTextKind.PreferenceSummary,
+                        )
+                    }
+                } else {
+                    items(filteredApps, key = { it.packageName }) { app ->
+                        val checked = app.packageName in selected
+                        val route = context.getString(
+                            if (AppAccessPolicy.usesClash(mode, checked)) R.string.app_via_clash
+                            else R.string.app_bypass,
+                        )
+                        CouiPreferenceRow(
+                            title = app.label,
+                            summary = "${app.packageName}\n$route",
+                            icon = app.icon,
+                            iconSize = 40.dp,
+                            enabled = editable,
+                            onClick = {
+                                if (editable) {
+                                    if (!selected.remove(app.packageName)) selected.add(app.packageName)
+                                    refresh()
+                                }
+                            },
+                            trailing = { Checkbox(checked = checked, enabled = editable) },
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun patchApps(apps: List<AppInfo>) { allApps = apps; loaded = true; refresh() }
     fun rebindAll() = refresh()
-    fun setSaving(value: Boolean) { savingInProgress = value; adapter.saving = value; refresh() }
-    fun updateRunning(running: Boolean) {
-        isRunning = running
-        binding.saveView.setText(if (running) R.string.route_save_reconnect else R.string.route_save)
-    }
+    fun setSaving(value: Boolean) { savingState = value; refresh() }
+    fun updateRunning(value: Boolean) { isRunning = value }
     fun select(action: AppAccessPolicy.Selection) {
-        if (mode == AccessControlMode.AcceptAll || savingInProgress) return
-        val result = AppAccessPolicy.select(selected, apps.map { it.packageName }.toSet(), action)
-        selected.clear(); selected.addAll(result); refresh()
+        if (mode == AccessControlMode.AcceptAll || savingState) return
+        val result = AppAccessPolicy.select(
+            selected, apps.map { it.packageName }.toSet(), action,
+        )
+        selected.clear()
+        selected.addAll(result)
+        refresh()
     }
 
     private fun refresh() {
-        onBackStateChanged()
         val query = keyword.trim()
-        val onlySelected = selectedOnly
-        adapter.mode = mode
-        adapter.apps = allApps.filter {
-            (showSystem || !it.systemApp || (onlySelected && it.packageName in selected)) &&
-                (!onlySelected || it.packageName in selected) &&
+        val selectedSet = selected.toSet()
+        filteredApps = allApps.filter {
+            (showSystem || !it.systemApp || (selectedOnly && it.packageName in selectedSet)) &&
+                (!selectedOnly || it.packageName in selectedSet) &&
                 (it.label.contains(query, true) || it.packageName.contains(query, true))
         }
-        adapter.notifyDataSetChanged()
-        count = context.getString(R.string.app_count, selected.size, apps.size)
-        binding.emptyView.visibility = if (apps.isEmpty()) View.VISIBLE else View.GONE
-        binding.emptyView.setText(if (loaded) R.string.app_empty else R.string.app_loading)
+        count = context.getString(R.string.app_count, selected.size, filteredApps.size)
         modeHint = context.getString(when (mode) {
             AccessControlMode.AcceptAll -> R.string.app_hint_all
             AccessControlMode.AcceptSelected -> R.string.app_hint_allow
@@ -89,46 +160,40 @@ class AccessControlDesign(
             AccessControlMode.AcceptSelected -> R.string.app_mode_allow
             AccessControlMode.DenySelected -> R.string.app_mode_bypass
         })
-        binding.saveView.isEnabled = dirty && !savingInProgress && loaded
-        binding.mainList.isEnabled = !savingInProgress
-        binding.saveView.setText(when {
-            savingInProgress -> R.string.route_saving
-            isRunning -> R.string.route_save_reconnect
-            else -> R.string.route_save
-        })
-    }
-
-    init {
-        binding.self = this
-        binding.activityBarLayout.applyFrom(context)
-        binding.mainList.applyLinearAdapter(context, adapter)
-        binding.menuView.setOnClickListener { if (!savingInProgress) menu.show(mode != AccessControlMode.AcceptAll) }
-        binding.controlsView.setContent {
-            CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
-                AccessControls(modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !savingInProgress,
-                    onMode = { chooseMode() },
-                    onKeyword = { keyword = it; refresh() },
-                    onSelectedOnly = { selectedOnly = it; refresh() },
-                    onSystem = { showSystem = it; uiStore.accessControlSystemApp = it; refresh() })
-            }
-        }
-        binding.saveView.setOnClickListener { requests.trySend(Request.Save) }
-        updateRunning(running); refresh()
+        version++
+        onBackStateChanged()
     }
 
     private fun chooseMode() {
-        if (savingInProgress) return
+        if (savingState) return
         val labels = listOf(R.string.app_mode_all, R.string.app_mode_allow, R.string.app_mode_bypass)
         context.showCouiContent { dismiss ->
-            Dialog(onDismissRequest = dismiss, title = context.getString(R.string.access_control_mode),
-                confirmAction = CouiDialogAction(context.getString(R.string.cancel), dismiss)) {
+            Dialog(
+                onDismissRequest = dismiss,
+                title = context.getString(R.string.access_control_mode),
+                confirmAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+            ) {
                 labels.forEachIndexed { index, label ->
-                    Item(onClick = { mode = AccessControlMode.values()[index]; dismiss(); refresh() },
-                        trailing = { RadioButton(selected = mode.ordinal == index) }) {
-                        Text(text = context.getString(label), kind = CouiTextKind.PreferenceTitle)
-                    }
+                    Item(
+                        onClick = { mode = AccessControlMode.values()[index]; dismiss(); refresh() },
+                        trailing = { RadioButton(selected = mode.ordinal == index) },
+                    ) { Text(text = context.getString(label), kind = CouiTextKind.PreferenceTitle) }
                 }
             }
         }
+    }
+
+    init { refresh() }
+}
+
+/** COUI toolbar-style operation displayed inside the app list, not a second XML action bar. */
+@androidx.compose.runtime.Composable
+private fun ToolbarSectionBulk(onMore: () -> Unit, enabled: Boolean) {
+    com.itos.coui.layout.Group {
+        com.github.kr328.clash.design.preference.NativeCouiAction(
+            title = stringResource(R.string.more),
+            enabled = enabled,
+            onClick = onMore,
+        )
     }
 }

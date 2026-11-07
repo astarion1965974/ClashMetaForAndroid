@@ -1,0 +1,89 @@
+name: Verify COUI migration PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'design/**'
+      - 'app/**'
+      - 'gradle/**'
+      - '.github/workflows/coui-pr-verify.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coui-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.repository == 'astarion1965974/ClashMetaForAndroid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GOMAXPROCS: '2'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+      - name: Install Android SDK and NDK
+        run: |
+          manager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          python3 -c 'print("y\n" * 200)' > "$RUNNER_TEMP/licenses.txt"
+          "$manager" --licenses < "$RUNNER_TEMP/licenses.txt" > /dev/null
+          "$manager" 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;29.0.14206865' 'cmake;3.22.1'
+          cat > local.properties <<EOF
+          sdk.dir=$ANDROID_HOME
+          custom.application.id=com.astarion.clash.live
+          custom.application.name=Clash Meta Live
+          remove.suffix=true
+          EOF
+      - name: Install patched Go toolchain
+        run: |
+          curl --fail --location --retry 3 https://github.com/MetaCubeX/go/releases/download/build/go1.26.linux-amd64.tar.gz -o "$RUNNER_TEMP/go.tar.gz"
+          mkdir -p "$RUNNER_TEMP/cmfa-go"
+          tar -xzf "$RUNNER_TEMP/go.tar.gz" -C "$RUNNER_TEMP/cmfa-go"
+          echo "GOROOT=$RUNNER_TEMP/cmfa-go/go" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/cmfa-go/go/bin" >> "$GITHUB_PATH"
+          for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do
+            patch -d "$RUNNER_TEMP/cmfa-go/go" --forward -p 1 -i "$p"
+          done
+      - name: Compile and run UI, service and app JVM tests
+        run: |
+          ./gradlew --no-daemon --console=plain --max-workers=2 \
+            :design:testAlphaDebugUnitTest :service:testAlphaDebugUnitTest :app:testAlphaDebugUnitTest \
+            -Pcmfa.abis=arm64-v8a --stacktrace
+      - name: Print failed JVM test assertions
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          for path in Path('.').glob('**/build/test-results/**/TEST-*.xml'):
+              try:
+                  root = ET.parse(path).getroot()
+              except (OSError, ET.ParseError):
+                  continue
+              for case in root.findall('.//testcase'):
+                  for failure in case.findall('failure') + case.findall('error'):
+                      print(f'{path}: {case.get("classname")}.{case.get("name")}')
+                      print((failure.get('message') or '')[:2500])
+                      print((failure.text or '')[:3500])
+          PY
+      - name: Preserve failure reports
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: coui-pr-test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+            design/build/ui-previews/
+          if-no-files-found: ignore

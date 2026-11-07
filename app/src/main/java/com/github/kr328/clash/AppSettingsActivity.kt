@@ -3,7 +3,7 @@ package com.github.kr328.clash
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.content.Intent
-import androidx.appcompat.app.AlertDialog
+import com.github.kr328.clash.design.dialog.showCouiSingleChoice
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.constants.Permissions
 import com.github.kr328.clash.common.util.componentName
@@ -56,19 +56,18 @@ class AppSettingsActivity : BaseActivity<AppSettingsDesign>(), Behavior {
         val store = ServiceStore(this)
         val values = listOf("") + names
         val labels = listOf(getString(DesignR.string.live_notification_group_auto)) + names
-        AlertDialog.Builder(this)
-            .setTitle(DesignR.string.live_notification_group)
-            .setSingleChoiceItems(labels.toTypedArray(), values.indexOf(store.notificationProxyGroup).coerceAtLeast(0)) { dialog, which ->
-                store.notificationProxyGroup = values[which]
-                sendBroadcast(
-                    Intent(Intents.ACTION_PROXY_SELECTION_CHANGED).setPackage(packageName),
-                    Permissions.RECEIVE_SELF_BROADCASTS
-                )
-                dialog.dismiss()
-                recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        showCouiSingleChoice(
+            title = getString(DesignR.string.live_notification_group),
+            labels = labels,
+            selectedIndex = values.indexOf(store.notificationProxyGroup).coerceAtLeast(0),
+        ) { which ->
+            store.notificationProxyGroup = values[which]
+            sendBroadcast(
+                Intent(Intents.ACTION_PROXY_SELECTION_CHANGED).setPackage(packageName),
+                Permissions.RECEIVE_SELF_BROADCASTS,
+            )
+            recreate()
+        }
     }
 
     override var autoRestart: Boolean
