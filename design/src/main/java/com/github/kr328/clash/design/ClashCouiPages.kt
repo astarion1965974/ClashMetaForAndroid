@@ -207,11 +207,13 @@ private fun ClashPage(
         ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize()
-                    // Apply Scaffold insets *outside* the scroll viewport so
-                    // content cannot receive taps through the floating bottom bar.
+                    // COUI Scaffold records this full viewport as the blur source.
+                    // Inset padding belongs INSIDE the scrolling content so
+                    // the translucent toolbar and navigation sample real rows.
+                    // Their separate Scaffold slots remain above the content.
+                    .couiVerticalScroll(rememberScrollState())
                     .padding(padding)
                     .consumeWindowInsets(padding)
-                    .couiVerticalScroll(rememberScrollState())
                     .padding(bottom = 16.dp),
                 verticalArrangement = contentArrangement,
                 content = content,

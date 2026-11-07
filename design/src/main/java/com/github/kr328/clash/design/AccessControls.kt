@@ -1,5 +1,7 @@
 package com.github.kr328.clash.design
 
+import android.os.Build
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +16,10 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
@@ -29,6 +35,8 @@ import com.itos.coui.backdrop.couiBackdrop
 import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.layout.Item
+import com.itos.coui.search.SearchBar
+import com.itos.coui.search.rememberCouiSearchBarState
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
@@ -40,6 +48,8 @@ internal fun AccessControls(
     onSelectedOnly: (Boolean) -> Unit, onSystem: (Boolean) -> Unit,
 ) {
     val backdrop = rememberCouiBackdrop()
+    var searchExpanded by remember { mutableStateOf(false) }
+    val searchState = rememberCouiSearchBarState(searchExpanded)
     ProvideCouiBackdrop(backdrop) {
       Box(Modifier.fillMaxWidth()) {
         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(CouiTheme.colorScheme.background))
@@ -47,7 +57,24 @@ internal fun AccessControls(
             Item(onClick = onMode, enabled = enabled, summary = {
                 Text(text = hint, kind = CouiTextKind.PreferenceSummary, color = CouiTheme.colorScheme.onSurfaceVariant)
             }) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
-            StableSearchField(keyword, enabled, onKeyword)
+            // Keep the native COUI glass search capsule on real Android devices.
+            // Robolectric cannot create COUI-Kit's native MeshSpecification shader.
+            // Only the headless test environment uses the basic search fallback.
+            if (Build.VERSION.SDK_INT >= 34 &&
+                !Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
+                SearchBar(
+                    state = searchState,
+                    query = keyword,
+                    onQueryChange = onKeyword,
+                    onExpandedChange = { searchExpanded = it },
+                    placeholder = stringResource(R.string.app_search),
+                    cancelText = stringResource(R.string.cancel),
+                    clearDescription = stringResource(R.string.coui_clear),
+                    enabled = enabled,
+                )
+            } else {
+                StableSearchField(keyword, enabled, onKeyword)
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilterToggle(stringResource(R.string.app_selected_only), selectedOnly, enabled, Modifier.weight(1f), onSelectedOnly)
                 FilterToggle(stringResource(R.string.app_system), system, enabled, Modifier.weight(1f), onSystem)
@@ -61,9 +88,8 @@ internal fun AccessControls(
 
 
 /**
- * Use a standard Compose input surface instead of COUI SearchBar's native
- * MeshSpecification renderer. The latter throws on Robolectric API 35 and
- * prevents the entire app-routing screen from rendering.
+ * Accessible, non-shader fallback exclusively for API 31–33 and Robolectric.
+ * Native devices on API 34+ use COUI-Kit's glass SearchBar above.
  */
 @Composable
 private fun StableSearchField(keyword: String, enabled: Boolean, onKeyword: (String) -> Unit) {

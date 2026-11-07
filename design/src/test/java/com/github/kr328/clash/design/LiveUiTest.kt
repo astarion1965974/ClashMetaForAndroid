@@ -174,18 +174,29 @@ class LiveUiTest {
             assertEquals(MainDesign.Request.OpenSettings, design.requests.tryReceive().getOrNull())
             toggle.performClick()
             assertEquals(MainDesign.Request.ToggleStatus, design.requests.tryReceive().getOrNull())
-            val nodes = nodeWithResourceName(ctx, "home_nodes_view")
-                .performScrollTo().assertIsDisplayed()
-            val bottomNavigationTop = nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot().top
-            assertTrue("The node row must not be hidden behind the bottom navigation",
-                nodes.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop)
+            // The COUI glass bottom navigation overlays a *full-viewport*
+            // backdrop. Scroll the actual rows into its unobstructed area
+            // before tapping; do not click the label covered by the overlay.
+            val bottomNavigationTop =
+                nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot().top
+            fun safeHomeRow(tag: String): androidx.compose.ui.test.SemanticsNodeInteraction {
+                val row = nodeWithResourceName(ctx, tag).performScrollTo()
+                repeat(4) {
+                    if (row.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop) {
+                        return row.assertIsDisplayed()
+                    }
+                    compose.onRoot().performTouchInput {
+                        swipeUp(startY = height * 0.70f, endY = height * 0.23f)
+                    }
+                }
+                assertTrue("Home row must remain above the floating COUI navigation",
+                    row.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop)
+                return row.assertIsDisplayed()
+            }
+            val nodes = safeHomeRow("home_nodes_view")
             nodes.performClick()
             assertEquals(MainDesign.Request.OpenProxy, design.requests.tryReceive().getOrNull())
-
-            val providers = nodeWithResourceName(ctx, "home_providers_view")
-                .performScrollTo().assertIsDisplayed()
-            assertTrue("The provider row must not be hidden behind the bottom navigation",
-                providers.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop)
+            val providers = safeHomeRow("home_providers_view")
             providers.performClick()
             assertEquals(MainDesign.Request.OpenProviders, design.requests.tryReceive().getOrNull())
             updateHome { design.setClashRunning(false) }

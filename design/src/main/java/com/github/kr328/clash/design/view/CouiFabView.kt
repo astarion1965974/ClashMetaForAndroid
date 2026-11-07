@@ -46,12 +46,19 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
                     val backdrop = rememberCouiBackdrop()
                     val renderer = if (Build.VERSION.SDK_INT >= 34) remember {
-                        runCatching { CouiFloatingRenderer() }.getOrNull()
+                        runCatching { CouiFloatingRenderer.standalone() }
+                            .onFailure { android.util.Log.e("COUI-FAB", "Native COUI FAB material unavailable", it) }
+                            .getOrNull()
                     } else null
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(Color.Transparent))
                         if (Build.VERSION.SDK_INT >= 34 && renderer != null) {
-                            Fab(backdrop = backdrop, renderer = renderer, onClick = { this@CouiFabView.performClick() }) {
+                            // This View is layered over the legacy page, so compose only
+                            // the COUI foreground rather than writing back a transparent
+                            // local backdrop over the page below.
+                            Fab(backdrop = backdrop, renderer = renderer,
+                                foregroundComposition = true,
+                                onClick = { this@CouiFabView.performClick() }) {
                                 if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                     colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent))
                             }
