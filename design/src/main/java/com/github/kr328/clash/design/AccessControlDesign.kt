@@ -42,7 +42,7 @@ class AccessControlDesign(
     val apps get() = adapter.apps
     val dirty get() = selected != original || mode != originalMode
     private var loaded = false
-    private var saving by mutableStateOf(false)
+    private var isSaving by mutableStateOf(false)
     private var isRunning = running
     private var keyword by mutableStateOf("")
     private var selectedOnly by mutableStateOf(false)
@@ -54,13 +54,13 @@ class AccessControlDesign(
 
     fun patchApps(apps: List<AppInfo>) { allApps = apps; loaded = true; refresh() }
     fun rebindAll() = refresh()
-    fun setSaving(value: Boolean) { saving = value; adapter.saving = value; refresh() }
+    fun setSaving(value: Boolean) { isSaving = value; adapter.saving = value; refresh() }
     fun updateRunning(running: Boolean) {
         isRunning = running
         binding.saveView.setText(if (running) R.string.route_save_reconnect else R.string.route_save)
     }
     fun select(action: AppAccessPolicy.Selection) {
-        if (mode == AccessControlMode.AcceptAll || saving) return
+        if (mode == AccessControlMode.AcceptAll || isSaving) return
         val result = AppAccessPolicy.select(selected, apps.map { it.packageName }.toSet(), action)
         selected.clear(); selected.addAll(result); refresh()
     }
@@ -89,10 +89,10 @@ class AccessControlDesign(
             AccessControlMode.AcceptSelected -> R.string.app_mode_allow
             AccessControlMode.DenySelected -> R.string.app_mode_bypass
         })
-        binding.saveView.isEnabled = dirty && !saving && loaded
-        binding.mainList.isEnabled = !saving
+        binding.saveView.isEnabled = dirty && !isSaving && loaded
+        binding.mainList.isEnabled = !isSaving
         binding.saveView.setText(when {
-            saving -> R.string.route_saving
+            isSaving -> R.string.route_saving
             isRunning -> R.string.route_save_reconnect
             else -> R.string.route_save
         })
@@ -102,10 +102,10 @@ class AccessControlDesign(
         binding.self = this
         binding.activityBarLayout.applyFrom(context)
         binding.mainList.applyLinearAdapter(context, adapter)
-        binding.menuView.setOnClickListener { if (!saving) menu.show(mode != AccessControlMode.AcceptAll) }
+        binding.menuView.setOnClickListener { if (!isSaving) menu.show(mode != AccessControlMode.AcceptAll) }
         binding.controlsView.setContent {
             CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
-                AccessControls(modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !saving,
+                AccessControls(modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !isSaving,
                     onMode = { chooseMode() },
                     onKeyword = { keyword = it; refresh() },
                     onSelectedOnly = { selectedOnly = it; refresh() },
@@ -117,7 +117,7 @@ class AccessControlDesign(
     }
 
     private fun chooseMode() {
-        if (saving) return
+        if (isSaving) return
         val labels = listOf(R.string.app_mode_all, R.string.app_mode_allow, R.string.app_mode_bypass)
         context.showCouiContent { dismiss ->
             Dialog(onDismissRequest = dismiss, title = context.getString(R.string.access_control_mode),
