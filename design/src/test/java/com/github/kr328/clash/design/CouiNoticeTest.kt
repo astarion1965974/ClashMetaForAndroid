@@ -11,6 +11,7 @@ import com.github.kr328.clash.design.dialog.CouiNoticeOptions
 import com.github.kr328.clash.design.dialog.showCouiNotice
 import com.github.kr328.clash.design.ui.ToastDuration
 import org.junit.Assert.assertEquals
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,9 +32,9 @@ class CouiNoticeTest {
         controller.setup()
         activity.setContentView(View(activity))
 
-        var actions = 0
+        val actions = AtomicInteger(0)
         val options = CouiNoticeOptions(activity).apply {
-            setAction("查看详情") { actions++ }
+            setAction("查看详情") { actions.incrementAndGet() }
         }
         activity.showCouiNotice("COUI 状态消息", ToastDuration.Indefinite, options)
 
@@ -41,8 +42,8 @@ class CouiNoticeTest {
         compose.onNodeWithTag("coui-notice-action").performClick()
         // Compose semantics actions can be dispatched on the next idle frame.
         // Verify the actual callback, rather than allowing a silent click.
-        compose.waitUntil(timeoutMillis = 5_000) { actions == 1 }
-        assertEquals(1, actions)
+        compose.waitUntil(timeoutMillis = 5_000) { actions.get() == 1 }
+        assertEquals(1, actions.get())
 
         controller.pause().stop().destroy()
     }
