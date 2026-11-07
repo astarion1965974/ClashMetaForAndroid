@@ -142,3 +142,7 @@ Renderer initialization error handling remains (including the simple in-app fall
 
 - Added `NativeCouiValueEditor` and typed COUI native editors for nullable port, text, string-list and map override fields. The dialogs distinguish an explicit null Reset from a real empty value and use COUI typography and controls; this replaces the View-based editable-list / map editing pathway for migrated pages.
 - Multi-line lists use one value per line; maps use `key=value` pairs. Port editor validates 0–65535 before saving. Existing core `ConfigurationOverride` property references remain the data source.
+
+## Data Binding KAPT compatibility cleanup
+
+- The obsolete `dialog_files_menu.xml` still referenced deleted `FilesDesign.requestRename/requestExport/requestImport/requestDelete` Java methods after the page moved to `showCouiMenu`. The old dialog is now removed to prevent Data Binding from generating invalid callbacks. No active screen imports `DialogFilesMenuBinding`.
