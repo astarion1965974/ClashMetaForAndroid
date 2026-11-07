@@ -1,120 +1,44 @@
 package com.github.kr328.clash.design.component
 
 import android.content.Context
-import android.view.MenuItem
 import android.view.View
-import androidx.appcompat.widget.PopupMenu
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.ProxyDesign
 import com.github.kr328.clash.design.R
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiMenu
 import com.github.kr328.clash.design.store.UiStore
 import kotlinx.coroutines.channels.Channel
 
 class ProxyMenu(
-    context: Context,
-    menuView: View,
-    mode: TunnelState.Mode?,
+    private val context: Context,
+    @Suppress("UNUSED_PARAMETER") menuView: View,
+    private val mode: TunnelState.Mode?,
     private val uiStore: UiStore,
     private val requests: Channel<ProxyDesign.Request>,
     private val updateConfig: () -> Unit,
-) : PopupMenu.OnMenuItemClickListener {
-    private val menu = PopupMenu(context, menuView)
-
+) {
     fun show() {
-        menu.show()
-    }
-
-    override fun onMenuItemClick(item: MenuItem): Boolean {
-        item.isChecked = !item.isChecked
-
-        when (item.itemId) {
-            R.id.not_selectable -> {
-                uiStore.proxyExcludeNotSelectable = item.isChecked
-
-                requests.trySend(ProxyDesign.Request.ReLaunch)
-            }
-            R.id.single -> {
-                uiStore.proxyLine = 1
-
-                updateConfig()
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.doubles -> {
-                uiStore.proxyLine = 2
-
-                updateConfig()
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.multiple -> {
-                uiStore.proxyLine = 3
-
-                updateConfig()
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.default_ -> {
-                uiStore.proxySort = ProxySort.Default
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.name -> {
-                uiStore.proxySort = ProxySort.Title
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.delay -> {
-                uiStore.proxySort = ProxySort.Delay
-
-                requests.trySend(ProxyDesign.Request.ReloadAll)
-            }
-            R.id.dont_modify -> {
-                requests.trySend(ProxyDesign.Request.PatchMode(null))
-            }
-            R.id.direct_mode -> {
-                requests.trySend(ProxyDesign.Request.PatchMode(TunnelState.Mode.Direct))
-            }
-            R.id.global_mode -> {
-                requests.trySend(ProxyDesign.Request.PatchMode(TunnelState.Mode.Global))
-            }
-            R.id.rule_mode -> {
-                requests.trySend(ProxyDesign.Request.PatchMode(TunnelState.Mode.Rule))
-            }
-            else -> return false
-        }
-
-        return true
-    }
-
-    init {
-        menu.menuInflater.inflate(R.menu.menu_proxy, menu.menu)
-
-        menu.menu.apply {
-            findItem(R.id.not_selectable).isChecked = uiStore.proxyExcludeNotSelectable
-
-            when (uiStore.proxyLine){
-                1 -> findItem(R.id.single).isChecked = true
-                2 -> findItem(R.id.doubles).isChecked = true
-                3 -> findItem(R.id.multiple).isChecked = true
-            }
-
-            when (uiStore.proxySort) {
-                ProxySort.Default -> findItem(R.id.default_).isChecked = true
-                ProxySort.Title -> findItem(R.id.name).isChecked = true
-                ProxySort.Delay -> findItem(R.id.delay).isChecked = true
-            }
-
-            when (mode) {
-                null -> findItem(R.id.dont_modify).isChecked = true
-                TunnelState.Mode.Direct -> findItem(R.id.direct_mode).isChecked = true
-                TunnelState.Mode.Global -> findItem(R.id.global_mode).isChecked = true
-                TunnelState.Mode.Rule -> findItem(R.id.rule_mode).isChecked = true
-                else -> {}
-            }
-        }
-
-        menu.setOnMenuItemClickListener(this)
+        fun option(group: Int, label: Int, selected: Boolean, action: () -> Unit) = CouiMenuOption(
+            "${context.getString(group)} · ${context.getString(label)}", selected, action = action)
+        fun line(value: Int) { uiStore.proxyLine = value; updateConfig(); requests.trySend(ProxyDesign.Request.ReloadAll) }
+        fun sort(value: ProxySort) { uiStore.proxySort = value; requests.trySend(ProxyDesign.Request.ReloadAll) }
+        fun changeMode(value: TunnelState.Mode?) { requests.trySend(ProxyDesign.Request.PatchMode(value)) }
+        context.showCouiMenu(listOf(
+            option(R.string.filter, R.string.not_selectable, uiStore.proxyExcludeNotSelectable) {
+                uiStore.proxyExcludeNotSelectable = !uiStore.proxyExcludeNotSelectable; requests.trySend(ProxyDesign.Request.ReLaunch)
+            },
+            option(R.string.mode, R.string.dont_modify, mode == null) { changeMode(null) },
+            option(R.string.mode, R.string.direct_mode, mode == TunnelState.Mode.Direct) { changeMode(TunnelState.Mode.Direct) },
+            option(R.string.mode, R.string.global_mode, mode == TunnelState.Mode.Global) { changeMode(TunnelState.Mode.Global) },
+            option(R.string.mode, R.string.rule_mode, mode == TunnelState.Mode.Rule) { changeMode(TunnelState.Mode.Rule) },
+            option(R.string.layout, R.string.single, uiStore.proxyLine == 1) { line(1) },
+            option(R.string.layout, R.string.doubles, uiStore.proxyLine == 2) { line(2) },
+            option(R.string.layout, R.string.multiple, uiStore.proxyLine == 3) { line(3) },
+            option(R.string.sort, R.string.default_, uiStore.proxySort == ProxySort.Default) { sort(ProxySort.Default) },
+            option(R.string.sort, R.string.name, uiStore.proxySort == ProxySort.Title) { sort(ProxySort.Title) },
+            option(R.string.sort, R.string.delay, uiStore.proxySort == ProxySort.Delay) { sort(ProxySort.Delay) },
+        ))
     }
 }

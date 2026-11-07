@@ -4,11 +4,15 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.github.kr328.clash.common.compat.getDrawableCompat
-import com.github.kr328.clash.design.databinding.PreferenceSwitchBinding
-import com.github.kr328.clash.design.util.layoutInflater
+import com.itos.coui.`switch`.Switch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.reflect.KMutableProperty0
 
@@ -26,74 +30,52 @@ fun PreferenceScreen.switch(
     @StringRes summary: Int? = null,
     configure: SwitchPreference.() -> Unit = {},
 ): SwitchPreference {
-    val binding = PreferenceSwitchBinding
-        .inflate(context.layoutInflater, root, false)
-
+    val row = CouiPreferenceView(context)
+    val updateMutex = Mutex()
     val impl = object : SwitchPreference {
-        override val view: View
-            get() = binding.root
-        override var icon: Drawable?
-            get() = binding.iconView.background
-            set(value) {
-                binding.iconView.background = value
-                binding.iconView.visibility = if (value == null) View.GONE else View.VISIBLE
-            }
-        override var title: CharSequence?
-            get() = binding.titleView.text
-            set(value) {
-                binding.titleView.text = value
-            }
-        override var summary: CharSequence?
-            get() = binding.summaryView.text
-            set(value) {
-                binding.summaryView.text = value
-                binding.summaryView.visibility = if (value.isNullOrEmpty()) View.GONE else View.VISIBLE
-            }
+        override val view: View = row
+        override var icon: Drawable? by mutableStateOf(icon?.let(context::getDrawableCompat))
+        override var title: CharSequence? by mutableStateOf(title?.let(context::getText))
+        override var summary: CharSequence? by mutableStateOf(summary?.let(context::getText))
         override var listener: OnChangedListener? = null
-        override var enabled: Boolean
-            get() = binding.root.isEnabled
-            set(value) {
-                binding.root.isEnabled = value
-                binding.root.isFocusable = value
-                binding.root.isClickable = value
-                binding.root.alpha = if (value) 1.0f else 0.33f
+        var checked by mutableStateOf(false)
+        var loaded by mutableStateOf(false)
+    }
+
+    fun updateChecked(checked: Boolean) {
+        if (!row.contentEnabled || !impl.loaded || checked == impl.checked) return
+        impl.checked = checked
+        launch(Dispatchers.Main) {
+            updateMutex.withLock {
+                withContext(Dispatchers.IO) { value.set(checked) }
+                impl.listener?.onChanged()
             }
-
+        }
     }
 
-    impl.icon = icon?.let(context::getDrawableCompat)
-
-    if (title != null) {
-        impl.title = context.getString(title)
+    row.setContent {
+        val enabled = row.contentEnabled && impl.loaded
+        CouiPreferenceRow(
+            title = impl.title,
+            summary = impl.summary,
+            icon = impl.icon,
+            enabled = enabled,
+            onClick = { updateChecked(!impl.checked) },
+            trailing = {
+                Switch(
+                    checked = impl.checked,
+                    onCheckedChange = ::updateChecked,
+                    enabled = enabled,
+                )
+            },
+        )
     }
-
-    impl.summary = summary?.let(context::getString)
-
     impl.configure()
-
     addElement(impl)
 
     launch(Dispatchers.Main) {
-        val initialValue = withContext(Dispatchers.IO) {
-            value.get()
-        }
-
-        binding.switchView.apply {
-            isChecked = initialValue
-
-            binding.root.setOnClickListener {
-                isChecked = !isChecked
-
-                this@switch.launch(Dispatchers.Main) {
-                    withContext(Dispatchers.IO) {
-                        value.set(isChecked)
-                    }
-
-                    impl.listener?.onChanged()
-                }
-            }
-        }
+        impl.checked = withContext(Dispatchers.IO) { value.get() }
+        impl.loaded = true
     }
-
     return impl
 }

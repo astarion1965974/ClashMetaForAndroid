@@ -21,11 +21,12 @@ import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
-import com.github.kr328.clash.core.bridge.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
@@ -64,23 +65,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                             startActivity(ProfilesActivity::class.intent)
                         MainDesign.Request.OpenProviders ->
                             startActivity(ProvidersActivity::class.intent)
-                        MainDesign.Request.OpenLogs -> {
-                            if (LogcatService.running) {
-                                startActivity(LogcatActivity::class.intent)
-                            } else {
-                                startActivity(LogsActivity::class.intent)
-                            }
-                        }
                         MainDesign.Request.OpenSettings ->
                             startActivity(SettingsActivity::class.intent)
-                        MainDesign.Request.OpenAppRouting ->
-                            startActivity(AccessControlActivity::class.intent)
-                        MainDesign.Request.OpenRouting ->
-                            startActivity(ManagedRoutingActivity::class.intent)
-                        MainDesign.Request.OpenHelp ->
-                            startActivity(HelpActivity::class.intent)
-                        MainDesign.Request.OpenAbout ->
-                            design.showAbout(queryAppVersionName())
+                        MainDesign.Request.CheckDns -> launch { design.checkDns() }
                     }
                 }
                 if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
@@ -106,14 +93,29 @@ class MainActivity : BaseActivity<MainDesign>() {
         setMode(state.mode)
         setHasProviders(providers.isNotEmpty())
 
-        withProfile {
-            setProfileName(queryActive()?.name)
-        }
+        withProfile { setProfile(queryActive()) }
+        withClash { setTrafficHistory(queryTrafficHistory()) }
     }
 
     private suspend fun MainDesign.fetchTraffic() {
         withClash {
             setForwarded(queryTrafficTotal())
+            setTrafficHistory(queryTrafficHistory())
+        }
+    }
+
+    private suspend fun MainDesign.checkDns() {
+        if (!clashRunning || pausedAtHome) return
+        updateDnsLoading(true)
+        try {
+            val results = coroutineScope {
+                listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").map { domain ->
+                    async { domain to runCatching { withClash { queryDnsDiagnostic(domain) } }.getOrDefault("{}") }
+                }.awaitAll()
+            }
+            if (clashRunning && !pausedAtHome) setDnsResults(results)
+        } finally {
+            updateDnsLoading(false)
         }
     }
 
@@ -144,12 +146,6 @@ class MainActivity : BaseActivity<MainDesign>() {
             }
         } catch (e: Exception) {
             design?.showToast(DesignR.string.unable_to_start_vpn, ToastDuration.Long)
-        }
-    }
-
-    private suspend fun queryAppVersionName(): String {
-        return withContext(Dispatchers.IO) {
-            packageManager.getPackageInfo(packageName, 0).versionName + "\n" + Bridge.nativeCoreVersion().replace("_", "-")
         }
     }
 

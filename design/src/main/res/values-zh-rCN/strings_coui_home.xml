@@ -1,15 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="coui_home_title">Clash Meta</string>
+    <string name="coui_provider_updating">更新中…</string>
+    <string name="coui_home_tab">首页</string>
+    <string name="coui_home_overview">连接概览</string>
     <string name="coui_home_subtitle">轻松管理网络连接</string>
     <string name="coui_home_connected">已连接</string>
     <string name="coui_home_disconnected">准备连接</string>
     <string name="coui_home_section_connection">连接管理</string>
-    <string name="coui_home_section_actions">快捷操作</string>
     <string name="coui_home_status_hint">实时状态</string>
-    <string name="coui_home_settings_shortcut">打开设置</string>
     <string name="coui_home_profile_title">当前配置</string>
     <string name="coui_home_nodes_title">代理节点</string>
     <string name="coui_home_providers_title">规则提供者</string>
-    <string name="coui_home_help_about">帮助与信息</string>
+    <string name="coui_settings_routing">分流</string>
+    <string name="coui_settings_support">工具与帮助</string>
+    <string name="coui_quota_title">套餐剩余</string>
+    <string name="coui_quota_detail">已用 %1$s / 总量 %2$s</string>
+    <string name="coui_quota_missing">订阅未提供套餐信息</string>
+    <string name="coui_traffic_week">近七日流量</string>
+    <string name="coui_traffic_legend">绿色 下载　蓝色 上传</string>
+    <string name="coui_traffic_empty">开始连接后记录流量</string>
+    <string name="coui_traffic_note">服务运行期间记录；顶部为本次连接累计</string>
+    <string name="coui_dns_title">分流与 DNS</string>
+    <string name="coui_dns_mode">当前模式：%1$s</string>
+    <string name="coui_dns_check">检测</string>
+    <string name="coui_dns_checking">检测中</string>
+    <string name="coui_dns_pending">尚未检测</string>
+    <string name="coui_dns_result">%1$s · %2$d 毫秒</string>
+    <string name="coui_dns_failed">解析失败或超时</string>
+    <string name="coui_dns_note">通过内核解析器检测；结果不代表实际连接的分流出口。</string>
+    <string name="coui_clear">清除</string>
+    <string name="coui_input_back_cancel">返回可取消修改</string>
 </resources>

@@ -78,6 +78,24 @@ Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryTrafficTotal(JNIEnv *e
     return (jlong) (down_scale_traffic(upload) << 32u | down_scale_traffic(download));
 }
 
+JNIEXPORT jlongArray JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryTrafficBytes(JNIEnv *env, jobject thiz) {
+    uint64_t upload = 0, download = 0;
+    queryTotal(&upload, &download);
+    jlong values[2] = { (jlong) upload, (jlong) download };
+    jlongArray result = (*env)->NewLongArray(env, 2);
+    if (result != NULL) (*env)->SetLongArrayRegion(env, result, 0, 2, values);
+    return result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryDnsDiagnostic(JNIEnv *env, jobject thiz,
+                                                                         jstring domain) {
+    scoped_string host = get_string(domain);
+    scoped_string response = queryDnsDiagnostic(host);
+    return new_string(response);
+}
+
 JNIEXPORT void JNICALL
 Java_com_github_kr328_clash_core_bridge_Bridge_nativeNotifyDnsChanged(JNIEnv *env, jobject thiz,
                                                                       jstring dns_list) {

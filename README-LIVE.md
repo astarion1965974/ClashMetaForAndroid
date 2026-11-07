@@ -45,3 +45,19 @@ git submodule update --init --recursive
 单元测试覆盖嵌套及隐藏策略组、不同组分流、相同节点去重、循环 / 缺失组、负载均衡、直连、自动切换、Unicode 截断，以及主策略组指定、默认识别、配置变更回退、全局模式和仅查询主策略组链。构建产物还需要在目标 ColorOS 手机上验证胶囊、展开操作、权限开关和锁屏显示。
 
 Live Updates 参考：[Android 官方说明](https://developer.android.com/develop/ui/views/notifications/live-update)。
+
+## 内置默认配置 / Built-in default profile
+
+首次安装（配置列表为空）时，App 会自动创建一个名为 **Open-Box 分流** 的配置，内容来自
+`service/src/main/assets/default-profile/openbox-mihomo.yaml`（与 `configs/openbox-port/openbox-mihomo.yaml` 相同）。
+它以「未保存」状态出现，不会自动激活，也不会请求占位的订阅地址，因此不会导致崩溃。覆盖升级且已有配置时不会创建。
+
+使用前请在 App 内编辑：
+
+1. 「配置」页点 **Open-Box 分流** →「编辑」→ 打开配置文件编辑。
+2. 把 `<SUBSCRIPTION_URL>` 替换成你的订阅地址（proxy-providers 在替换前无法加载节点）。
+3. 把 `secret: <CHANGE_ME>` 改成你自己的面板密钥。
+4. 保存后再选中启用。
+
+On first launch with no profiles, the app seeds an unsaved, inactive "Open-Box 分流" profile. Replace
+`<SUBSCRIPTION_URL>` and `<CHANGE_ME>` in-app before saving. Never commit real subscription URLs or secrets.

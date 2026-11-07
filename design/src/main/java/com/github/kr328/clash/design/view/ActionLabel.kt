@@ -7,48 +7,52 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.databinding.ComponentActionLabelBinding
-import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.github.kr328.clash.design.preference.CouiPreferenceView
 
 class ActionLabel @JvmOverloads constructor(
     context: Context,
     attributeSet: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = 0,
-    @StyleRes defStyleRes: Int = 0
+    @StyleRes defStyleRes: Int = 0,
 ) : FrameLayout(context, attributeSet, defStyleAttr, defStyleRes) {
-    private val binding = ComponentActionLabelBinding
-        .inflate(context.layoutInflater, this, true)
+    private lateinit var row: CouiPreferenceView
+    private var hasClick by mutableStateOf(false)
 
-    var icon: Drawable?
-        get() = binding.iconView.background
-        set(value) {
-            binding.iconView.background = value
-        }
+    var icon: Drawable? by mutableStateOf(null)
+    var text: CharSequence? by mutableStateOf(null)
+    var subtext: CharSequence? by mutableStateOf(null)
 
-    var text: CharSequence?
-        get() = binding.textView.text
-        set(value) {
-            binding.textView.text = value
-        }
+    override fun setEnabled(enabled: Boolean) {
+        super.setEnabled(enabled)
+        if (::row.isInitialized) row.isEnabled = enabled
+    }
 
-    var subtext: CharSequence?
-        get() = binding.subtextView.text
-        set(value) {
-            binding.subtextView.text = value
-            binding.subtextView.visibility = if (value == null) View.GONE else View.VISIBLE
-        }
-
-    override fun setOnClickListener(l: OnClickListener?) {
-        binding.root.setOnClickListener(l)
+    override fun setOnClickListener(listener: View.OnClickListener?) {
+        super.setOnClickListener(listener)
+        hasClick = listener != null
     }
 
     init {
+        row = CouiPreferenceView(context)
+        row.isEnabled = isEnabled
+        row.setContent {
+            CouiPreferenceRow(
+                title = text,
+                summary = subtext,
+                icon = icon,
+                enabled = row.contentEnabled,
+                onClick = if (hasClick) ({ performClick() }) else null,
+            )
+        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
         context.theme.obtainStyledAttributes(
-            attributeSet,
-            R.styleable.ActionLabel,
-            defStyleAttr,
-            defStyleRes
+            attributeSet, R.styleable.ActionLabel, defStyleAttr, defStyleRes,
         ).apply {
             try {
                 icon = getDrawable(R.styleable.ActionLabel_icon)

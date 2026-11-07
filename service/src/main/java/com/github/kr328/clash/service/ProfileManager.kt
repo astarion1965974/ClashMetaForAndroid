@@ -1,6 +1,7 @@
 package com.github.kr328.clash.service
 
 import android.content.Context
+import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.service.data.Database
 import com.github.kr328.clash.service.data.ImportedDao
 import com.github.kr328.clash.service.data.Pending
@@ -30,6 +31,30 @@ class ProfileManager(private val context: Context) : IProfileManager,
             Database.database //.init
 
             ProfileReceiver.rescheduleAll(context)
+
+            seedDefaultProfile()
+        }
+    }
+
+    // Built-in Open-Box routing template. Left as a pending (unsaved) profile so that the
+    // <SUBSCRIPTION_URL> placeholder is never fetched or validated until the user edits it.
+    private suspend fun seedDefaultProfile() {
+        try {
+            if (store.defaultProfileSeeded) return
+
+            if (queryAll().isEmpty()) {
+                val uuid = create(Profile.Type.File, DEFAULT_PROFILE_NAME)
+
+                context.pendingDir.resolve(uuid.toString()).resolve("config.yaml").outputStream().use { out ->
+                    context.assets.open(DEFAULT_PROFILE_ASSET).use { it.copyTo(out) }
+                }
+
+                context.sendProfileChanged(uuid)
+            }
+
+            store.defaultProfileSeeded = true
+        } catch (e: Exception) {
+            Log.w("Seed default profile: $e", e)
         }
     }
 
@@ -233,5 +258,10 @@ class ProfileManager(private val context: Context) : IProfileManager,
         } else {
             ProfileReceiver.scheduleNext(context, imported)
         }
+    }
+
+    companion object {
+        private const val DEFAULT_PROFILE_NAME = "Open-Box 分流"
+        private const val DEFAULT_PROFILE_ASSET = "default-profile/openbox-mihomo.yaml"
     }
 }

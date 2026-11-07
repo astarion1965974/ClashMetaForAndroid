@@ -132,11 +132,13 @@
             android:nextFocusLeft="@id/root_view"
             android:onClick="@{menu}">
 
-            <View
+            <ImageView
                 android:layout_width="@dimen/item_tailing_component_size"
                 android:layout_height="@dimen/item_tailing_component_size"
                 android:layout_margin="@dimen/item_tailing_margin"
-                android:background="@drawable/ic_baseline_more_vert" />
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_baseline_more_vert" />
         </FrameLayout>
     </RelativeLayout>
 </layout>

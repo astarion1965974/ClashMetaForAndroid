@@ -9,6 +9,6 @@
                 <LinearLayout android:id="@+id/content" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
             </LinearLayout>
         </ScrollView>
-        <com.google.android.material.button.MaterialButton android:id="@+id/save_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="20dp" android:layout_marginVertical="8dp" android:text="@string/route_save" />
+        <com.github.kr328.clash.design.view.CouiButtonView android:id="@+id/save_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="20dp" android:layout_marginVertical="8dp" android:text="@string/route_save" />
     </LinearLayout>
 </layout>

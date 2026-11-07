@@ -4,13 +4,21 @@ import android.graphics.drawable.Drawable
 import android.view.View
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.common.compat.getDrawableCompat
-import com.github.kr328.clash.design.databinding.PreferenceClickableBinding
-import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.R
+import com.itos.coui.theme.CouiTheme
 
 interface ClickablePreference : Preference {
     var title: CharSequence
-
     var icon: Drawable?
     var summary: CharSequence?
 
@@ -21,52 +29,41 @@ fun PreferenceScreen.clickable(
     @StringRes title: Int,
     @DrawableRes icon: Int? = null,
     @StringRes summary: Int? = null,
-    configure: ClickablePreference.() -> Unit = {}
+    configure: ClickablePreference.() -> Unit = {},
 ): ClickablePreference {
-    val binding = PreferenceClickableBinding
-        .inflate(context.layoutInflater, root, false)
-
+    val row = CouiPreferenceView(context)
     val impl = object : ClickablePreference {
-        override var icon: Drawable?
-            get() = binding.iconView.background
-            set(value) {
-                binding.iconView.background = value
-                binding.iconView.visibility = if (value == null) View.GONE else View.VISIBLE
-            }
-        override var title: CharSequence
-            get() = binding.titleView.text
-            set(value) {
-                binding.titleView.text = value
-            }
-        override var summary: CharSequence?
-            get() = binding.summaryView.text
-            set(value) {
-                binding.summaryView.text = value
-                binding.summaryView.visibility = if (value == null) View.GONE else View.VISIBLE
-            }
-        override val view: View
-            get() = binding.root
+        override val view: View = row
+        override var title: CharSequence by mutableStateOf(context.getText(title))
+        override var icon: Drawable? by mutableStateOf(icon?.let(context::getDrawableCompat))
+        override var summary: CharSequence? by mutableStateOf(summary?.let(context::getText))
+        var onClick: (() -> Unit)? by mutableStateOf(null)
 
         override fun clicked(clicked: () -> Unit) {
-            binding.root.setOnClickListener {
-                clicked()
-            }
+            onClick = clicked
         }
     }
 
-    impl.title = context.getText(title)
-
-    impl.icon = icon?.let(context::getDrawableCompat)
-
-    if (summary != null) {
-        impl.summary = context.getText(summary)
-    } else {
-        impl.summary = null
+    row.setContent {
+        CouiPreferenceRow(
+            title = impl.title,
+            summary = impl.summary,
+            icon = impl.icon,
+            enabled = row.contentEnabled,
+            onClick = impl.onClick,
+            trailing = {
+                if (impl.onClick != null) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_live_chevron),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurfaceVariant),
+                    )
+                }
+            },
+        )
     }
-
     impl.configure()
-
     addElement(impl)
-
     return impl
 }

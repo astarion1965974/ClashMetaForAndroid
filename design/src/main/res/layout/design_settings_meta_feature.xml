@@ -39,13 +39,13 @@
 
                 <include
                     layout="@layout/common_activity_bar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/toolbar_height"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
                     android:layout_toStartOf="@id/clear_view" />
 
-                <ImageView
+                <com.github.kr328.clash.design.view.CouiIconButtonView
                     android:id="@+id/clear_view"
                     android:layout_width="@dimen/item_tailing_component_size"
                     android:layout_height="@dimen/item_tailing_component_size"

@@ -29,10 +29,11 @@ class ProxyAdapter(
                 clicked(current.proxy.name)
             }
 
-            val isSelector = selectable
+            val isSelector = this@ProxyAdapter.selectable
 
             isFocusable = isSelector
             isClickable = isSelector
+            this.selectable = isSelector
 
             current.update(true)
         }

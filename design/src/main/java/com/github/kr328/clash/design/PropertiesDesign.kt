@@ -5,6 +5,7 @@ import android.view.View
 import com.github.kr328.clash.core.model.FetchStatus
 import com.github.kr328.clash.design.databinding.DesignPropertiesBinding
 import com.github.kr328.clash.design.dialog.ModelProgressBarConfigure
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import com.github.kr328.clash.design.dialog.requestModelTextInput
 import com.github.kr328.clash.design.dialog.withModelProgressBar
 import com.github.kr328.clash.design.util.*
@@ -64,18 +65,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
 
     suspend fun requestExitWithoutSaving(): Boolean {
         return withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { ctx ->
-                val dialog = MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.exit_without_save)
-                    .setMessage(R.string.exit_without_save_warning)
-                    .setCancelable(true)
-                    .setPositiveButton(R.string.ok) { _, _ -> ctx.resume(true) }
-                    .setNegativeButton(R.string.cancel) { _, _ -> }
-                    .setOnDismissListener { if (!ctx.isCompleted) ctx.resume(false) }
-                    .show()
-
-                ctx.invokeOnCancellation { dialog.dismiss() }
-            }
+            context.requestCouiConfirm(R.string.exit_without_save, R.string.exit_without_save_warning)
         }
     }
 

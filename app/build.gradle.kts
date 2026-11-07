@@ -46,6 +46,37 @@ android {
     }
 }
 
+val couiRevision = providers.gradleProperty("cmfa.couiRevision").map { revision ->
+    require(revision.matches(Regex("[1-9][0-9]{0,6}"))) { "Invalid COUI revision" }
+    revision.toInt()
+}
+
+if (couiRevision.isPresent) {
+    androidComponents.onVariants(androidComponents.selector().withBuildType("debug")) { variant ->
+        val revision = couiRevision.get()
+        variant.outputs.forEach { output ->
+            output.versionCode.set(211042 + revision)
+            output.versionName.set("2.11.36.Live.Mobile.1-COUI.$revision")
+        }
+    }
+}
+
+val mainlineBuildNumber = providers.gradleProperty("cmfa.mainlineBuildNumber").map {
+    val number = it.toInt()
+    require(number in 1..1_000_000) { "Invalid mainline build number" }
+    number
+}
+
+if (mainlineBuildNumber.isPresent) {
+    androidComponents.onVariants(androidComponents.selector().withBuildType("release")) { variant ->
+        val build = mainlineBuildNumber.get()
+        variant.outputs.forEach { output ->
+            output.versionCode.set(211046 + build)
+            output.versionName.set("2.11.36.Live.Coui.R8.$build")
+        }
+    }
+}
+
 tasks.getByName("clean", type = Delete::class) {
     delete(file("release"))
 }

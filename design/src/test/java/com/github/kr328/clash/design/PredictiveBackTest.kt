@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28, 33, 35])
+@Config(sdk = [31, 33, 35])
 class PredictiveBackTest {
     private fun activity(): AppCompatActivity {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java)

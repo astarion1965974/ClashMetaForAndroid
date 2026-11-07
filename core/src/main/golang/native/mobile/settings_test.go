@@ -7,6 +7,7 @@ import (
 	_ "github.com/metacubex/mihomo/hub/executor"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -77,6 +78,8 @@ func TestDNSBootstrapAndCustomResolver(t *testing.T) {
 	c.DNS.ProxyServerNameserver = []string{"https://custom.example/dns-query"}
 	c.DNS.NameServerPolicy = orderedmap.New[string, any]()
 	c.DNS.NameServerPolicy.Set("internal.example", []string{"system://"})
+	domesticResolvers := []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"}
+	c.DNS.NameServerPolicy.Set("rule-set:live-cn", domesticResolvers)
 	if err := Apply(c, Settings{Enabled: true, SecureDNS: true}); err != nil {
 		t.Fatal(err)
 	}
@@ -85,6 +88,12 @@ func TestDNSBootstrapAndCustomResolver(t *testing.T) {
 	}
 	if len(c.DNS.DefaultNameserver) == 0 || len(c.DNS.NameServer) != 1 {
 		t.Fatal(c.DNS)
+	}
+	if resolvers, _ := c.DNS.NameServerPolicy.Get("rule-set:live-cn"); !reflect.DeepEqual(resolvers, domesticResolvers) {
+		t.Fatalf("mobile preset replaced managed domestic resolvers: %v", resolvers)
+	}
+	if _, ok := c.DNS.NameServerPolicy.Get("rule-set,live-cn"); ok {
+		t.Fatal("mobile preset added a comma-delimited domestic DNS policy")
 	}
 }
 func TestNoDirectFallbackOnMissingNodes(t *testing.T) {
@@ -146,12 +155,25 @@ func TestGeneratedFallbackParsesWithMihomo(t *testing.T) {
 	c.Proxy = []map[string]any{{"name": "JP 1", "type": "socks5", "server": "127.0.0.1", "port": 1080}, {"name": "JP 2", "type": "socks5", "server": "127.0.0.1", "port": 1081}}
 	c.ProxyGroup = []map[string]any{{"name": "Live · 默认代理", "type": "select", "proxies": []string{"JP 1"}}}
 	c.Rule = []string{"MATCH,Live · 默认代理"}
-	if err := Apply(c, Settings{Enabled: true, StableNodes: []string{"JP 2", "JP 1"}, AINodes: []string{"JP 1"}}); err != nil {
+	c.DNS.Enable = true
+	c.RuleProvider = map[string]map[string]any{
+		"live-cn":     {"type": "inline", "behavior": "domain", "payload": []string{"+.example.cn"}},
+		"live-openai": {"type": "inline", "behavior": "domain", "payload": []string{"+.example.org"}},
+	}
+	if err := Apply(c, Settings{Enabled: true, SecureDNS: true, StableNodes: []string{"JP 2", "JP 1"}, AINodes: []string{"JP 1"}}); err != nil {
 		t.Fatal(err)
 	}
 	parsed, err := config.ParseRawConfig(c)
 	if err != nil {
 		t.Fatal(err)
+	}
+	policies := parsed.DNS.NameServerPolicy
+	if len(policies) != 2 || policies[0].Matcher == nil || policies[1].Matcher == nil {
+		t.Fatalf("expected domestic and AI rule-set DNS policies, got %+v", policies)
+	}
+	if policies[0].NameServers[0].ProxyName != "DIRECT" || policies[1].NameServers[0].ProxyName != AIGroup ||
+		parsed.DNS.NameServer[0].ProxyName != StableGroup {
+		t.Fatal("unexpected DNS exits")
 	}
 	for _, name := range []string{StableGroup, AIGroup} {
 		if parsed.Proxies[name] == nil {

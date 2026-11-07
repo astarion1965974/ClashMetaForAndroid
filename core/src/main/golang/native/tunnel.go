@@ -4,11 +4,35 @@ package main
 import "C"
 
 import (
+	"context"
+	"time"
 	"unsafe"
 
 	"cfa/native/app"
 	"cfa/native/tunnel"
+	"github.com/metacubex/mihomo/component/resolver"
 )
+
+//export queryDnsDiagnostic
+func queryDnsDiagnostic(domain C.c_string) *C.char {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	start := time.Now()
+	ips, err := resolver.LookupIP(ctx, C.GoString(domain))
+	addresses := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		addresses = append(addresses, ip.String())
+	}
+	message := ""
+	if err != nil {
+		message = err.Error()
+	}
+	return marshalJson(struct {
+		Addresses []string `json:"addresses"`
+		Error string `json:"error"`
+		Millis int64 `json:"millis"`
+	}{addresses, message, time.Since(start).Milliseconds()})
+}
 
 //export queryTunnelState
 func queryTunnelState() *C.char {

@@ -1,15 +1,33 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
-import android.text.InputType
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.databinding.DesignManagedRoutingBinding
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiContent
+import com.github.kr328.clash.design.dialog.showCouiMenu
 import com.github.kr328.clash.design.preference.*
 import com.github.kr328.clash.design.util.*
 import com.github.kr328.clash.service.store.ManagedRoutingSettings
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
+import com.itos.coui.text.rememberCouiTextStyle
+import com.itos.coui.theme.CouiTheme
 import java.net.IDN
 import java.text.DateFormat
 import java.util.Date
@@ -54,30 +72,31 @@ class ManagedRoutingDesign(
 
     private fun editDomains(direct: Boolean) {
         if (saving || updating) return
-        val input = EditText(context).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            minLines = 4; maxLines = 10
-            setText((if (direct) settings.directDomains else settings.proxyDomains).joinToString("\n"))
-            hint = "example.com"
-            setPadding(24, 16, 24, 16)
-        }
-        val dialog = MaterialAlertDialogBuilder(context)
-            .setTitle(if (direct) R.string.managed_direct else R.string.managed_proxy)
-            .setMessage(R.string.managed_domain_hint).setView(input)
-            .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.route_save, null).create()
-        dialog.setOnShowListener {
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        context.showCouiContent { dismiss ->
+            var input by remember { mutableStateOf((if (direct) settings.directDomains else settings.proxyDomains).joinToString("\n")) }
+            var invalid by remember { mutableStateOf(false) }
+            Dialog(onDismissRequest = dismiss, title = context.getString(if (direct) R.string.managed_direct else R.string.managed_proxy),
+                message = context.getString(R.string.managed_domain_hint),
+                dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+                confirmAction = CouiDialogAction(context.getString(R.string.route_save), {
                 try {
-                    val domains = input.text.toString().lineSequence().map(String::trim).filter(String::isNotEmpty)
+                    val domains = input.lineSequence().map(String::trim).filter(String::isNotEmpty)
                         .map { IDN.toASCII(it, IDN.USE_STD3_ASCII_RULES).lowercase() }.distinct().toList()
                     val other = if (direct) settings.proxyDomains else settings.directDomains
                     require(domains.none { it in other || it.length > 253 || it.contains(Regex("[^a-z0-9.-]")) || it.split('.').any { part -> part.isEmpty() || part.length > 63 || part.startsWith('-') || part.endsWith('-') } })
                     if (direct) settings.directDomains = domains else settings.proxyDomains = domains
-                    dialog.dismiss(); buildScreen(); changed()
-                } catch (_: IllegalArgumentException) { input.error = context.getString(R.string.managed_domain_invalid) }
+                    dismiss(); buildScreen(); changed()
+                } catch (_: IllegalArgumentException) { invalid = true }
+                })) {
+                BasicTextField(value = input, onValueChange = { input = it; invalid = false },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).heightIn(min = 100.dp)
+                        .background(CouiTheme.colorScheme.background).padding(12.dp),
+                    textStyle = rememberCouiTextStyle(CouiTextKind.Body).copy(color = CouiTheme.colorScheme.onSurface),
+                    cursorBrush = SolidColor(CouiTheme.colorScheme.accent), minLines = 4, maxLines = 10)
+                if (invalid) Text(text = context.getString(R.string.managed_domain_invalid), kind = CouiTextKind.Description,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             }
         }
-        dialog.show()
     }
 
     private fun buildScreen() {
@@ -103,11 +122,12 @@ class ManagedRoutingDesign(
                     val initial = settings.targets[key] ?: if (key == "cn") "DIRECT" else "Live · 默认代理"
                     summary = label(initial)
                     clicked {
-                        if (!saving && !updating) MaterialAlertDialogBuilder(context)
-                            .setTitle(titleRes).setSingleChoiceItems(options.map(::label).toTypedArray(), options.indexOf(initial)) { dialog, index ->
-                                settings.targets = settings.targets + (key to options[index])
-                                dialog.dismiss(); buildScreen(); changed()
-                            }.setNegativeButton(R.string.cancel, null).show()
+                        if (!saving && !updating) context.showCouiMenu(options.map { option ->
+                            CouiMenuOption(label(option), selected = option == initial) {
+                                settings.targets = settings.targets + (key to option)
+                                buildScreen(); changed()
+                            }
+                        })
                     }
                 }
             }
@@ -133,13 +153,16 @@ class ManagedRoutingDesign(
             }
             clickable(R.string.managed_reset) {
                 clicked {
-                    if (!saving && !updating) MaterialAlertDialogBuilder(context).setTitle(R.string.managed_reset)
-                        .setMessage(R.string.managed_reset_hint).setNegativeButton(R.string.cancel, null)
-                        .setPositiveButton(R.string.reset) { _, _ ->
+                    if (!saving && !updating) context.showCouiContent { dismiss ->
+                        Dialog(onDismissRequest = dismiss, title = context.getString(R.string.managed_reset),
+                            message = context.getString(R.string.managed_reset_hint),
+                            dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+                            confirmAction = CouiDialogAction(context.getString(R.string.reset), {
                             settings.targets = emptyMap(); settings.directDomains = emptyList(); settings.proxyDomains = emptyList()
                             settings.blockAds = false; settings.domesticDns = true
-                            buildScreen(); changed()
-                        }.show()
+                            dismiss(); buildScreen(); changed()
+                        }))
+                    }
                 }
             }
         }

@@ -42,11 +42,13 @@
                     android:orientation="horizontal"
                     android:paddingVertical="@dimen/item_padding_vertical">
 
-                    <View
+                    <ImageView
                         android:layout_width="@dimen/tips_icon_size"
                         android:layout_height="@dimen/tips_icon_size"
                         android:layout_marginHorizontal="@dimen/tips_icon_margin"
-                        android:background="@drawable/ic_outline_info" />
+                        android:importantForAccessibility="no"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_outline_info" />
 
                     <TextView
                         android:id="@+id/tips"
@@ -122,8 +124,8 @@
 
                 <include
                     layout="@layout/common_activity_bar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/toolbar_height"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
                     android:layout_toStartOf="@id/action_layout" />
@@ -142,7 +144,7 @@
                         android:indeterminate="true"
                         android:visibility="@{processing ? View.VISIBLE : View.GONE}" />
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:layout_width="@dimen/item_tailing_component_size"
                         android:layout_height="@dimen/item_tailing_component_size"
                         android:layout_gravity="end|center_vertical"

@@ -1,0 +1,843 @@
+# 由路由器 Open-Box (sing-box) 分流规则移植的 mihomo 配置模板
+# 使用前替换 <SUBSCRIPTION_URL> 和 <CHANGE_ME>；不要把真实订阅地址提交进仓库
+mixed-port: 7890
+allow-lan: true
+mode: rule
+ipv6: false
+log-level: info
+external-controller: 127.0.0.1:9090
+secret: <CHANGE_ME>
+unified-delay: true
+tcp-concurrent: true
+geodata-mode: false
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  sniff:
+    HTTP:
+      ports:
+      - 80
+      - 8080-8880
+      override-destination: false
+    TLS:
+      ports:
+      - 443
+      - 8443
+    QUIC:
+      ports:
+      - 443
+      - 8443
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: redir-host
+  respect-rules: true
+  default-nameserver:
+  - 223.5.5.5
+  - 119.29.29.29
+  proxy-server-nameserver:
+  - tcp://223.5.5.5
+  - 119.29.29.29
+  nameserver:
+  - tcp://223.5.5.5
+  - 119.29.29.29
+  nameserver-policy:
+    rule-set:geosite_gfw,geosite_google,geosite_geolocation-!cn,geosite_category-ai-!cn,geosite_openai,geosite_spotify:
+    - tcp://1.1.1.1#其他
+    - tcp://8.8.8.8#其他
+proxy-providers:
+  airport:
+    type: http
+    url: <SUBSCRIPTION_URL>
+    path: ./providers/airport.yaml
+    interval: 86400
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+      expected-status: 204
+    exclude-filter: 家宽
+proxy-groups:
+- name: 地区-美国
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(美国).*$
+- name: 地区-香港
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(香港).*$
+- name: 地区-日本
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(日本).*$
+- name: 地区-新加坡
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(新加坡).*$
+- name: 地区-台湾
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(台湾).*$
+- name: 地区-韩国
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(韩国).*$
+- name: 自动选择
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*.*$
+- name: 故障转移-备用
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(香港|新加坡|韩国).*$
+- name: 故障转移-主用
+  type: url-test
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(日本).*$
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+- name: 故障转移
+  type: fallback
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  timeout: 5000
+  max-failed-times: 2
+  expected-status: 204
+  lazy: false
+  proxies:
+  - 故障转移-主用
+  - 故障转移-备用
+- name: 非日本节点-备用
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(香港|韩国|新加坡).*$
+- name: 非日本节点-主用
+  type: url-test
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(新加坡).*$
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+- name: 非日本节点
+  type: fallback
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  timeout: 5000
+  max-failed-times: 2
+  expected-status: 204
+  lazy: false
+  proxies:
+  - 非日本节点-主用
+  - 非日本节点-备用
+- name: Dalamud更新
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(日本).*$
+- name: 赛博云
+  type: select
+  proxies:
+  - 地区-日本
+  - 自动选择
+  - 故障转移
+  - 地区-美国
+  - 地区-香港
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+- name: Steam网页节点
+  type: select
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(香港|日本|新加坡).*$
+- name: 非香港节点
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量|香港|澳门|HK|Hong ?Kong|Macau)).*.*$
+- name: 台湾专线优先-主用
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*.*$
+- name: 台湾专线优先-备用
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(美国|香港|新加坡|荷兰).*$
+- name: 台湾专线优先
+  type: fallback
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  timeout: 5000
+  max-failed-times: 2
+  expected-status: 204
+  lazy: false
+  proxies:
+  - 台湾专线优先-主用
+  - 台湾专线优先-备用
+- name: 谷歌固定-备用
+  type: url-test
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量|香港|澳门|HK|Hong ?Kong|Macau)).*(日本|新加坡).*$
+- name: 谷歌固定-主用
+  type: url-test
+  use:
+  - airport
+  filter: ^(?!.*(家宽|剩余|到期|官网|套餐|流量)).*(日本).*$
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 100
+  expected-status: 204
+  lazy: true
+- name: 谷歌固定
+  type: fallback
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  timeout: 5000
+  max-failed-times: 3
+  expected-status: 204
+  lazy: false
+  proxies:
+  - 谷歌固定-主用
+  - 谷歌固定-备用
+- name: md.gvdb.org
+  type: select
+  proxies:
+  - 非日本节点
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: Dalamud更新站点-1
+  type: select
+  proxies:
+  - Dalamud更新
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: Steam下载
+  type: select
+  proxies:
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: Steam社区
+  type: select
+  proxies:
+  - Steam网页节点
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: Steam商店
+  type: select
+  proxies:
+  - Steam网页节点
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: 局域网与测速直连
+  type: select
+  proxies:
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: AI网站
+  type: select
+  proxies:
+  - 非香港节点
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: 干净IP网站
+  type: select
+  proxies:
+  - 台湾专线优先
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 谷歌固定
+- name: Spotify
+  type: select
+  proxies:
+  - 地区-日本
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: 谷歌与被墙网站
+  type: select
+  proxies:
+  - 谷歌固定
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+- name: 国内网站直连
+  type: select
+  proxies:
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: 境外网站
+  type: select
+  proxies:
+  - 台湾专线优先
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 谷歌固定
+- name: 国内IP直连
+  type: select
+  proxies:
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 台湾专线优先
+  - 谷歌固定
+- name: 其他
+  type: select
+  proxies:
+  - 台湾专线优先
+  - DIRECT
+  - REJECT
+  - 地区-美国
+  - 地区-香港
+  - 地区-日本
+  - 地区-新加坡
+  - 地区-台湾
+  - 地区-韩国
+  - 自动选择
+  - 故障转移
+  - 非日本节点
+  - Dalamud更新
+  - 赛博云
+  - Steam网页节点
+  - 非香港节点
+  - 谷歌固定
+rule-providers:
+  geosite_steam@cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/steam@cn.mrs
+    path: ./ruleset/geosite/steam@cn.mrs
+    interval: 86400
+  geosite_private:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/private.mrs
+    path: ./ruleset/geosite/private.mrs
+    interval: 86400
+  geoip_private:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geoip/private.mrs
+    path: ./ruleset/geoip/private.mrs
+    interval: 86400
+  geosite_category-speedtest:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/category-speedtest.mrs
+    path: ./ruleset/geosite/category-speedtest.mrs
+    interval: 86400
+  geosite_category-ai-!cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/category-ai-!cn.mrs
+    path: ./ruleset/geosite/category-ai-!cn.mrs
+    interval: 86400
+  geosite_category-ai-chat-!cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/category-ai-chat-!cn.mrs
+    path: ./ruleset/geosite/category-ai-chat-!cn.mrs
+    interval: 86400
+  geosite_openai:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/openai.mrs
+    path: ./ruleset/geosite/openai.mrs
+    interval: 86400
+  geosite_anthropic:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/anthropic.mrs
+    path: ./ruleset/geosite/anthropic.mrs
+    interval: 86400
+  geosite_google-gemini:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/google-gemini.mrs
+    path: ./ruleset/geosite/google-gemini.mrs
+    interval: 86400
+  geosite_xai:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/xai.mrs
+    path: ./ruleset/geosite/xai.mrs
+    interval: 86400
+  geosite_cursor:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/cursor.mrs
+    path: ./ruleset/geosite/cursor.mrs
+    interval: 86400
+  geosite_github-copilot:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/github-copilot.mrs
+    path: ./ruleset/geosite/github-copilot.mrs
+    interval: 86400
+  geosite_perplexity:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/perplexity.mrs
+    path: ./ruleset/geosite/perplexity.mrs
+    interval: 86400
+  geosite_spotify:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/spotify.mrs
+    path: ./ruleset/geosite/spotify.mrs
+    interval: 86400
+  geosite_google:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/google.mrs
+    path: ./ruleset/geosite/google.mrs
+    interval: 86400
+  geosite_gfw:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/gfw.mrs
+    path: ./ruleset/geosite/gfw.mrs
+    interval: 86400
+  geosite_apple-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/apple-cn.mrs
+    path: ./ruleset/geosite/apple-cn.mrs
+    interval: 86400
+  geosite_microsoft@cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/microsoft@cn.mrs
+    path: ./ruleset/geosite/microsoft@cn.mrs
+    interval: 86400
+  geosite_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/cn.mrs
+    path: ./ruleset/geosite/cn.mrs
+    interval: 86400
+  geosite_geolocation-!cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geosite/geolocation-!cn.mrs
+    path: ./ruleset/geosite/geolocation-!cn.mrs
+    interval: 86400
+  geoip_cn:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: https://github.com/MetaCubeX/meta-rules-dat/raw/meta/geo/geoip/cn.mrs
+    path: ./ruleset/geoip/cn.mrs
+    interval: 86400
+rules:
+- DST-PORT,123,DIRECT
+- DOMAIN,md.gvdb.org,md.gvdb.org
+- DOMAIN,dalamud-dis.atmoomen.top,Dalamud更新站点-1
+- DOMAIN,gh.atmoomen.top,Dalamud更新站点-1
+- DOMAIN,api.nuget.org,Dalamud更新站点-1
+- RULE-SET,geosite_steam@cn,Steam下载
+- DOMAIN,dl.steam.clngaa.com,Steam下载
+- DOMAIN,dl.steam.ksyna.com,Steam下载
+- DOMAIN,st.dl.bscstorage.net,Steam下载
+- DOMAIN,st.dl.eccdnx.com,Steam下载
+- DOMAIN,st.dl.pinyuncloud.com,Steam下载
+- DOMAIN-SUFFIX,steamcontent.com,Steam下载
+- DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,Steam下载
+- DOMAIN-SUFFIX,cdn-ali.content.steamchina.com,Steam下载
+- DOMAIN-SUFFIX,cdn-qc.content.steamchina.com,Steam下载
+- DOMAIN-SUFFIX,cdn-ws.content.steamchina.com,Steam下载
+- DOMAIN,steamcommunity-a.akamaihd.net,Steam社区
+- DOMAIN,steamuserimages-a.akamaihd.net,Steam社区
+- DOMAIN,community.akamai.steamstatic.com,Steam社区
+- DOMAIN,community.fastly.steamstatic.com,Steam社区
+- DOMAIN,avatars.steamstatic.com,Steam社区
+- DOMAIN,avatars.akamai.steamstatic.com,Steam社区
+- DOMAIN,avatars.fastly.steamstatic.com,Steam社区
+- DOMAIN,community.cloudflare.steamstatic.com,Steam社区
+- DOMAIN,community.steamstatic.com,Steam社区
+- DOMAIN,avatars.cloudflare.steamstatic.com,Steam社区
+- DOMAIN-SUFFIX,steamcommunity.com,Steam社区
+- DOMAIN-SUFFIX,steam-chat.com,Steam社区
+- DOMAIN,store.akamai.steamstatic.com,Steam商店
+- DOMAIN,store.fastly.steamstatic.com,Steam商店
+- DOMAIN,shared.akamai.steamstatic.com,Steam商店
+- DOMAIN,shared.fastly.steamstatic.com,Steam商店
+- DOMAIN,cdn.akamai.steamstatic.com,Steam商店
+- DOMAIN,cdn.fastly.steamstatic.com,Steam商店
+- DOMAIN,cdn.cloudflare.steamstatic.com,Steam商店
+- DOMAIN,shared.cloudflare.steamstatic.com,Steam商店
+- DOMAIN,store.cloudflare.steamstatic.com,Steam商店
+- DOMAIN-SUFFIX,store.steampowered.com,Steam商店
+- DOMAIN-SUFFIX,checkout.steampowered.com,Steam商店
+- DOMAIN-SUFFIX,help.steampowered.com,Steam商店
+- DOMAIN-SUFFIX,login.steampowered.com,Steam商店
+- DOMAIN-SUFFIX,api.steampowered.com,Steam商店
+- RULE-SET,geosite_private,局域网与测速直连
+- RULE-SET,geoip_private,局域网与测速直连,no-resolve
+- RULE-SET,geosite_category-speedtest,局域网与测速直连
+- DOMAIN,repo.huaweicloud.com,局域网与测速直连
+- DOMAIN-SUFFIX,cm.steampowered.com,局域网与测速直连
+- DOMAIN-SUFFIX,steamserver.net,局域网与测速直连
+- IP-CIDR,45.121.184.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,103.10.124.0/23,局域网与测速直连,no-resolve
+- IP-CIDR,103.28.54.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,146.66.152.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,146.66.155.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,153.254.86.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.224.0/22,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.230.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.232.0/23,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.234.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.236.0/22,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.240.0/23,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.244.0/23,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.246.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,155.133.248.0/21,局域网与测速直连,no-resolve
+- IP-CIDR,162.254.192.0/21,局域网与测速直连,no-resolve
+- IP-CIDR,185.25.182.0/23,局域网与测速直连,no-resolve
+- IP-CIDR,192.69.96.0/22,局域网与测速直连,no-resolve
+- IP-CIDR,205.185.194.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,205.196.6.0/24,局域网与测速直连,no-resolve
+- IP-CIDR,208.64.200.0/22,局域网与测速直连,no-resolve
+- IP-CIDR,208.78.164.0/22,局域网与测速直连,no-resolve
+- RULE-SET,geosite_category-ai-!cn,AI网站
+- RULE-SET,geosite_category-ai-chat-!cn,AI网站
+- RULE-SET,geosite_openai,AI网站
+- RULE-SET,geosite_anthropic,AI网站
+- RULE-SET,geosite_google-gemini,AI网站
+- RULE-SET,geosite_xai,AI网站
+- RULE-SET,geosite_cursor,AI网站
+- RULE-SET,geosite_github-copilot,AI网站
+- RULE-SET,geosite_perplexity,AI网站
+- DOMAIN-SUFFIX,openai.com,AI网站
+- DOMAIN-SUFFIX,chatgpt.com,AI网站
+- DOMAIN-SUFFIX,oaistatic.com,AI网站
+- DOMAIN-SUFFIX,oaiusercontent.com,AI网站
+- DOMAIN-SUFFIX,anthropic.com,AI网站
+- DOMAIN-SUFFIX,claude.ai,AI网站
+- DOMAIN-SUFFIX,x.ai,AI网站
+- DOMAIN-SUFFIX,grok.com,AI网站
+- DOMAIN-SUFFIX,cursor.com,AI网站
+- DOMAIN-SUFFIX,cursor.sh,AI网站
+- DOMAIN-SUFFIX,perplexity.ai,AI网站
+- DOMAIN-SUFFIX,gemini.google.com,AI网站
+- DOMAIN-SUFFIX,aistudio.google.com,AI网站
+- DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI网站
+- DOMAIN-SUFFIX,copilot.microsoft.com,AI网站
+- DOMAIN-SUFFIX,discord.com,干净IP网站
+- DOMAIN-SUFFIX,discord.gg,干净IP网站
+- DOMAIN-SUFFIX,discordapp.com,干净IP网站
+- DOMAIN-SUFFIX,discordapp.net,干净IP网站
+- DOMAIN-SUFFIX,medium.com,干净IP网站
+- DOMAIN-SUFFIX,reddit.com,干净IP网站
+- DOMAIN-SUFFIX,redd.it,干净IP网站
+- DOMAIN-SUFFIX,redditmedia.com,干净IP网站
+- DOMAIN-SUFFIX,redditstatic.com,干净IP网站
+- DOMAIN-SUFFIX,patreon.com,干净IP网站
+- DOMAIN-SUFFIX,x.com,干净IP网站
+- DOMAIN-SUFFIX,twitter.com,干净IP网站
+- DOMAIN-SUFFIX,twimg.com,干净IP网站
+- DOMAIN-SUFFIX,t.co,干净IP网站
+- DOMAIN-SUFFIX,paypal.com,干净IP网站
+- DOMAIN-SUFFIX,paypalobjects.com,干净IP网站
+- DOMAIN-SUFFIX,netflix.com,干净IP网站
+- DOMAIN-SUFFIX,netflix.net,干净IP网站
+- DOMAIN-SUFFIX,nflxvideo.net,干净IP网站
+- DOMAIN-SUFFIX,nflximg.net,干净IP网站
+- DOMAIN-SUFFIX,nflxext.com,干净IP网站
+- DOMAIN-SUFFIX,nflxso.net,干净IP网站
+- RULE-SET,geosite_spotify,Spotify
+- DOMAIN-SUFFIX,spotify.com,Spotify
+- DOMAIN-SUFFIX,scdn.co,Spotify
+- DOMAIN-SUFFIX,spotifycdn.com,Spotify
+- DOMAIN-SUFFIX,spotifycdn.net,Spotify
+- DOMAIN-SUFFIX,spotify.design,Spotify
+- DOMAIN-SUFFIX,pscdn.co,Spotify
+- DOMAIN-SUFFIX,spoti.fi,Spotify
+- DOMAIN-SUFFIX,spotilocal.com,Spotify
+- DOMAIN-SUFFIX,spotifycharts.com,Spotify
+- DOMAIN-SUFFIX,spotify.link,Spotify
+- DOMAIN-SUFFIX,audio-ak-spotify-com.akamaized.net,Spotify
+- DOMAIN-SUFFIX,audio4-ak-spotify-com.akamaized.net,Spotify
+- DOMAIN-SUFFIX,heads-ak-spotify-com.akamaized.net,Spotify
+- DOMAIN-SUFFIX,heads4-ak-spotify-com.akamaized.net,Spotify
+- RULE-SET,geosite_google,谷歌与被墙网站
+- RULE-SET,geosite_gfw,谷歌与被墙网站
+- RULE-SET,geosite_apple-cn,国内网站直连
+- RULE-SET,geosite_microsoft@cn,国内网站直连
+- RULE-SET,geosite_cn,国内网站直连
+- DOMAIN-SUFFIX,snssdk.com,国内网站直连
+- DOMAIN-SUFFIX,amemv.com,国内网站直连
+- DOMAIN-SUFFIX,zijieapi.com,国内网站直连
+- DOMAIN-SUFFIX,bytedance.com,国内网站直连
+- DOMAIN-SUFFIX,byteimg.com,国内网站直连
+- DOMAIN-SUFFIX,bytescm.com,国内网站直连
+- DOMAIN-SUFFIX,bytetos.com,国内网站直连
+- DOMAIN-SUFFIX,bytegecko.com,国内网站直连
+- DOMAIN-SUFFIX,bytednsdoc.com,国内网站直连
+- DOMAIN-SUFFIX,bdurl.net,国内网站直连
+- DOMAIN-SUFFIX,ecombdimg.com,国内网站直连
+- DOMAIN-SUFFIX,ecombdstatic.com,国内网站直连
+- DOMAIN-SUFFIX,douyin.com,国内网站直连
+- DOMAIN-SUFFIX,douyinpic.com,国内网站直连
+- DOMAIN-SUFFIX,douyinvod.com,国内网站直连
+- DOMAIN-SUFFIX,douyinstatic.com,国内网站直连
+- DOMAIN-SUFFIX,jinritemai.com,国内网站直连
+- DOMAIN-SUFFIX,pstatp.com,国内网站直连
+- DOMAIN-SUFFIX,toutiao.com,国内网站直连
+- RULE-SET,geosite_geolocation-!cn,境外网站
+- RULE-SET,geoip_cn,国内IP直连,no-resolve
+- MATCH,其他

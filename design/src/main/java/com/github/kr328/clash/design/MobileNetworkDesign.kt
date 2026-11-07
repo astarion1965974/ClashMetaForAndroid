@@ -3,10 +3,11 @@ package com.github.kr328.clash.design
 import android.content.Context
 import android.view.View
 import com.github.kr328.clash.design.databinding.DesignMobileNetworkBinding
+import com.github.kr328.clash.design.dialog.showCouiAlert
+import com.github.kr328.clash.design.dialog.showCouiMultiChoice
 import com.github.kr328.clash.design.preference.*
 import com.github.kr328.clash.design.util.*
 import com.github.kr328.clash.service.store.MobileNetworkSettings
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MobileNetworkDesign(context: Context, val settings: MobileNetworkSettings,
     private val nodes: List<String>, private val running: Boolean) : Design<MobileNetworkDesign.Request>(context) {
@@ -27,16 +28,19 @@ class MobileNetworkDesign(context: Context, val settings: MobileNetworkSettings,
         if (saving) return
         val chosen = (if (ai) settings.aiNodes else settings.stableNodes).toMutableList()
         val options = (chosen + nodes).distinct()
-        if (options.isEmpty()) { MaterialAlertDialogBuilder(context).setMessage(R.string.mobile_no_nodes).setPositiveButton(R.string.ok,null).show(); return }
-        val dialog = MaterialAlertDialogBuilder(context).setTitle(if (ai) R.string.mobile_ai else R.string.mobile_stable)
-            .setMultiChoiceItems(options.toTypedArray(), options.map { it in chosen }.toBooleanArray()) { _, index, checked ->
-                if (checked) { if (options[index] !in chosen) chosen.add(options[index]) } else chosen.remove(options[index])
-            }.setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.route_save,null).create()
-        dialog.setOnShowListener { dialog.getButton(-1).setOnClickListener {
-            if (chosen.size > 5) { android.widget.Toast.makeText(context,R.string.mobile_five,android.widget.Toast.LENGTH_SHORT).show(); return@setOnClickListener }
-            if (ai) settings.aiNodes = chosen.toList() else settings.stableNodes = chosen.toList()
-            dialog.dismiss(); build(); changed()
-        } }; dialog.show()
+        if (options.isEmpty()) {
+            context.showCouiAlert(context.getText(if (ai) R.string.mobile_ai else R.string.mobile_stable), context.getText(R.string.mobile_no_nodes))
+            return
+        }
+        context.showCouiMultiChoice(context.getString(if (ai) R.string.mobile_ai else R.string.mobile_stable), options, chosen) { result ->
+            if (result.size > 5) {
+                android.widget.Toast.makeText(context, R.string.mobile_five, android.widget.Toast.LENGTH_SHORT).show()
+                false
+            } else {
+                if (ai) settings.aiNodes = result else settings.stableNodes = result
+                build(); changed(); true
+            }
+        }
     }
     private fun build() {
         binding.content.removeAllViews()
@@ -55,10 +59,10 @@ class MobileNetworkDesign(context: Context, val settings: MobileNetworkSettings,
             clickable(R.string.mobile_bound) {
                 summary=settings.trustedSSIDs.joinToString(", ").ifBlank { context.getString(R.string.mobile_none_bound) }
                 clicked {
-                    val all=settings.trustedSSIDs; val keep=all.toMutableSet()
-                    MaterialAlertDialogBuilder(context).setTitle(R.string.mobile_bound)
-                        .setMultiChoiceItems(all.toTypedArray(),BooleanArray(all.size){true}) { _,i,checked -> if(checked)keep.add(all[i])else keep.remove(all[i]) }
-                        .setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.route_save){_,_->settings.trustedSSIDs=all.filter{it in keep};build();changed()}.show()
+                    val all=settings.trustedSSIDs
+                    context.showCouiMultiChoice(context.getString(R.string.mobile_bound), all, all) { keep ->
+                        settings.trustedSSIDs=all.filter{it in keep}; build(); changed(); true
+                    }
                 }
             }
             clickable(R.string.mobile_permissions,summary=R.string.mobile_permission_hint) { clicked { requests.trySend(Request.Permissions) } }

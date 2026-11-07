@@ -127,6 +127,21 @@ func TestBundledRulesParseWithMihomo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	policy := parsed.DNS.NameServerPolicy
+	if len(policy) != 1 || policy[0].Matcher == nil {
+		t.Fatalf("domestic DNS must parse as one rule-set matcher, got %+v", policy)
+	}
+	if matcher, ok := policy[0].Matcher.(C.Rule); !ok || matcher.Payload() != "live-cn" {
+		t.Fatalf("domestic DNS should match live-cn, got %v", policy[0].Matcher)
+	}
+	if len(policy[0].NameServers) != 2 {
+		t.Fatalf("expected two domestic resolvers, got %+v", policy[0].NameServers)
+	}
+	for _, ns := range policy[0].NameServers {
+		if ns.Net != "https" || ns.ProxyName != "DIRECT" {
+			t.Errorf("expected direct DoH, got %+v", ns)
+		}
+	}
 	if len(parsed.RuleProviders) != len(Sets) {
 		t.Fatalf("got %d providers", len(parsed.RuleProviders))
 	}
@@ -179,7 +194,7 @@ func TestProviderOnlySubscriptionAndOriginalDNSReferences(t *testing.T) {
 	}}
 	c.DNS.Enable = true
 	c.DNS.NameServerPolicy = orderedmap.New[string, any]()
-	c.DNS.NameServerPolicy.Set("rule-set,subscription-dns", []string{"223.5.5.5"})
+	c.DNS.NameServerPolicy.Set("rule-set:subscription-dns", []string{"223.5.5.5"})
 	dir := t.TempDir()
 	C.SetHomeDir(dir)
 	if err := Apply(c, Settings{Enabled: true, DomesticDNS: true, Targets: map[string]string{"ai": "Subscription group"}}, dir); err != nil {
@@ -208,16 +223,20 @@ func TestProviderOnlySubscriptionAndOriginalDNSReferences(t *testing.T) {
 func TestPruneUnusedProvidersButKeepDNSReferences(t *testing.T) {
 	cfg := config.DefaultRawConfig()
 	cfg.Proxy = []map[string]any{{"name": "node", "type": "ss"}}
-	cfg.RuleProvider = map[string]map[string]any{"old-a": {"type": "http"}, "old-b": {"type": "http"}, "unused": {"type": "http"}}
+	cfg.RuleProvider = map[string]map[string]any{
+		"old-a": {"type": "http"}, "Old-B": {"type": "http"},
+		"fake-filter": {"type": "http"}, "unused": {"type": "http"},
+	}
 	cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
-	cfg.DNS.NameServerPolicy.Set("rule-set,old-a,old-b", []string{"system://"})
+	cfg.DNS.NameServerPolicy.Set("RULE-SET:old-a,Old-B", []string{"system://"})
+	cfg.DNS.FakeIPFilter = []string{"RULE-SET,fake-filter,real-ip"}
 	if err := Apply(cfg, Settings{Enabled: true}, t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := cfg.RuleProvider["unused"]; ok {
 		t.Fatal("unused provider retained")
 	}
-	for _, n := range []string{"old-a", "old-b"} {
+	for _, n := range []string{"old-a", "Old-B", "fake-filter"} {
 		if _, ok := cfg.RuleProvider[n]; !ok {
 			t.Fatal("DNS reference removed", n)
 		}

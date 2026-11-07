@@ -1,201 +1,83 @@
 package com.github.kr328.clash.design.component
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
-import android.view.View
-import com.github.kr328.clash.common.compat.getDrawableCompat
-import com.github.kr328.clash.design.store.UiStore
+import android.widget.FrameLayout
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.neverEqualPolicy
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.github.kr328.clash.design.preference.CouiPreferenceView
+import com.itos.coui.layout.CouiPageDefaults
+import com.itos.coui.layout.Item
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
+import com.itos.coui.theme.CouiTheme
 
-class ProxyView(
-    context: Context,
-    config: ProxyViewConfig,
-) : View(context) {
+class ProxyView(context: Context, config: ProxyViewConfig) : FrameLayout(context) {
+    constructor(context: Context) : this(context, ProxyViewConfig(context, 2))
+
+    var state: ProxyViewState? by mutableStateOf(null, neverEqualPolicy())
+    var selectable by mutableStateOf(false)
 
     init {
-        background = context.getDrawableCompat(config.clickableBackground)
-    }
-
-    var state: ProxyViewState? = null
-    constructor(context: Context) : this(context, ProxyViewConfig(context, 2))
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val state = state ?: return super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-
-        val width = when (MeasureSpec.getMode(widthMeasureSpec)) {
-            MeasureSpec.UNSPECIFIED ->
-                resources.displayMetrics.widthPixels
-            MeasureSpec.AT_MOST, MeasureSpec.EXACTLY ->
-                MeasureSpec.getSize(widthMeasureSpec)
-            else ->
-                throw IllegalArgumentException("invalid measure spec")
-        }
-
-        state.paint.apply {
-            reset()
-
-            textSize = state.config.textSize
-
-            getTextBounds("Stub!", 0, 1, state.rect)
-        }
-
-        val textHeight = state.rect.height()
-        val exceptHeight = (state.config.layoutPadding * 2 +
-                state.config.contentPadding * 2 +
-                textHeight * 2 +
-                state.config.textMargin).toInt()
-
-        val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
-            MeasureSpec.UNSPECIFIED ->
-                exceptHeight
-            MeasureSpec.AT_MOST, MeasureSpec.EXACTLY ->
-                exceptHeight.coerceAtMost(MeasureSpec.getSize(heightMeasureSpec))
-            else ->
-                throw IllegalArgumentException("invalid measure spec")
-        }
-
-        setMeasuredDimension(width, height)
-    }
-
-    override fun draw(canvas: Canvas) {
-        val state = state ?: return super.draw(canvas)
-
-        if (state.update(false))
-            postInvalidate()
-
-        val width = width.toFloat()
-        val height = height.toFloat()
-
-        val paint = state.paint
-
-        paint.reset()
-
-        paint.color = state.background
-        paint.style = Paint.Style.FILL
-        paint.isAntiAlias = true
-
-        // draw background
-        canvas.apply {
-            if (state.config.proxyLine==1) {
-                drawRect(0f, 0f, width, height, paint)
-            } else {
-                val path = state.path
-
-                path.reset()
-
-                path.addRoundRect(
-                    state.config.layoutPadding,
-                    state.config.layoutPadding,
-                    width - state.config.layoutPadding,
-                    height - state.config.layoutPadding,
-                    state.config.cardRadius,
-                    state.config.cardRadius,
-                    Path.Direction.CW,
-                )
-
-                paint.setShadowLayer(
-                    state.config.cardRadius,
-                    state.config.cardOffset,
-                    state.config.cardOffset,
-                    state.config.shadow
-                )
-
-                drawPath(path, paint)
-                paint.clearShadowLayer()
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = resources.displayMetrics.density * if (state.selected) 1.5f else 1f
-                paint.color = if (state.selected) state.config.accent else state.config.border
-                drawPath(path, paint)
-                paint.style = Paint.Style.FILL
-                clipPath(path)
+        val row = CouiPreferenceView(context)
+        row.setContent {
+            state?.let { current ->
+                val colors = CouiTheme.colorScheme
+                val selected = current.selected
+                val shape = CouiPageDefaults.shape
+                val margin = if (config.proxyLine == 1) 12.dp else 4.dp
+                Item(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = margin, vertical = 4.dp)
+                        .clip(shape)
+                        .background(if (selected) colors.accent.copy(alpha = 0.10f) else colors.card)
+                        .then(if (selected) Modifier.border(1.dp, colors.accent, shape) else Modifier),
+                    enabled = selectable,
+                    onClick = if (selectable) ({ performClick() }) else null,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                    summary = {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (current.subtitle.isNotEmpty()) {
+                                Text(
+                                    text = current.subtitle,
+                                    kind = CouiTextKind.PreferenceSummary,
+                                    color = colors.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            if (current.delayText.isNotEmpty()) {
+                                Text(
+                                    text = current.delayText,
+                                    kind = CouiTextKind.PreferenceSummary,
+                                    color = if (selected) colors.accent else colors.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    Text(
+                        text = current.title,
+                        kind = CouiTextKind.PreferenceTitle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
-
-        super.draw(canvas)
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        val state = state ?: return
-
-        val paint = state.paint
-
-        val width = width.toFloat()
-        val height = height.toFloat()
-
-        paint.textSize = state.config.textSize
-
-        // measure delay text bounds
-        val delayCount = paint.breakText(
-            state.delayText,
-            false,
-            (width - state.config.layoutPadding * 2 - state.config.contentPadding * 2)
-                .coerceAtLeast(0f),
-            null
-        )
-
-        state.paint.getTextBounds(state.delayText, 0, delayCount, state.rect)
-
-        val delayWidth = state.rect.width()
-
-        val mainTextWidth = (width -
-                state.config.layoutPadding * 2 -
-                state.config.contentPadding * 2 -
-                delayWidth -
-                state.config.textMargin * 2
-                )
-            .coerceAtLeast(0f)
-
-        // measure title text bounds
-        val titleCount = paint.breakText(
-            state.title,
-            false,
-            mainTextWidth,
-            null,
-        )
-
-        // measure subtitle text bounds
-        val subtitleCount = paint.breakText(
-            state.subtitle,
-            false,
-            mainTextWidth,
-            null,
-        )
-
-        // text draw measure
-        val textOffset = (paint.descent() + paint.ascent()) / 2
-
-        paint.reset()
-
-        paint.textSize = state.config.textSize
-        paint.isAntiAlias = true
-        paint.color = state.controls
-
-        // draw delay
-        canvas.apply {
-            val x = width - state.config.layoutPadding - state.config.contentPadding - delayWidth
-            val y = height / 2f - textOffset
-
-            drawText(state.delayText, 0, delayCount, x, y, paint)
-        }
-
-        // draw title
-        canvas.apply {
-            val x = state.config.layoutPadding + state.config.contentPadding
-            val y = state.config.layoutPadding +
-                    (height - state.config.layoutPadding * 2) / 3f - textOffset
-
-            drawText(state.title, 0, titleCount, x, y, paint)
-        }
-
-        // draw subtitle
-        canvas.apply {
-            val x = state.config.layoutPadding + state.config.contentPadding
-            val y = state.config.layoutPadding +
-                    (height - state.config.layoutPadding * 2) / 3f * 2 - textOffset
-
-            drawText(state.subtitle, 0, subtitleCount, x, y, paint)
-        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 }

@@ -10,10 +10,24 @@ import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.design.databinding.DesignSettingsMetaFeatureBinding
 import com.github.kr328.clash.design.databinding.DialogAgeKeyHelperBinding
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
+import com.github.kr328.clash.design.dialog.requestModelTextInput
+import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.preference.*
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog
+import com.itos.coui.layout.Item
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
+import com.itos.coui.theme.CouiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -34,23 +48,7 @@ class MetaFeatureSettingsDesign(
         get() = binding.root
 
     suspend fun requestResetConfirm(): Boolean {
-        return suspendCancellableCoroutine { ctx ->
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.reset_override_settings)
-                .setMessage(R.string.reset_override_settings_message)
-                .setPositiveButton(R.string.ok) { _, _ -> ctx.resume(true) }
-                .setNegativeButton(R.string.cancel) { _, _ -> }
-                .show()
-
-            dialog.setOnDismissListener {
-                if (!ctx.isCompleted)
-                    ctx.resume(false)
-            }
-
-            ctx.invokeOnCancellation {
-                dialog.dismiss()
-            }
-        }
+        return context.requestCouiConfirm(R.string.reset_override_settings, R.string.reset_override_settings_message)
     }
 
     init {
@@ -347,71 +345,51 @@ class MetaFeatureSettingsDesign(
     }
 
     private fun requestAgeKeyHelper(hybrid: Boolean) {
-        launch(Dispatchers.Main) {
-            val binding = DialogAgeKeyHelperBinding
-                .inflate(context.layoutInflater, context.root, false)
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setTitle(if (hybrid) R.string.age_key_type_hybrid else R.string.age_key_type_x25519)
-                .setView(binding.root)
-                .create()
-
+        context.showCouiContent { dismiss ->
+            var secret by remember { mutableStateOf("") }
+            var publicKey by remember { mutableStateOf("") }
             fun copy(label: String, value: String) {
-                if (value.isBlank())
-                    return
-
+                if (value.isBlank()) return
                 val data = ClipData.newPlainText(label, value)
                 context.getSystemService<ClipboardManager>()?.setPrimaryClip(data)
-
                 launch { showToast(R.string.copied, ToastDuration.Short) }
             }
-
-            fun patchSecretKeyState() {
-                val secretKey = binding.secretKeyView.text?.toString() ?: ""
-                val valid = secretKey.isBlank() || Clash.veritySecretKeys(secretKey)
-
-                binding.secretKeyLayout.error = if (valid) null else context.getText(R.string.age_secret_key_error)
-            }
-
-            fun patchPublicKeyState() {
-                val publicKey = binding.publicKeyView.text?.toString() ?: ""
-                val valid = publicKey.isBlank() || Clash.verityPublicKeys(publicKey)
-
-                binding.publicKeyLayout.error = if (valid) null else context.getText(R.string.age_public_key_error)
-            }
-
-            dialog.setOnShowListener {
-                binding.secretKeyView.doOnTextChanged { _, _, _, _ -> patchSecretKeyState() }
-                binding.publicKeyView.doOnTextChanged { _, _, _, _ -> patchPublicKeyState() }
-
-                binding.generateView.setOnClickListener {
+            Dialog(onDismissRequest = dismiss, title = context.getString(if (hybrid) R.string.age_key_type_hybrid else R.string.age_key_type_x25519),
+                confirmAction = CouiDialogAction(context.getString(R.string.close), dismiss)) {
+                Item(onClick = { launch(Dispatchers.Main) {
+                    secret = context.requestModelTextInput(secret, context.getText(R.string.age_secret_key),
+                        error = context.getText(R.string.age_secret_key_error),
+                        validator = { it.isBlank() || runCatching { Clash.veritySecretKeys(it) }.getOrDefault(false) })
+                } }, summary = { Text(text = secret.ifBlank { "—" }, kind = CouiTextKind.PreferenceSummary,
+                    color = CouiTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis) }) {
+                    Text(text = context.getString(R.string.age_secret_key), kind = CouiTextKind.PreferenceTitle)
+                }
+                Item(onClick = {
                     val keyPair = if (hybrid) {
                         Clash.genHybridKeyPair()
                     } else {
                         Clash.genX25519KeyPair()
                     }
-
-                    binding.secretKeyView.setText(keyPair.secretKey)
-                    binding.publicKeyView.setText(keyPair.publicKey)
+                    secret = keyPair.secretKey; publicKey = keyPair.publicKey
+                }) { Text(text = context.getString(R.string.age_key_generate), kind = CouiTextKind.PreferenceTitle) }
+                Item(onClick = { copy("age_secret_key", secret) }) {
+                    Text(text = "${context.getString(R.string.age_key_copy)} · ${context.getString(R.string.age_secret_key)}", kind = CouiTextKind.PreferenceTitle)
                 }
-
-                binding.toPublicKeyView.setOnClickListener {
-                    val publicKey = Clash.toPublicKeys(binding.secretKeyView.text?.toString() ?: "")
-                        .firstOrNull()
-                        ?: ""
-
-                    binding.publicKeyView.setText(publicKey)
+                Item(onClick = { launch(Dispatchers.Main) {
+                    publicKey = context.requestModelTextInput(publicKey, context.getText(R.string.age_public_key),
+                        error = context.getText(R.string.age_public_key_error),
+                        validator = { it.isBlank() || runCatching { Clash.verityPublicKeys(it) }.getOrDefault(false) })
+                } }, summary = { Text(text = publicKey.ifBlank { "—" }, kind = CouiTextKind.PreferenceSummary,
+                    color = CouiTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis) }) {
+                    Text(text = context.getString(R.string.age_public_key), kind = CouiTextKind.PreferenceTitle)
                 }
-
-                binding.copySecretKeyView.setOnClickListener {
-                    copy("age_secret_key", binding.secretKeyView.text?.toString() ?: "")
+                Item(onClick = { publicKey = Clash.toPublicKeys(secret).firstOrNull() ?: "" }) {
+                    Text(text = context.getString(R.string.age_key_to_public), kind = CouiTextKind.PreferenceTitle)
                 }
-
-                binding.copyPublicKeyView.setOnClickListener {
-                    copy("age_public_key", binding.publicKeyView.text?.toString() ?: "")
+                Item(onClick = { copy("age_public_key", publicKey) }) {
+                    Text(text = "${context.getString(R.string.age_key_copy)} · ${context.getString(R.string.age_public_key)}", kind = CouiTextKind.PreferenceTitle)
                 }
             }
-
-            dialog.show()
         }
     }
 

@@ -29,6 +29,14 @@ class ClashManager(private val context: Context) : IClashManager,
         return Clash.queryTrafficTotal()
     }
 
+    override fun queryTrafficHistory(): String = TrafficHistory.snapshot(context)
+
+    override fun queryDnsDiagnostic(domain: String): String {
+        if (!StatusProvider.serviceRunning || !StatusProvider.profileLoaded) return "{}"
+        if (domain !in setOf("baidu.com", "bilibili.com", "google.com", "youtube.com")) return "{}"
+        return Clash.queryDnsDiagnostic(domain)
+    }
+
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
         if (!StatusProvider.profileLoaded) return emptyList()
         return Clash.queryGroupNames(excludeNotSelectable)

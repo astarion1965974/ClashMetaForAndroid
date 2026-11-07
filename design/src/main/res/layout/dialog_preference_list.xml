@@ -29,9 +29,11 @@
                 android:layout_marginHorizontal="@dimen/item_header_margin"
                 android:layout_toStartOf="@id/new_view"
                 android:gravity="center_vertical"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textAppearance="@style/TextAppearance.Live.Heading" />
 
-            <ImageView
+            <com.github.kr328.clash.design.view.CouiIconButtonView
                 android:id="@+id/new_view"
                 android:layout_width="@dimen/item_tailing_component_size"
                 android:layout_height="@dimen/item_tailing_component_size"
@@ -51,10 +53,9 @@
                 android:layout_above="@id/ok_view"
                 android:layout_below="@id/title_view" />
 
-            <Button
+            <com.github.kr328.clash.design.view.CouiButtonView
                 android:id="@+id/reset_view"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:layout_width="88dp"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentBottom="true"
@@ -68,19 +69,17 @@
                 android:layout_toStartOf="@id/cancel_view"
                 android:layout_toEndOf="@id/reset_view" />
 
-            <Button
+            <com.github.kr328.clash.design.view.CouiButtonView
                 android:id="@+id/cancel_view"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:layout_width="88dp"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_toStartOf="@id/ok_view"
                 android:text="@string/cancel" />
 
-            <Button
+            <com.github.kr328.clash.design.view.CouiButtonView
                 android:id="@+id/ok_view"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:layout_width="88dp"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentBottom="true"

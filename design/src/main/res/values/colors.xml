@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="color_clash_light">#6577F3</color>
-    <color name="color_clash_dark">#A2B0FF</color>
+    <color name="color_clash_light">#3478F6</color>
+    <color name="color_clash_dark">#89B8FF</color>
     <color name="color_system_ui_overlay">#50000000</color>
-    <color name="color_light_background">#FFF3F5F9</color>
+    <color name="color_light_background">#FFF0F1F3</color>
     <color name="color_dark_background">#FF12151B</color>
     <color name="color_dark_surface">#FF20242C</color>
     <color name="color_light_clash_stopped">#FF62666D</color>

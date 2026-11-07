@@ -12,8 +12,7 @@ Feature of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
 
 ### Requirement
 
-- Android 5.0+ (minimum)
-- Android 7.0+ (recommend)
+- Android 12+ (minimum)
 - `armeabi-v7a` , `arm64-v8a`, `x86` or `x86_64` Architecture
 
 ### Build
@@ -24,7 +23,7 @@ Feature of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
    git submodule update --init --recursive
    ```
 
-2. Install **OpenJDK 11**, **Android SDK**, **CMake** and **Golang**
+2. Install **OpenJDK 21**, **Android SDK Platform 37.0**, **CMake** and **Golang**
 
 3. Create `local.properties` in project root with
 
@@ -85,3 +84,7 @@ APP package name is `com.github.metacubex.clash.meta`
 - Manually triggering `Build Release` actions will compile, tag and publish a `Release` version.
   - You must fill the blank `Release Tag` with the tag you want to release in the format of `v1.2.3`.
   - `versionName` and `versionCode` in `build.gradle.kts` will be automatically bumped to the tag you filled above.
+
+### COUI 仪表盘数据
+
+套餐剩余量来自当前订阅返回的流量信息；七日流量仅统计此版本运行期间由服务采样的上传和下载。DNS 检测由用户手动触发，使用内核解析器，解析结果不代表连接实际采用的分流出口。

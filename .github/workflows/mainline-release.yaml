@@ -1,0 +1,173 @@
+name: Mainline Android Release
+
+# Only the main branch produces release candidates and signed stable APKs.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mainline-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'astarion1965974/ClashMetaForAndroid' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GOMAXPROCS: '2'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+      - name: Install Android SDK and NDK
+        run: |
+          manager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          python3 -c 'print("y\n" * 200)' > "$RUNNER_TEMP/licenses.txt"
+          "$manager" --licenses < "$RUNNER_TEMP/licenses.txt" > /dev/null
+          "$manager" 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;29.0.14206865' 'cmake;3.22.1'
+          cat > local.properties <<EOF
+          sdk.dir=$ANDROID_HOME
+          custom.application.id=com.astarion.clash.live
+          custom.application.name=Clash Meta Live
+          remove.suffix=true
+          EOF
+      - name: Install patched Go toolchain
+        run: |
+          curl --fail --location --retry 3 https://github.com/MetaCubeX/go/releases/download/build/go1.26.linux-amd64.tar.gz -o "$RUNNER_TEMP/go.tar.gz"
+          mkdir -p "$RUNNER_TEMP/cmfa-go"
+          tar -xzf "$RUNNER_TEMP/go.tar.gz" -C "$RUNNER_TEMP/cmfa-go"
+          echo "GOROOT=$RUNNER_TEMP/cmfa-go/go" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/cmfa-go/go/bin" >> "$GITHUB_PATH"
+          for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do
+            patch -d "$RUNNER_TEMP/cmfa-go/go" --forward -p 1 -i "$p"
+          done
+      - name: Native routing and mobile tests
+        working-directory: core/src/main/golang
+        run: |
+          overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
+          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1
+      - name: Build tested ARM64 release
+        run: |
+          ./gradlew --no-daemon --console=plain --max-workers=2 \
+            design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:assembleAlphaRelease \
+            -Pcmfa.abis=arm64-v8a "-Pcmfa.mainlineBuildNumber=$GITHUB_RUN_NUMBER"
+      - name: Verify candidate identity
+        shell: bash
+        run: |
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/alpha/release/*-arm64-v8a-*.apk)
+          if [[ "${#apks[@]}" -ne 1 ]]; then echo "::error::Expected exactly one ARM64 APK"; exit 1; fi
+          mkdir -p release-candidate
+          cp "${apks[0]}" release-candidate/unsigned.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging release-candidate/unsigned.apk > "$RUNNER_TEMP/badging.txt"
+          grep -F "package: name='com.astarion.clash.live' versionCode='$((211046 + GITHUB_RUN_NUMBER))' versionName='2.11.36.Live.Coui.R8.$GITHUB_RUN_NUMBER'" "$RUNNER_TEMP/badging.txt"
+          grep -F "native-code: 'arm64-v8a'" "$RUNNER_TEMP/badging.txt"
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: mainline-unsigned
+          path: release-candidate/unsigned.apk
+          retention-days: 14
+          if-no-files-found: error
+      - name: Preserve failed test reports
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: mainline-test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          if-no-files-found: ignore
+
+  publish:
+    needs: build
+    if: github.repository == 'astarion1965974/ClashMetaForAndroid' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: mainline-unsigned
+          path: release-candidate
+      - name: Install APK signing tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'build-tools;36.0.0'
+      - name: Sign using the existing Live release key
+        env:
+          LIVE_SIGNING_BACKUP_B64: ${{ secrets.LIVE_SIGNING_BACKUP_B64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, io, os, subprocess, tempfile, zipfile
+          from pathlib import Path
+          backup = os.environ.get('LIVE_SIGNING_BACKUP_B64', '')
+          if not backup:
+              raise RuntimeError('LIVE_SIGNING_BACKUP_B64 is absent; refusing to release a debug-signed APK')
+          sdk = Path(os.environ['ANDROID_HOME']) / 'build-tools' / '36.0.0'
+          source = Path('release-candidate/unsigned.apk')
+          output = Path('release')
+          output.mkdir(exist_ok=True)
+          apk = output / 'ClashMeta-Live-arm64-v8a.apk'
+          n = int(os.environ['GITHUB_RUN_NUMBER'])
+          version = f'2.11.36.Live.Coui.R8.{n}'
+          code = 211046 + n
+          signer = '60687fc4e622e84d7f1db5e3acc5db12487b48bc7a10d691426df60e815a9b7f'
+          with tempfile.TemporaryDirectory(prefix='live-sign-') as directory:
+              raw = base64.b64decode(''.join(backup.split()), validate=True)
+              with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                  key_name = next(k for k in archive.namelist() if k.endswith('.jks'))
+                  props_name = next(k for k in archive.namelist() if k.endswith('signing.properties'))
+                  key = Path(directory) / 'signing.jks'
+                  key.write_bytes(archive.read(key_name))
+                  key.chmod(0o600)
+                  props = dict(line.split('=', 1) for line in archive.read(props_name).decode().splitlines()
+                               if '=' in line and not line.startswith('#'))
+              env = os.environ.copy()
+              env['LIVE_STORE_PASSWORD'] = props['keystore.password']
+              env['LIVE_KEY_PASSWORD'] = props['key.password']
+              subprocess.run([str(sdk / 'apksigner'), 'sign', '--ks', str(key),
+                  '--ks-key-alias', props['key.alias'], '--ks-pass', 'env:LIVE_STORE_PASSWORD',
+                  '--key-pass', 'env:LIVE_KEY_PASSWORD', '--out', str(apk), str(source)],
+                  env=env, check=True)
+          badging = subprocess.check_output([str(sdk / 'aapt'), 'dump', 'badging', str(apk)], text=True)
+          expected = f"package: name='com.astarion.clash.live' versionCode='{code}' versionName='{version}'"
+          if expected not in badging or "native-code: 'arm64-v8a'" not in badging:
+              raise RuntimeError('Signed APK identity, version or architecture mismatch')
+          output_of_verifier = subprocess.check_output([str(sdk / 'apksigner'),
+              'verify', '--verbose', '--print-certs', str(apk)], text=True).lower()
+          if signer not in output_of_verifier:
+              raise RuntimeError('APK signer differs from the installed Live release')
+          subprocess.run([str(sdk / 'zipalign'), '-c', '-P', '16', '4', str(apk)], check=True)
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+          (output / 'SHA256SUMS').write_text(f'{digest}  {apk.name}\n')
+          (output / 'release-notes.md').write_text(
+              f'Clash Meta Live + COUI R8\n\nVersion: {version} ({code})\n'
+              f'Source: {os.environ["GITHUB_SHA"]}\n'
+              'All consolidated features are built from main.\n'
+              'Signed with the existing Live identity for in-place upgrades.\n')
+          PY
+      - name: Publish normal stable GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v2.11.36-coui-r8.$GITHUB_RUN_NUMBER"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::Existing release will not be overwritten"
+            exit 1
+          fi
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Clash Meta Live + COUI R8.$GITHUB_RUN_NUMBER" \
+            --notes-file release/release-notes.md --latest \
+            release/ClashMeta-Live-arm64-v8a.apk release/SHA256SUMS
