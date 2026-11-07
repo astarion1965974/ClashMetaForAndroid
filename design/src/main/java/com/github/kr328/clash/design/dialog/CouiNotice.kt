@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -101,16 +102,21 @@ fun Context.showCouiNotice(
                 val action = options.onAction
                 val label = options.actionLabel
                 if (action != null && label != null) {
-                    Text(
-                        text = label,
-                        kind = CouiTextKind.PreferenceTitle,
-                        color = colors.accent,
+                    // Keep the click semantics on a container rather than
+                    // BasicText: its own text semantics can absorb test clicks.
+                    Box(
                         modifier = Modifier.testTag("coui-notice-action")
                             .clickable(role = Role.Button) {
                                 action(host)
                                 close()
                             }.padding(6.dp),
-                    )
+                    ) {
+                        Text(
+                            text = label,
+                            kind = CouiTextKind.PreferenceTitle,
+                            color = colors.accent,
+                        )
+                    }
                 }
             }
         }
