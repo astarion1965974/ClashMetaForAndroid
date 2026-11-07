@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -96,7 +95,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
                     topBar = {
                         TopAppBar(
                             title = {
-                                Text(context.getString(R.string.profiles), kind = CouiTextKind.Toolbar)
+                                Text(text = context.getString(R.string.profiles), kind = CouiTextKind.Toolbar)
                             },
                             navigationIcon = {
                                 ToolbarIcon(CouiIcons.Back,
