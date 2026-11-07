@@ -106,7 +106,7 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private suspend fun MainDesign.checkDns() {
         if (!clashRunning || pausedAtHome) return
-        setDnsLoading(true)
+        updateDnsLoading(true)
         try {
             val results = coroutineScope {
                 listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").map { domain ->
@@ -115,7 +115,7 @@ class MainActivity : BaseActivity<MainDesign>() {
             }
             setDnsResults(results)
         } finally {
-            setDnsLoading(false)
+            updateDnsLoading(false)
         }
     }
 

@@ -11,22 +11,12 @@
         </com.github.kr328.clash.design.view.ActivityBarLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="20dp">
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="16dp" android:text="@string/live_app_intro" android:textAppearance="@style/TextAppearance.CouiHome.PageTitle" />
-            <Spinner android:id="@+id/mode_view" android:layout_width="match_parent" android:layout_height="48dp" android:contentDescription="@string/access_control_mode" android:background="@drawable/bg_live_spinner" android:paddingStart="12dp" android:paddingEnd="36dp" />
-            <TextView android:id="@+id/mode_hint" android:layout_width="match_parent" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.Live.Secondary" android:paddingVertical="4dp" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_routing_summary" android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" android:paddingBottom="8dp" />
-            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/app_search" app:startIconDrawable="@drawable/ic_baseline_search" app:endIconMode="clear_text">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/keyword_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:inputType="text" android:maxLines="1" android:imeOptions="actionDone" />
-            </com.google.android.material.textfield.TextInputLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/selected_filter" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/app_selected_only" />
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/system_filter" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/app_system" />
-            </LinearLayout>
-            <TextView android:id="@+id/count_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingBottom="8dp" android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" android:accessibilityLiveRegion="polite" />
+            <androidx.compose.ui.platform.ComposeView android:id="@+id/controls_view" android:layout_width="match_parent" android:layout_height="wrap_content" />
         </LinearLayout>
         <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/main_list" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="8dp" />
             <TextView android:id="@+id/empty_view" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:padding="24dp" android:text="@string/app_loading" android:textAppearance="@style/TextAppearance.MaterialComponents.Body1" />
         </FrameLayout>
-        <com.google.android.material.button.MaterialButton android:id="@+id/save_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="20dp" android:layout_marginVertical="8dp" android:text="@string/route_save" />
+        <com.github.kr328.clash.design.view.CouiButtonView android:id="@+id/save_view" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="20dp" android:layout_marginVertical="8dp" android:text="@string/route_save" />
     </LinearLayout>
 </layout>

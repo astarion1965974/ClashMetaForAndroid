@@ -106,6 +106,26 @@ class LiveUiTest {
     private fun nodeWithResourceName(context: Context, name: String) =
         compose.onNodeWithTag("${context.packageName}:id/$name")
 
+    @Test fun dashboardShowsQuotaAndRealDnsResults() {
+        val ctx = context(false)
+        val design = MainDesign(ctx)
+        val profile = com.github.kr328.clash.service.model.Profile(
+            uuid = java.util.UUID.randomUUID(), name = "测试订阅", type = com.github.kr328.clash.service.model.Profile.Type.Url,
+            source = "https://example.com", active = true, interval = 0, upload = 100, download = 200,
+            total = 1000, expire = 0, updatedAt = 0, imported = true, pending = false)
+        updateHome {
+            design.setProfile(profile)
+            design.setClashRunning(true)
+            design.setTrafficHistory("""[{"date":"2026-11-07","upload":30,"download":70,"recorded":true}]""")
+            design.setDnsResults(listOf("baidu.com" to """{"addresses":["192.0.2.1"],"millis":42}"""))
+        }
+        ctx.setContentView(design.root)
+        compose.onNodeWithText(ctx.getString(R.string.coui_quota_title)).assertIsDisplayed()
+        savePreview(compose.onRoot().captureToImage().asAndroidBitmap(), "dashboard-light")
+        compose.onNodeWithText("192.0.2.1 · 42 毫秒").performScrollTo().assertIsDisplayed()
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun mobileSettingsBothThemesAndHomePauseStatus() {
         for(dark in listOf(false,true)) {
             val ctx=context(dark)
@@ -200,7 +220,7 @@ class LiveUiTest {
         second.itemView.performClick()
         assertTrue(selected.contains("org.example.browser"))
         assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
-        assertEquals(ctx.getString(R.string.route_save_reconnect), design.root.findViewById<TextView>(R.id.save_view).text)
+        assertEquals(ctx.getString(R.string.route_save_reconnect), design.root.findViewById<com.github.kr328.clash.design.view.CouiButtonView>(R.id.save_view).text)
     }
 
     @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {

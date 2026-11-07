@@ -8,6 +8,7 @@ import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.databinding.DesignSettingsOverideBinding
 import com.github.kr328.clash.design.databinding.DialogPreferenceListBinding
 import com.github.kr328.clash.design.dialog.FullScreenDialog
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.preference.*
 import com.github.kr328.clash.design.util.*
@@ -32,23 +33,7 @@ class OverrideSettingsDesign(
         get() = binding.root
 
     suspend fun requestResetConfirm(): Boolean {
-        return suspendCancellableCoroutine { ctx ->
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.reset_override_settings)
-                .setMessage(R.string.reset_override_settings_message)
-                .setPositiveButton(R.string.ok) { _, _ -> ctx.resume(true) }
-                .setNegativeButton(R.string.cancel) { _, _ -> }
-                .show()
-
-            dialog.setOnDismissListener {
-                if (!ctx.isCompleted)
-                    ctx.resume(false)
-            }
-
-            ctx.invokeOnCancellation {
-                dialog.dismiss()
-            }
-        }
+        return context.requestCouiConfirm(R.string.reset_override_settings, R.string.reset_override_settings_message)
     }
 
     init {

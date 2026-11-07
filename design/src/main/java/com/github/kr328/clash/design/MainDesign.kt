@@ -81,7 +81,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         }.getOrDefault(emptyList())
     }
 
-    fun setDnsLoading(value: Boolean) { dnsLoading = value }
+    fun updateDnsLoading(value: Boolean) { dnsLoading = value }
 
     fun setDnsResults(results: List<Pair<String, String>>) {
         dns = results.map { (domain, json) ->
@@ -98,6 +98,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
 
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
+            if (this@MainDesign.running != running) dns = emptyList()
             this@MainDesign.running = running
         }
     }
@@ -110,12 +111,14 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
 
     suspend fun setMode(mode: TunnelState.Mode) {
         withContext(Dispatchers.Main) {
-            modeLabel = when (mode) {
+            val next = when (mode) {
                 TunnelState.Mode.Direct -> context.getString(R.string.direct_mode)
                 TunnelState.Mode.Global -> context.getString(R.string.global_mode)
                 TunnelState.Mode.Rule -> context.getString(R.string.rule_mode)
                 else -> context.getString(R.string.rule_mode)
             }
+            if (modeLabel != next) dns = emptyList()
+            modeLabel = next
         }
     }
 

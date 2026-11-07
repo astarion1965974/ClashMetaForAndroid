@@ -10,6 +10,7 @@ import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.design.databinding.DesignSettingsMetaFeatureBinding
 import com.github.kr328.clash.design.databinding.DialogAgeKeyHelperBinding
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import com.github.kr328.clash.design.preference.*
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.*
@@ -34,23 +35,7 @@ class MetaFeatureSettingsDesign(
         get() = binding.root
 
     suspend fun requestResetConfirm(): Boolean {
-        return suspendCancellableCoroutine { ctx ->
-            val dialog = MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.reset_override_settings)
-                .setMessage(R.string.reset_override_settings_message)
-                .setPositiveButton(R.string.ok) { _, _ -> ctx.resume(true) }
-                .setNegativeButton(R.string.cancel) { _, _ -> }
-                .show()
-
-            dialog.setOnDismissListener {
-                if (!ctx.isCompleted)
-                    ctx.resume(false)
-            }
-
-            ctx.invokeOnCancellation {
-                dialog.dismiss()
-            }
-        }
+        return context.requestCouiConfirm(R.string.reset_override_settings, R.string.reset_override_settings_message)
     }
 
     init {

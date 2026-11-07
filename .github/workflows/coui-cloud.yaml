@@ -69,6 +69,7 @@ jobs:
           ./gradlew --no-daemon --console=plain --max-workers=2 \
             design:testAlphaDebugUnitTest \
             --tests 'com.github.kr328.clash.design.CouiPreferenceTest.*' \
+            --tests 'com.github.kr328.clash.design.LiveUiTest.dashboardShowsQuotaAndRealDnsResults' \
             --tests 'com.github.kr328.clash.design.LiveUiTest.appRoutingPreservesSelectionAndSaveState' \
             --tests 'com.github.kr328.clash.design.LiveUiTest.ruleSettingsInflateInBothThemesAndKeepSaveReachable' \
             app:assembleAlphaDebug -Pcmfa.abis=arm64-v8a "-Pcmfa.couiRevision=$COUI_REVISION"

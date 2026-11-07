@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import com.github.kr328.clash.design.adapter.LogFileAdapter
 import com.github.kr328.clash.design.databinding.DesignLogsBinding
+import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import com.github.kr328.clash.design.model.LogFile
 import com.github.kr328.clash.design.util.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -35,15 +36,7 @@ class LogsDesign(context: Context) : Design<LogsDesign.Request>(context) {
 
     suspend fun requestDeleteAll(): Boolean {
         return withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { ctx ->
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.delete_all_logs)
-                    .setMessage(R.string.delete_all_logs_warn)
-                    .setPositiveButton(R.string.ok) { _, _ -> ctx.resume(true) }
-                    .setNegativeButton(R.string.cancel) { _, _ -> }
-                    .show()
-                    .setOnDismissListener { if (!ctx.isCompleted) ctx.resume(false) }
-            }
+            context.requestCouiConfirm(R.string.delete_all_logs, R.string.delete_all_logs_warn)
         }
     }
 
