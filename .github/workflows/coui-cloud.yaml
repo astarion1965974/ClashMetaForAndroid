@@ -6,6 +6,10 @@ on:
       - 'feat/coui-cloud'
     tags:
       - 'coui-r*'
+  pull_request:
+    branches:
+      - 'feat/coui-cloud'
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -106,6 +110,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
