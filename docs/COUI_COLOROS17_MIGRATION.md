@@ -158,3 +158,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `MetaFeatureSettingsDesign` now renders native COUI Groups/Items for AGE X25519/hybrid keys, four primary meta settings, fourteen sniffing options and four GeoX import actions. The existing AGE key helper already used COUI dialogs and is retained unchanged.
 - Sniffer dependent fields disable when sniffing is explicitly disabled. All import/reset requests and core override property references are unchanged.
 - The previously commented-out GeoX URL override controls remain inactive as before; these are not user-facing pages.
+
+## Remove obsolete legacy-page COUI bridge
+
+- All 20 `*Design.kt` page controllers now use `ComposeView` roots. `BaseActivity` directly hosts these roots rather than injecting the old `wrapLegacyCouiPage` AndroidView-based toolbar/adapter bridge.
+- Removed `LegacyCouiPageHost.kt`, which still referenced obsolete View IDs from migrated XML layouts and failed Kotlin compilation. Root-native COUI components own their own glass toolbar, content Insets and navigation.
+- This does **not** imply that every popup, dialog, or adapter XML resource has been migrated; those are audited separately.
