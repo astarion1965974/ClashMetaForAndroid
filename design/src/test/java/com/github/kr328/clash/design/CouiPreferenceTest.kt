@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -152,6 +154,28 @@ class CouiPreferenceTest {
         activity.setContentView(View(activity))
     }
 
+    @Test fun proxyCardsHaveEqualHeightForOneAndTwoLineNames() {
+        val activity = activity()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val store = UiStore(activity).apply { proxyLine = 2 }
+        val design = ProxyDesign(activity, null, listOf("Selector"), store)
+        activity.setContentView(design.root)
+        val proxies = listOf(
+            Proxy("short", "日本", "Tuic", "Tuic", 12, false),
+            Proxy("long", "俄罗斯[1.5x]-冷门", "Tuic", "Tuic", 120, false),
+        )
+        scope.launch { design.updateGroup(0, proxies, true, ProxyState("short"), emptyMap()) }
+        shadowOf(Looper.getMainLooper()).idle()
+        compose.onNodeWithTag("proxy-node-short").assertIsSelected()
+        compose.onNodeWithTag("proxy-node-long").assertIsNotSelected()
+        val left = compose.onNodeWithTag("proxy-node-short").fetchSemanticsNode().boundsInRoot
+        val right = compose.onNodeWithTag("proxy-node-long").fetchSemanticsNode().boundsInRoot
+        assertEquals(left.top, right.top, 1f)
+        assertEquals(left.height, right.height, 1f)
+        scope.cancel()
+        activity.setContentView(View(activity))
+    }
+
     @Test fun nativeProxySelectionPreservesEnabledState() {
         val activity = activity()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -163,6 +187,12 @@ class CouiPreferenceTest {
         shadowOf(Looper.getMainLooper()).idle()
         compose.onNodeWithText("Node A").assertIsDisplayed().performClick()
         assertEquals(ProxyDesign.Request.Select(0, "node-a"), design.requests.tryReceive().getOrNull())
+        compose.onNodeWithTag("proxy-node-node-a").assertIsNotSelected()
+
+        // Selection must repaint without refreshing the entire proxy group from Clash.
+        design.updateSelectedProxy(0, "node-a")
+        compose.waitForIdle()
+        compose.onNodeWithTag("proxy-node-node-a").assertIsSelected()
 
         scope.launch { design.updateGroup(0, listOf(proxy), false, ProxyState(""), emptyMap()) }
         shadowOf(Looper.getMainLooper()).idle()

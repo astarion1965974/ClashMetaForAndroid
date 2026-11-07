@@ -92,7 +92,7 @@ class ProxyActivity : BaseActivity<ProxyDesign>() {
                                 states[it.index].now = it.name
                             }
 
-                            design.requestRedrawVisible()
+                            design.updateSelectedProxy(it.index, it.name)
                         }
                         is ProxyDesign.Request.UrlTest -> {
                             launch {
