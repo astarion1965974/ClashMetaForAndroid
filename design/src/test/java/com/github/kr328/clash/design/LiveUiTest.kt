@@ -99,8 +99,15 @@ class LiveUiTest {
 
     private fun updateHome(update: suspend () -> Unit) {
         val job = CoroutineScope(Dispatchers.Main).launch { update() }
-        shadowOf(Looper.getMainLooper()).idle()
-        assertTrue(job.isCompleted && !job.isCancelled)
+        // Profile list updates compute a RecyclerView diff on Dispatchers.Default.
+        // Drain the Main looper until that worker completes instead of assuming
+        // every coroutine finishes in a single synchronous Robolectric idle().
+        for (attempt in 0 until 200) {
+            shadowOf(Looper.getMainLooper()).idle()
+            if (job.isCompleted) break
+            Thread.sleep(10)
+        }
+        assertTrue("Main coroutine should complete after background diffing", job.isCompleted && !job.isCancelled)
     }
 
     private fun nodeWithResourceName(context: Context, name: String) =
