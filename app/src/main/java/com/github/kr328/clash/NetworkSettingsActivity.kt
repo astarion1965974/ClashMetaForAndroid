@@ -16,6 +16,7 @@ class NetworkSettingsActivity : BaseActivity<NetworkSettingsDesign>() {
         )
 
         setContentDesign(design)
+        design.showRunningNotice()
 
         while (isActive) {
             select<Unit> {
