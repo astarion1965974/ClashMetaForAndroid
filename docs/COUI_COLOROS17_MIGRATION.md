@@ -176,3 +176,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Converted unsaved changes confirmations in managed routing, application routing and mobile network activities to suspendable COUI dialogs with explicit Continue Editing/Discard labels.
 - Converted ColorOS-only mobile background-location permission prompt, Wi-Fi SSID binding, notification strategy-group picker and GeoX file validation warning to COUI `Dialog` / `showCouiSingleChoice` / `showCouiAlert`.
 - Removed two old Android SDK UI appearance guards from BaseActivity (ColorOS 17 target only). No change to VPN or core logic.
+
+## UI tests adapted to native COUI contracts
+
+- Updated `BackGuardTest` to validate that saving/updating blocks page exit and dirty edits do not finish without COUI confirmation, instead of assuming Material AlertDialog objects exist.
+- Updated `PredictiveBackTest` to click the actual COUI back icon through Compose semantics, not removed XML `activity_bar_close_view`; targeting Android 35+ only in this test.
+- Updated the managed-routing UI smoke test to wait for COUI composition and check the Save control exists in the native semantics tree.

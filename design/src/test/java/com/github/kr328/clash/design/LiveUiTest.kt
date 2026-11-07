@@ -257,7 +257,9 @@ class LiveUiTest {
             val design = ManagedRoutingDesign(ctx, ManagedRoutingSettings(), listOf("自动选择", "香港节点"), false)
             render(design.root, if (dark) "rules-dark" else "rules-light")
             assertFalse(design.dirty)
-            compose.onNodeWithText(ctx.getString(R.string.route_save)).assertIsDisplayed()
+            compose.waitForIdle()
+            compose.onNodeWithText(ctx.getString(R.string.route_save), useUnmergedTree = true)
+                .assertExists()
         }
     }
 

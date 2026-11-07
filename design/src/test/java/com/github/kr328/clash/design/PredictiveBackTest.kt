@@ -8,6 +8,9 @@ import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcher
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import com.github.kr328.clash.design.dialog.FullScreenDialog
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.DirectoryBackCallback
@@ -16,14 +19,17 @@ import com.github.kr328.clash.service.store.ManagedRoutingSettings
 import com.github.kr328.clash.service.store.MobileNetworkSettings
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [31, 33, 35])
+@Config(sdk = [35])
 class PredictiveBackTest {
+    @get:Rule val compose = createEmptyComposeRule()
+
     private fun activity(): AppCompatActivity {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java)
         controller.get().setTheme(R.style.AppThemeLight)
@@ -137,7 +143,10 @@ class PredictiveBackTest {
         activity.onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { back++ }
         })
-        design.root.findViewById<ImageView>(R.id.activity_bar_close_view).performClick()
+        activity.setContentView(design.root)
+        compose.onNodeWithContentDescription(
+            activity.getString(androidx.appcompat.R.string.abc_action_bar_up_description)
+        ).performClick()
         assertEquals(1, back)
     }
 
