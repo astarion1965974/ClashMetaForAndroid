@@ -144,7 +144,7 @@ class LiveUiTest {
             assertFalse(design.dirty)
             design.bind("Home Wi-Fi")
             assertTrue(design.dirty)
-            assertTrue(design.root.findViewById<View>(R.id.save_view).isEnabled)
+            compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
             val home=MainDesign(ctx)
             updateHome {
                 home.setClashRunning(true)

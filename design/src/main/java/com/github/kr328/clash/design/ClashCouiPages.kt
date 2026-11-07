@@ -632,6 +632,7 @@ internal fun PageRow(
 internal fun ColorOsSubPage(
     title: String,
     onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val context = LocalContext.current
@@ -650,6 +651,7 @@ internal fun ColorOsSubPage(
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack)
                     },
+                    actions = actions,
                 )
             },
         ) { padding ->

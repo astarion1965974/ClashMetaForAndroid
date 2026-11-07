@@ -118,3 +118,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 
 - `FilesDesign` now hosts an entirely COUI Compose lazy list, native glass Add toolbar action, COUI file/folder cards with more menus, and stable file IDs. Old `DesignFilesBinding`, `FileAdapter`, dialog binding and `RecyclerView` no longer participate in the screen.
 - Directory back-stack handling and preview capture, root-level import restrictions, rename/delete/export requests, file-name validation, and elapsed-update behavior are preserved.
+
+## Native configuration properties editor
+
+- `PropertiesDesign` now renders editable configuration name/URL/AGE key/update interval/file links as native COUI rows, plus a shared glass Save header action. Profile edits continue to use validated input dialogs and the same update/commit request channel.
+- `ColorOsSubPage` now accepts an optional COUI toolbar action slot, reused by properties and future subordinate pages.
+- The progress and fetch-status callback contract is unchanged; the page's `progressing` flag now uses Compose state instead of an XML binding boolean.
+- The mobile network UI test's old XML `save_view` assertion was updated to use the COUI save-label semantics.
