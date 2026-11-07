@@ -18,6 +18,7 @@ import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.DarkMode
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.ui.DayNight
+import com.github.kr328.clash.design.util.wrapLegacyCouiPage
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.showExceptionToast
@@ -46,7 +47,7 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
         set(value) {
             field = value
             if (value != null) {
-                setContentView(value.root)
+                setContentView(wrapLegacyCouiPage(this, value.root))
             } else {
                 setContentView(View(this))
             }
