@@ -40,6 +40,17 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                 }
                 design.requests.onReceive {
                     when (it) {
+                        ProfilesDesign.Request.OpenHome -> {
+                            startActivity(MainActivity::class.intent.apply {
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            })
+                            finish()
+                        }
+                        ProfilesDesign.Request.OpenSettings -> {
+                            startActivity(SettingsActivity::class.intent)
+                            finish()
+                        }
                         ProfilesDesign.Request.Create ->
                             startActivity(NewProfileActivity::class.intent)
                         ProfilesDesign.Request.UpdateAll ->

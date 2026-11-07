@@ -97,8 +97,14 @@ internal fun ClashHome(
 ) {
     ClashPage(
         topBar = {
+            // The title belongs to the COUI gradient-blurred toolbar, rather
+            // than a huge, uncollapsible HomeTitle inside the scrolling body.
             TopAppBar(
-                title = {},
+                title = {
+                    Text(text = stringResource(R.string.application_name),
+                        kind = CouiTextKind.Toolbar, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis)
+                },
                 actions = {
                     ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
                         onRequest(HomeRequest.OpenSettings)
@@ -106,10 +112,15 @@ internal fun ClashHome(
                 },
             )
         },
-        bottomBar = { HomeBottomBar(onRequest) },
+        bottomBar = {
+            PrimaryBottomBar(selected = 0, modifier = resourceName("home_navigation")) { index ->
+                when (index) {
+                    1 -> onRequest(HomeRequest.OpenProfiles)
+                    2 -> onRequest(HomeRequest.OpenSettings)
+                }
+            }
+        },
     ) {
-        Text(text = stringResource(R.string.application_name), kind = CouiTextKind.HomeTitle,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp))
         HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
         HomeQuotaCard(quota)
         HomeTrafficCard(days, forwarded, running && !paused)
@@ -134,8 +145,20 @@ internal fun ClashHome(
 }
 
 @Composable
-internal fun ClashSettings(onBack: () -> Unit, onRequest: (SettingsRequest) -> Unit) {
-    ClashPage(topBar = {
+internal fun ClashSettings(
+    onBack: () -> Unit,
+    onRequest: (SettingsRequest) -> Unit,
+) {
+    ClashPage(
+        bottomBar = {
+            PrimaryBottomBar(selected = 2, modifier = resourceName("settings_navigation")) { index ->
+                when (index) {
+                    0 -> onRequest(SettingsRequest.OpenHome)
+                    1 -> onRequest(SettingsRequest.OpenProfiles)
+                }
+            }
+        },
+        topBar = {
         TopAppBar(
             title = { Text(text = stringResource(R.string.settings), kind = CouiTextKind.Toolbar) },
             navigationIcon = {
@@ -223,7 +246,11 @@ private fun ClashPage(
 }
 
 @Composable
-private fun HomeBottomBar(onRequest: (HomeRequest) -> Unit) {
+internal fun PrimaryBottomBar(
+    selected: Int,
+    modifier: Modifier = Modifier,
+    onSelection: (Int) -> Unit,
+) {
     val home = ImageVector.vectorResource(R.drawable.ic_navigation_home)
     val profiles = ImageVector.vectorResource(R.drawable.ic_baseline_view_list)
     val items = listOf(
@@ -231,25 +258,19 @@ private fun HomeBottomBar(onRequest: (HomeRequest) -> Unit) {
         CouiNavigationItem(stringResource(R.string.profiles), profiles, profiles),
         CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Settings, CouiIcons.Settings),
     )
-    var selectedIndex by remember { mutableIntStateOf(0) }
+    var selectedIndex by remember(selected) { mutableIntStateOf(selected) }
     val lifecycle = LocalView.current.findViewTreeLifecycleOwner()?.lifecycle
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) selectedIndex = 0
+            if (event == Lifecycle.Event.ON_RESUME) selectedIndex = selected
         }
         lifecycle?.addObserver(observer)
         onDispose { lifecycle?.removeObserver(observer) }
     }
     val select: (Int) -> Unit = { index ->
         selectedIndex = index
-        val request = when (index) {
-            1 -> HomeRequest.OpenProfiles
-            2 -> HomeRequest.OpenSettings
-            else -> null
-        }
-        request?.let(onRequest)
+        if (index != selected) onSelection(index)
     }
-    val modifier = resourceName("home_navigation")
     if (Build.VERSION.SDK_INT >= 34) {
         val renderer = remember { createFloatingRenderer { CouiFloatingRenderer() } }
         if (renderer != null) {

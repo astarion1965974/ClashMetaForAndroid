@@ -41,6 +41,17 @@ class SettingsActivity : BaseActivity<SettingsDesign>() {
                             startActivity(HelpActivity::class.intent)
                         SettingsDesign.Request.OpenAbout ->
                             design.showAbout(queryAppVersionName())
+                        SettingsDesign.Request.OpenHome -> {
+                            startActivity(MainActivity::class.intent.apply {
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            })
+                            finish()
+                        }
+                        SettingsDesign.Request.OpenProfiles -> {
+                            startActivity(ProfilesActivity::class.intent)
+                            finish()
+                        }
                     }
                 }
             }

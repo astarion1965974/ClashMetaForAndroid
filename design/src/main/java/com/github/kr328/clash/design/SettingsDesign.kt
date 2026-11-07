@@ -11,6 +11,7 @@ class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request
     enum class Request {
         StartApp, StartNetwork, StartOverride, StartMetaFeature,
         OpenAppRouting, OpenRouting, OpenLogs, OpenHelp, OpenAbout,
+        OpenHome, OpenProfiles,
     }
 
     fun showAbout(versionName: String) {

@@ -2,6 +2,27 @@ package com.github.kr328.clash.design
 
 import android.app.Dialog
 import android.content.Context
+import android.app.Activity
+import android.graphics.Rect
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.recyclerview.widget.RecyclerView
+import com.itos.coui.icons.CouiIcons
+import com.itos.coui.layout.Scaffold
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
+import com.itos.coui.theme.CouiTheme
+import com.itos.coui.topappbar.TopAppBar
+import com.github.kr328.clash.design.util.resolveThemedBoolean
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.View
@@ -42,6 +63,8 @@ import kotlin.coroutines.resume
 
 class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context) {
     sealed class Request {
+        object OpenHome : Request()
+        object OpenSettings : Request()
         object UpdateAll : Request()
         object Create : Request()
         data class Active(val profile: Profile) : Request()
@@ -62,9 +85,52 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
             adapter.states.allUpdating = value
         }
     private val rotateAnimation : Animation = AnimationUtils.loadAnimation(context, R.anim.rotate_infinite)
+    private var canUpdate by mutableStateOf(false)
 
-    override val root: View
-        get() = binding.root
+    // The existing RecyclerView stays as content under a real native COUI
+    // Scaffold. Its toolbar and navigation now sample the same page source.
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(context.getString(R.string.profiles), kind = CouiTextKind.Toolbar)
+                            },
+                            navigationIcon = {
+                                ToolbarIcon(CouiIcons.Back,
+                                    context.getString(androidx.appcompat.R.string.abc_action_bar_up_description)) {
+                                    (context as? AppCompatActivity)?.onSupportNavigateUp()
+                                        ?: (context as? Activity)?.finish()
+                                }
+                            },
+                            actions = {
+                                if (canUpdate) {
+                                    ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_sync),
+                                        context.getString(R.string.update)) { requestUpdateAll() }
+                                }
+                                ToolbarIcon(ImageVector.vectorResource(R.drawable.ic_baseline_add),
+                                    context.getString(R.string._new)) { requestCreate() }
+                            },
+                        )
+                    },
+                    bottomBar = {
+                        PrimaryBottomBar(selected = 1, modifier = Modifier.testTag("profiles_navigation")) { index ->
+                            when (index) {
+                                0 -> requests.trySend(Request.OpenHome)
+                                2 -> requests.trySend(Request.OpenSettings)
+                            }
+                        }
+                    },
+                ) {
+                    // Keep the content behind native COUI floating surfaces.
+                    // The recycler's last-row decoration avoids hit overlap.
+                    AndroidView(factory = { binding.root }, modifier = Modifier.fillMaxSize())
+                }
+            }
+        }
+    }
 
     suspend fun patchProfiles(profiles: List<Profile>) {
         adapter.apply {
@@ -76,6 +142,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
 
         withContext(Dispatchers.Main) {
+            canUpdate = updatable
             binding.updateView.visibility = if (updatable) View.VISIBLE else View.GONE
         }
     }
@@ -95,11 +162,20 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     init {
         binding.self = this
 
-        binding.activityBarLayout.applyFrom(context)
+        binding.activityBarLayout.visibility = View.GONE
 
         binding.mainList.recyclerList.also {
             it.bindAppBarElevation(binding.activityBarLayout)
             it.applyLinearAdapter(context, adapter)
+            it.addItemDecoration(object : RecyclerView.ItemDecoration() {
+                override fun getItemOffsets(
+                    outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State,
+                ) {
+                    if (parent.getChildAdapterPosition(view) == (parent.adapter?.itemCount ?: 0) - 1) {
+                        outRect.bottom = (104f * context.resources.displayMetrics.density).toInt()
+                    }
+                }
+            })
         }
     }
 

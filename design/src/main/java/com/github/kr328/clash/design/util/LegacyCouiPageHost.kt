@@ -21,6 +21,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import android.view.ViewTreeObserver
+import com.github.kr328.clash.design.view.CouiIconButtonView
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -64,32 +72,26 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
     val toolbar = original.findViewById<ActivityBarLayout>(R.id.activity_bar_layout)
         ?: return original
 
-    // Preserve the original view instances, LiveData/data binding, click
-    // listeners, progress spinners and dynamic visible/enabled state.
+    // Preserve the real toolbar buttons in their original View hierarchy:
+    // binding and visibility transitions still update those instances.
+    // Only their visual surfaces are drawn as native COUI TopAppBarButtons,
+    // sharing the SAME page backdrop as the standard Settings back button.
     val actionIds = intArrayOf(
         R.id.action_layout, R.id.url_test_layout, R.id.update_layout,
         R.id.clear_view, R.id.delete_view, R.id.new_view, R.id.add_view,
         R.id.update_view, R.id.menu_view,
     )
-    val actions = mutableListOf<View>()
-    fun inChildTree(parent: View, target: View): Boolean {
-        var current: View? = target
-        while (current != null) {
-            if (current === parent) return true
-            current = current.parent as? View
+    val actions = mutableListOf<CouiIconButtonView>()
+    fun harvest(view: View) {
+        if (view is CouiIconButtonView) {
+            if (actions.none { it === view }) actions.add(view)
+        } else if (view is ViewGroup) {
+            for (i in 0 until view.childCount) harvest(view.getChildAt(i))
         }
-        return false
     }
-    for (id in actionIds) {
-        val action = toolbar.findViewById<View>(id) ?: continue
-        if (actions.any { inChildTree(it, action) }) continue
-        // One View cannot have two parents. Move toolbar action containers
-        // rather than reproducing business requests with duplicate callbacks.
-        (action.parent as? ViewGroup)?.removeView(action)
-        actions += action
-    }
-    // INVISIBLE, not GONE: legacy LinearLayouts still reserve the title
-    // height; CoordinatorLayouts still keep their scroll/header contracts.
+    for (id in actionIds) toolbar.findViewById<View>(id)?.let(::harvest)
+    // INVISIBLE keeps the legacy header's padding/scroll contracts intact.
+    // It does not create a second opaque or clickable toolbar.
     toolbar.visibility = View.INVISIBLE
 
     val oldFloatingFab = original.findViewById<CouiFabView>(R.id.url_test_float_view)
@@ -128,15 +130,7 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
                             actions = {
                                 actions.forEach { action ->
                                     key(action.id) {
-                                        val slotWidth = if (action.id == R.id.action_layout &&
-                                            ((action as? ViewGroup)?.childCount ?: 0) > 2) 112.dp else 48.dp
-                                        AndroidView(
-                                            modifier = Modifier.width(slotWidth).height(48.dp),
-                                            factory = {
-                                                (action.parent as? ViewGroup)?.removeView(action)
-                                                action
-                                            },
-                                        )
+                                        LegacyToolbarAction(original, toolbar, action)
                                     }
                                 }
                             },
@@ -197,6 +191,59 @@ fun wrapLegacyCouiPage(context: Context, original: View): View {
                     }
                 }
             }
+        }
+    }
+}
+
+
+/** Native COUI glass action, retaining the legacy click handler and states. */
+@Composable
+private fun LegacyToolbarAction(original: View, toolbar: View, action: CouiIconButtonView) {
+    fun isAvailable(): Boolean {
+        var current: View? = action
+        while (current != null && current !== toolbar) {
+            if (current.visibility != View.VISIBLE) return false
+            current = current.parent as? View
+        }
+        return action.isEnabled
+    }
+    var available by remember(action) { mutableStateOf(isAvailable()) }
+    DisposableEffect(original, action) {
+        var observer: ViewTreeObserver? = null
+        val onLayout = ViewTreeObserver.OnGlobalLayoutListener {
+            val latest = isAvailable()
+            if (available != latest) available = latest
+        }
+        fun attachObserver() {
+            if (observer == null) {
+                original.viewTreeObserver.takeIf { it.isAlive }?.let {
+                    it.addOnGlobalLayoutListener(onLayout)
+                    observer = it
+                }
+            }
+        }
+        fun removeObserver() {
+            observer?.let { if (it.isAlive) it.removeOnGlobalLayoutListener(onLayout) }
+            observer = null
+        }
+        val attach = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) { attachObserver() }
+            override fun onViewDetachedFromWindow(v: View) { removeObserver() }
+        }
+        original.addOnAttachStateChangeListener(attach)
+        if (original.isAttachedToWindow) attachObserver()
+        onDispose {
+            original.removeOnAttachStateChangeListener(attach)
+            removeObserver()
+        }
+    }
+    if (available && action.iconForHost != 0) {
+        ToolbarIcon(
+            ImageVector.vectorResource(action.iconForHost),
+            action.contentDescription?.toString().orEmpty()
+                .ifEmpty { action.labelForHost.orEmpty() },
+        ) {
+            if (isAvailable()) action.performClick()
         }
     }
 }

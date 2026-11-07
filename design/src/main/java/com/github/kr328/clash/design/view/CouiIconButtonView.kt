@@ -38,6 +38,10 @@ class CouiIconButtonView @JvmOverloads constructor(context: Context, attrs: Attr
     // Avoid captured initializer locals in nested Compose lambdas (Kotlin IR).
     private val fabIcon: Int
     private val fabLabel: String?
+    // Exposed to the page-level COUI toolbar bridge. The legacy View retains
+    // its click handler, but its icon is rendered by a real TopAppBarButton.
+    val iconForHost: Int get() = fabIcon
+    val labelForHost: String? get() = fabLabel
     init {
         val a = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.src, android.R.attr.contentDescription))
         fabIcon = a.getResourceId(0, 0)
