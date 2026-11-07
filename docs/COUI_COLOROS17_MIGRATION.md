@@ -79,3 +79,11 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Preserves non-inline provider refresh requests, progress indicator, elapsed timestamps, `notifyUpdated()` retry and `notifyChanged()` success pathways.
 - Includes a regression test for refresh-all excluding inline providers and avoiding duplicate requests while an update is already running.
 - Legacy `ProviderAdapter` and `design_providers.xml` remain tracked for safe, post-verification cleanup.
+
+## Seventh native secondary screen: live and saved log viewer
+
+- `LogcatDesign` now uses native COUI `ColorOsLazySubPage`, with glass actions: live logs show Stop/Close; saved logs show Delete and Export. Existing activity request contract remains unchanged.
+- Replaces old Android `RecyclerView` with Compose `LazyColumn`, preserving reverse-layout for live streaming, a follow-tail scroll policy and long-press-to-copy functionality.
+- `ColorOsLazySubPage` now accepts optional `LazyListState` and `reverseLayout`, with defaults preserving existing callers.
+- Added a viewer regression test for appended messages and action routing.
+- Legacy `LogMessageAdapter` and XML layout remain temporarily until complete dead-code verification.

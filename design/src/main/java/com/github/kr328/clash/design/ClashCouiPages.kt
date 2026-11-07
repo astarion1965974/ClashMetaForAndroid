@@ -35,6 +35,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -668,6 +670,8 @@ internal fun ColorOsLazySubPage(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    listState: LazyListState? = null,
+    reverseLayout: Boolean = false,
     content: LazyListScope.() -> Unit,
 ) {
     val context = LocalContext.current
@@ -692,6 +696,8 @@ internal fun ColorOsLazySubPage(
         ) { padding ->
             val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
             LazyColumn(
+                state = listState ?: rememberLazyListState(),
+                reverseLayout = reverseLayout,
                 modifier = Modifier.fillMaxSize().padding(scrollPadding).consumeWindowInsets(padding),
                 contentPadding = PaddingValues(bottom = 24.dp),
                 content = content,

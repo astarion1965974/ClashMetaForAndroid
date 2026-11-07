@@ -303,6 +303,26 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun nativeCouiLogViewerRetainsActionsAndMessages() {
+        val ctx = context(false)
+        val viewer = LogcatDesign(ctx, streaming = false)
+        ctx.setContentView(viewer.root)
+        val msg = com.github.kr328.clash.core.model.LogMessage(
+            level = com.github.kr328.clash.core.model.LogMessage.Level.Info,
+            message = "native COUI log row", time = java.util.Date(0),
+        )
+        updateHome { viewer.patchMessages(listOf(msg), 0, 1) }
+        compose.onNodeWithText("native COUI log row").assertIsDisplayed()
+        compose.onNodeWithContentDescription(ctx.getString(R.string.export)).performClick()
+        assertEquals(LogcatDesign.Request.Export, viewer.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+        val streaming = LogcatDesign(ctx, streaming = true)
+        ctx.setContentView(streaming.root)
+        compose.onNodeWithContentDescription(ctx.getString(R.string.close)).performClick()
+        assertEquals(LogcatDesign.Request.Close, streaming.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun nativeCouiProviderListKeepsRefreshRequests() {
         val ctx = context(false)
         val remote = com.github.kr328.clash.core.model.Provider(
