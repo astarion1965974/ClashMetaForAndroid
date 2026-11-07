@@ -303,6 +303,19 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun nativeCouiLogsKeepStartAndFileActions() {
+        val ctx = context(false)
+        val design = LogsDesign(ctx)
+        ctx.setContentView(design.root)
+        compose.onNodeWithText(ctx.getString(R.string.clash_logcat)).performClick()
+        assertEquals(LogsDesign.Request.StartLogcat, design.requests.tryReceive().getOrNull())
+        val log = com.github.kr328.clash.design.model.LogFile("clash-1730000.log", java.util.Date(1730000L))
+        updateHome { design.patchLogs(listOf(log)) }
+        compose.onNodeWithText(log.fileName).assertIsDisplayed().performClick()
+        assertEquals(LogsDesign.Request.OpenFile(log), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun nativeCouiHelpLinksAndRecoveryPageKeepActions() {
         val ctx = context(false)
         var opened: android.net.Uri? = null

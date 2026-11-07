@@ -58,3 +58,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Converted `PreferenceScreen.tips()` from `PreferenceTipsBinding` to COUI typography, preserving its mutable `TipsPreference.text` contract.
 - Added `CouiRichText` to convert Android `Spanned` bold/italic formatting into Compose `AnnotatedString`; the native Help page no longer displays literal HTML tags from translated `<strong>` strings.
 - Other XML preference methods retain their existing COUI row wrappers for now. Do not delete XML resources until references and build verification confirm that they are unused.
+
+## Fourth native secondary screen: saved logs
+
+- `LogsDesign` now uses `ColorOsLazySubPage`: native COUI large-title header with glass back/delete-all actions, a lazy Compose list, a COUI logcat entry and COUI history rows.
+- Existing `StartLogcat`, `DeleteAll`, `OpenFile` requests and deletion confirmation flow stay unchanged.
+- Lists are keyed by `LogFile.fileName` to preserve stable item identity. UI test verifies logcat and saved-file requests.
+- `LogFileAdapter` and the old `design_logs.xml` resource are retained until post-CI dead-code cleanup.

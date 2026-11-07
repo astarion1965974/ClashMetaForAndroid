@@ -33,6 +33,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -600,7 +602,7 @@ private fun Metric(label: String, value: String, modifier: Modifier = Modifier) 
 }
 
 @Composable
-private fun PageRow(
+internal fun PageRow(
     @DrawableRes icon: Int,
     title: String,
     summary: String,
@@ -654,6 +656,44 @@ internal fun ColorOsSubPage(
                 modifier = Modifier.fillMaxSize().couiVerticalScroll(rememberScrollState())
                     .padding(scrollPadding).consumeWindowInsets(padding)
                     .padding(bottom = 24.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+/** Native lazy-list variant for long secondary pages such as saved logs. */
+@Composable
+internal fun ColorOsLazySubPage(
+    title: String,
+    onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
+    content: LazyListScope.() -> Unit,
+) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    CouiTheme(darkTheme = dark) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                ColorOsLargeTopBar(
+                    title = title,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        ToolbarIcon(CouiIcons.Back,
+                            stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                            onBack)
+                    },
+                    actions = actions,
+                )
+            },
+        ) { padding ->
+            val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(scrollPadding).consumeWindowInsets(padding),
+                contentPadding = PaddingValues(bottom = 24.dp),
                 content = content,
             )
         }
