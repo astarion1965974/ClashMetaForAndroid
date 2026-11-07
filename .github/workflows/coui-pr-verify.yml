@@ -60,6 +60,23 @@ jobs:
           ./gradlew --no-daemon --console=plain --max-workers=2 \
             :design:testAlphaDebugUnitTest :service:testAlphaDebugUnitTest :app:testAlphaDebugUnitTest \
             -Pcmfa.abis=arm64-v8a --stacktrace
+      - name: Print failed JVM test assertions
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          for path in Path('.').glob('**/build/test-results/**/TEST-*.xml'):
+              try:
+                  root = ET.parse(path).getroot()
+              except (OSError, ET.ParseError):
+                  continue
+              for case in root.findall('.//testcase'):
+                  for failure in case.findall('failure') + case.findall('error'):
+                      print(f'{path}: {case.get("classname")}.{case.get("name")}')
+                      print((failure.get('message') or '')[:2500])
+                      print((failure.text or '')[:3500])
+          PY
       - name: Preserve failure reports
         if: failure()
         uses: actions/upload-artifact@v7.0.2

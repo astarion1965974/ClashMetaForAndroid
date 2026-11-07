@@ -19,7 +19,7 @@ class SettingsDesign(context: AppCompatActivity) : Design<SettingsDesign.Request
     override val root: View = ComposeView(context).apply {
         setContent {
             ClashSettings(
-                onBack = { context.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 onRequest = ::request,
             )
         }

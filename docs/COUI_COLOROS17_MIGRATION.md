@@ -194,3 +194,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Removed **26 orphaned legacy layout XML resources** after the 20 screen controllers migrated to Compose roots. No currently mounted page or COUI dialog depends on these layouts.
 - Reduced `CouiPreferenceView.kt` to reusable Compose COUI row/action/icon functions, eliminating its per-row FrameLayout + ComposeView bridge. The dynamic Android Drawable icon remains as a justified `AndroidView` because Android app/provider icons arrive as `Drawable` instances.
 - Retired the obsolete FullScreenDialog-specific back test; remaining predictive back tests still cover native COUI toolbar and directory snapshot gestures.
+
+## ColorOS toolbar/system Back alignment and CI diagnostics
+
+- Central `Context.colorOsNavigateBack()` uses AndroidX `OnBackPressedDispatcherOwner` from the hosting Activity so COUI back buttons follow the same dirty/save interceptors as system back. The first two callers (mobile network, settings) now use it; remaining COUI back callbacks are in the final consistency audit.
+- The CI now prints failed JUnit XML assertions to distinguish navigation and semantic-node issues from code compilation errors.

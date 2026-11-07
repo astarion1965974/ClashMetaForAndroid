@@ -92,7 +92,7 @@ class MobileNetworkDesign(
                     else -> R.string.route_save
                 }),
                 canSave = dirty && interactive,
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 onSave = { if (dirty && interactive) requests.trySend(Request.Save) },
             ) {
                 Group {
