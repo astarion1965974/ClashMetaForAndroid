@@ -22,7 +22,7 @@ class ApkBrokenDesign(context: Context) : Design<ApkBrokenDesign.Request>(contex
             ColorOsSubPage(
                 title = (context as? AppCompatActivity)?.title?.toString()
                     ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.application_name),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 Text(
                     text = stringResource(R.string.application_broken_tips),

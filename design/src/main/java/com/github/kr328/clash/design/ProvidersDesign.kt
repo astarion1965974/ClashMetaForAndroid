@@ -46,7 +46,7 @@ class ProvidersDesign(
         setContent {
             ColorOsLazySubPage(
                 title = stringResource(R.string.providers),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     ToolbarIcon(
                         ImageVector.vectorResource(R.drawable.ic_baseline_sync),

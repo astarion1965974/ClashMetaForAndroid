@@ -27,7 +27,7 @@ class HelpDesign(
         setContent {
             ColorOsSubPage(
                 title = stringResource(R.string.help),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 CouiRichText(
                     value = context.getHtml(R.string.tips_help),

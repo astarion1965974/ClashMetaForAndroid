@@ -26,7 +26,7 @@ class NewProfileDesign(context: Context) : Design<NewProfileDesign.Request>(cont
         setContent {
             ColorOsLazySubPage(
                 title = stringResource(R.string.new_profile),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 itemsIndexed(sources, key = { index, provider ->
                     when (provider) {

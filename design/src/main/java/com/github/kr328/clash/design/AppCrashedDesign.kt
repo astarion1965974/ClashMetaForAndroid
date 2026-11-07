@@ -24,7 +24,7 @@ class AppCrashedDesign(context: Context) : Design<Unit>(context) {
             ColorOsSubPage(
                 title = (context as? AppCompatActivity)?.title?.toString()
                     ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.application_name),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 SelectionContainer {
                     Text(

@@ -38,7 +38,7 @@ class LogsDesign(context: Context) : Design<LogsDesign.Request>(context) {
         setContent {
             ColorOsLazySubPage(
                 title = stringResource(R.string.logs),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     ToolbarIcon(
                         ImageVector.vectorResource(R.drawable.ic_baseline_clear_all),

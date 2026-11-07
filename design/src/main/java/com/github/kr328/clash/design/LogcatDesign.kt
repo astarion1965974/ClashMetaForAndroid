@@ -44,7 +44,7 @@ class LogcatDesign(
             ColorOsLazySubPage(
                 title = (context as? AppCompatActivity)?.title?.toString()
                     ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.logs),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 listState = scrollState,
                 reverseLayout = streaming,
                 actions = {

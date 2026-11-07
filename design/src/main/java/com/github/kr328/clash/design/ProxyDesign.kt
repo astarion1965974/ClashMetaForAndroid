@@ -96,7 +96,7 @@ class ProxyDesign(
                                 ToolbarIcon(
                                     com.itos.coui.icons.CouiIcons.Back,
                                     stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
-                                ) { (context as? AppCompatActivity)?.onSupportNavigateUp() }
+                                ) { context.colorOsNavigateBack() }
                             },
                             actions = {
                                 if (groupNames.isNotEmpty()) {
