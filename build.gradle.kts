@@ -64,8 +64,13 @@ subprojects {
             minSdk = 31
             targetSdk = 35
 
-            versionName = "2.11.36.Live.Coui.R8"
-            versionCode = 211047
+            // Keep app-visible release_name/release_code in sync with the APK
+            // output version selected by cmfa.mainlineBuildNumber.
+            val mainlineBuildNumber =
+                (rootProject.findProperty("cmfa.mainlineBuildNumber") as? String)?.toIntOrNull()
+            versionName = mainlineBuildNumber?.let { "2.11.36.Live.Coui.R8.$it" }
+                ?: "2.11.36.Live.Coui.R8"
+            versionCode = mainlineBuildNumber?.let { 211046 + it } ?: 211047
 
             resValue("string", "release_name", "v$versionName")
             resValue("integer", "release_code", "$versionCode")

@@ -1,6 +1,7 @@
 package com.github.kr328.clash.design
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,12 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -25,8 +29,6 @@ import com.itos.coui.backdrop.couiBackdrop
 import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.layout.Item
-import com.itos.coui.search.SearchBar
-import com.itos.coui.search.rememberCouiSearchBarState
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
@@ -38,8 +40,6 @@ internal fun AccessControls(
     onSelectedOnly: (Boolean) -> Unit, onSystem: (Boolean) -> Unit,
 ) {
     val backdrop = rememberCouiBackdrop()
-    var searchExpanded by remember { mutableStateOf(false) }
-    val search = rememberCouiSearchBarState(searchExpanded)
     ProvideCouiBackdrop(backdrop) {
       Box(Modifier.fillMaxWidth()) {
         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(CouiTheme.colorScheme.background))
@@ -47,10 +47,7 @@ internal fun AccessControls(
             Item(onClick = onMode, enabled = enabled, summary = {
                 Text(text = hint, kind = CouiTextKind.PreferenceSummary, color = CouiTheme.colorScheme.onSurfaceVariant)
             }) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
-            SearchBar(state = search, query = keyword, onQueryChange = onKeyword,
-                onExpandedChange = { searchExpanded = it }, placeholder = stringResource(R.string.app_search),
-                cancelText = stringResource(R.string.cancel), clearDescription = stringResource(R.string.coui_clear),
-                enabled = enabled)
+            StableSearchField(keyword, enabled, onKeyword)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilterToggle(stringResource(R.string.app_selected_only), selectedOnly, enabled, Modifier.weight(1f), onSelectedOnly)
                 FilterToggle(stringResource(R.string.app_system), system, enabled, Modifier.weight(1f), onSystem)
@@ -59,6 +56,54 @@ internal fun AccessControls(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
         }
       }
+    }
+}
+
+
+/**
+ * Use a standard Compose input surface instead of COUI SearchBar's native
+ * MeshSpecification renderer. The latter throws on Robolectric API 35 and
+ * prevents the entire app-routing screen from rendering.
+ */
+@Composable
+private fun StableSearchField(keyword: String, enabled: Boolean, onKeyword: (String) -> Unit) {
+    val colors = CouiTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(14.dp)).background(colors.container)
+            .heightIn(min = 52.dp).padding(start = 16.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicTextField(
+            value = keyword,
+            onValueChange = onKeyword,
+            enabled = enabled,
+            singleLine = true,
+            textStyle = TextStyle(color = colors.onSurface, fontSize = 16.sp),
+            cursorBrush = SolidColor(colors.accent),
+            modifier = Modifier.weight(1f).testTag("access_control_search"),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (keyword.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.app_search),
+                            kind = CouiTextKind.PreferenceSummary,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
+        if (keyword.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.coui_clear),
+                kind = CouiTextKind.PreferenceSummary,
+                color = colors.accentOnSurface,
+                modifier = Modifier.clickable(enabled = enabled, role = Role.Button) { onKeyword("") }
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
+            )
+        }
     }
 }
 

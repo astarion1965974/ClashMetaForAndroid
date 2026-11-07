@@ -174,9 +174,11 @@ class LiveUiTest {
             assertEquals(MainDesign.Request.OpenSettings, design.requests.tryReceive().getOrNull())
             toggle.performClick()
             assertEquals(MainDesign.Request.ToggleStatus, design.requests.tryReceive().getOrNull())
-            compose.onNodeWithText(ctx.getString(R.string.coui_home_nodes_title)).performClick()
+            compose.onNodeWithText(ctx.getString(R.string.coui_home_nodes_title))
+                .performScrollTo().assertIsDisplayed().performClick()
             assertEquals(MainDesign.Request.OpenProxy, design.requests.tryReceive().getOrNull())
-            compose.onNodeWithText(ctx.getString(R.string.coui_home_providers_title)).performClick()
+            compose.onNodeWithText(ctx.getString(R.string.coui_home_providers_title))
+                .performScrollTo().assertIsDisplayed().performClick()
             assertEquals(MainDesign.Request.OpenProviders, design.requests.tryReceive().getOrNull())
             updateHome { design.setClashRunning(false) }
             toggle.assertTextContains(ctx.getString(R.string.live_connect))

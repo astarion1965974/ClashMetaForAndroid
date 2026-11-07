@@ -9,9 +9,10 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded verification runs, but never cancel an explicit release.
 concurrency:
-  group: mainline-release
-  cancel-in-progress: true
+  group: mainline-${{ (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:')) && github.sha || 'verification' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.event.head_commit.message, 'release:') }}
 
 jobs:
   build:
@@ -57,10 +58,16 @@ jobs:
         run: |
           overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
           GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile -count=1
-      - name: Build tested ARM64 release
+      # Keep unit-test failures separate from shrinking/signing failures.
+      - name: Run design, service and app JVM tests
         run: |
           ./gradlew --no-daemon --console=plain --max-workers=2 \
-            design:testAlphaDebugUnitTest service:testAlphaDebugUnitTest app:assembleAlphaRelease \
+            :design:testAlphaDebugUnitTest :service:testAlphaDebugUnitTest :app:testAlphaDebugUnitTest \
+            -Pcmfa.abis=arm64-v8a "-Pcmfa.mainlineBuildNumber=$GITHUB_RUN_NUMBER"
+      - name: Assemble ARM64 release with R8
+        run: |
+          ./gradlew --no-daemon --console=plain --max-workers=2 \
+            :app:assembleAlphaRelease \
             -Pcmfa.abis=arm64-v8a "-Pcmfa.mainlineBuildNumber=$GITHUB_RUN_NUMBER"
       - name: Verify candidate identity
         shell: bash
