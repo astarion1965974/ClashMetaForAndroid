@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -283,6 +284,7 @@ internal fun ClashPrimaryTabs(
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
     val homeScroll = rememberScrollState()
+    val profilesScroll = rememberLazyListState()
     val settingsScroll = rememberScrollState()
     // Keep the three large-title states independent while changing tabs.
     val homeTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -360,7 +362,7 @@ internal fun ClashPrimaryTabs(
                                         dnsLoading, forwarded, mode, hasProviders, onHomeRequest,
                                     )
                                 }
-                                1 -> profiles.PrimaryTabContent(padding, profilesPadding)
+                                1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
                                 2 -> Column(
                                     Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
                                         .padding(settingsPadding).consumeWindowInsets(padding)

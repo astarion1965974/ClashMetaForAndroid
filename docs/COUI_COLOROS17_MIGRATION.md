@@ -47,3 +47,7 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Converted **HelpDesign**, **ApkBrokenDesign** and **AppCrashedDesign** from XML-based `DesignSettingsCommonBinding` / `DesignAppCrashedBinding` pages to native Compose COUI bodies.
 - Existing web links, reinstall request and selectable crash logs remain available. Added a UI regression test for these actions.
 - The rest of the legacy settings, file, proxy and log pages still need native conversion. Old XML resources are kept until their remaining references have been audited.
+
+## Main tab state retention
+
+- The configuration tab now hoists `LazyListState` to the stable three-tab host alongside the existing home and settings scroll states. Switching the translucent bottom navigation away and back no longer recreates the configuration scroll position.

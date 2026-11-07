@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -142,8 +143,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
     /** Render COUI profile rows within the main tab's single Scaffold. */
     @androidx.compose.runtime.Composable
-    internal fun PrimaryTabContent(padding: PaddingValues, contentPadding: PaddingValues = padding) {
+    internal fun PrimaryTabContent(padding: PaddingValues, contentPadding: PaddingValues, listState: LazyListState) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
