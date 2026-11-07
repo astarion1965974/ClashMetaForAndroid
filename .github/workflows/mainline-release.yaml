@@ -95,6 +95,13 @@ jobs:
             **/build/reports/tests/
             **/build/test-results/
           if-no-files-found: ignore
+      - name: Preserve COUI UI previews when tests fail
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: mainline-ui-previews
+          path: design/build/ui-previews/
+          if-no-files-found: ignore
 
   publish:
     needs: build

@@ -118,11 +118,15 @@ internal fun ClashHome(
         if (running) {
             Group(title = stringResource(R.string.coui_home_section_connection)) {
                 PageRow(R.drawable.ic_baseline_apps, stringResource(R.string.coui_home_nodes_title),
-                    stringResource(R.string.live_nodes_hint)) { onRequest(HomeRequest.OpenProxy) }
+                    stringResource(R.string.live_nodes_hint), resourceName("home_nodes_view")) {
+                    onRequest(HomeRequest.OpenProxy)
+                }
                 if (hasProviders) {
                     Divider()
                     PageRow(R.drawable.ic_baseline_swap_vertical_circle, stringResource(R.string.coui_home_providers_title),
-                        stringResource(R.string.providers)) { onRequest(HomeRequest.OpenProviders) }
+                        stringResource(R.string.providers), resourceName("home_providers_view")) {
+                        onRequest(HomeRequest.OpenProviders)
+                    }
                 }
             }
         }
@@ -203,9 +207,11 @@ private fun ClashPage(
         ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize()
-                    .couiVerticalScroll(rememberScrollState())
+                    // Apply Scaffold insets *outside* the scroll viewport so
+                    // content cannot receive taps through the floating bottom bar.
                     .padding(padding)
                     .consumeWindowInsets(padding)
+                    .couiVerticalScroll(rememberScrollState())
                     .padding(bottom = 16.dp),
                 verticalArrangement = contentArrangement,
                 content = content,

@@ -174,11 +174,19 @@ class LiveUiTest {
             assertEquals(MainDesign.Request.OpenSettings, design.requests.tryReceive().getOrNull())
             toggle.performClick()
             assertEquals(MainDesign.Request.ToggleStatus, design.requests.tryReceive().getOrNull())
-            compose.onNodeWithText(ctx.getString(R.string.coui_home_nodes_title))
-                .performScrollTo().assertIsDisplayed().performClick()
+            val nodes = nodeWithResourceName(ctx, "home_nodes_view")
+                .performScrollTo().assertIsDisplayed()
+            val bottomNavigationTop = nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot().top
+            assertTrue("The node row must not be hidden behind the bottom navigation",
+                nodes.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop)
+            nodes.performClick()
             assertEquals(MainDesign.Request.OpenProxy, design.requests.tryReceive().getOrNull())
-            compose.onNodeWithText(ctx.getString(R.string.coui_home_providers_title))
-                .performScrollTo().assertIsDisplayed().performClick()
+
+            val providers = nodeWithResourceName(ctx, "home_providers_view")
+                .performScrollTo().assertIsDisplayed()
+            assertTrue("The provider row must not be hidden behind the bottom navigation",
+                providers.getUnclippedBoundsInRoot().bottom <= bottomNavigationTop)
+            providers.performClick()
             assertEquals(MainDesign.Request.OpenProviders, design.requests.tryReceive().getOrNull())
             updateHome { design.setClashRunning(false) }
             toggle.assertTextContains(ctx.getString(R.string.live_connect))
