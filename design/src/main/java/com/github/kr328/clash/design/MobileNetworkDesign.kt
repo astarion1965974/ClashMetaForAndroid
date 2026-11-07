@@ -29,7 +29,7 @@ class MobileNetworkDesign(
     enum class Request { Save, BindWifi, Permissions, AppRouting }
 
     private var original = settings.copy()
-    private var saving by mutableStateOf(false)
+    private var savingState by mutableStateOf(false)
     private var revision by mutableIntStateOf(0)
     val dirty: Boolean get() = original != settings
 
@@ -44,7 +44,7 @@ class MobileNetworkDesign(
     }
 
     fun setSaving(value: Boolean) {
-        saving = value
+        savingState = value
         changed()
     }
 
@@ -54,7 +54,7 @@ class MobileNetworkDesign(
     }
 
     private fun pick(ai: Boolean) {
-        if (saving) return
+        if (savingState) return
         val chosen = (if (ai) settings.aiNodes else settings.stableNodes).toMutableList()
         val options = (chosen + nodes).distinct()
         if (options.isEmpty()) {
@@ -83,11 +83,11 @@ class MobileNetworkDesign(
         setContent {
             // Depend on revision to recompose when a settings data class field is modified.
             revision
-            val interactive = !saving
+            val interactive = !savingState
             ColorOsFormPage(
                 title = stringResource(R.string.mobile_title),
                 saveLabel = stringResource(when {
-                    saving -> R.string.route_saving
+                    savingState -> R.string.route_saving
                     running -> R.string.route_save_reconnect
                     else -> R.string.route_save
                 }),

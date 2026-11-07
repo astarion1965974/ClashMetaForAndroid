@@ -47,8 +47,8 @@ class ManagedRoutingDesign(
 ) : Design<ManagedRoutingDesign.Request>(context) {
     enum class Request { Save, Update, Refresh }
     private var original = settings.copy()
-    private var saving by mutableStateOf(false)
-    private var updating by mutableStateOf(false)
+    private var savingState by mutableStateOf(false)
+    private var updatingState by mutableStateOf(false)
     private var runningNow by mutableStateOf(running)
     private var status by mutableStateOf<CharSequence>(context.getString(R.string.managed_status_unloaded))
     private var revision by mutableIntStateOf(0)
@@ -59,9 +59,9 @@ class ManagedRoutingDesign(
         onBackStateChanged()
     }
     fun markSaved() { original = settings.copy(); changed() }
-    fun setSaving(value: Boolean) { saving = value; changed() }
+    fun setSaving(value: Boolean) { savingState = value; changed() }
     fun updateRunning(value: Boolean) { runningNow = value }
-    fun setUpdating(value: Boolean) { updating = value; changed() }
+    fun setUpdating(value: Boolean) { updatingState = value; changed() }
     fun setProviderStatus(count: Int, oldestUpdate: Long?) {
         status = if (count == 0) context.getString(R.string.managed_status_unloaded)
         else context.getString(
@@ -80,7 +80,7 @@ class ManagedRoutingDesign(
     }
 
     private fun chooseTarget(category: String) {
-        if (saving || updating) return
+        if (savingState || updatingState) return
         val current = settings.targets[category]
             ?: if (category == "cn") "DIRECT" else "Live · 默认代理"
         val options = (listOf("Live · 默认代理", "DIRECT", "REJECT") + targets)
@@ -94,7 +94,7 @@ class ManagedRoutingDesign(
     }
 
     private fun editDomains(direct: Boolean) {
-        if (saving || updating) return
+        if (savingState || updatingState) return
         context.showCouiContent { dismiss ->
             var input by remember {
                 mutableStateOf((if (direct) settings.directDomains else settings.proxyDomains).joinToString("\n"))
@@ -147,7 +147,7 @@ class ManagedRoutingDesign(
     }
 
     private fun requestReset() {
-        if (saving || updating) return
+        if (savingState || updatingState) return
         context.showCouiContent { dismiss ->
             Dialog(
                 onDismissRequest = dismiss,
@@ -170,7 +170,7 @@ class ManagedRoutingDesign(
     override val root: View = ComposeView(context).apply {
         setContent {
             revision
-            val editable = !saving && !updating
+            val editable = !savingState && !updatingState
             val categories = listOf(
                 "cn" to R.string.managed_cn,
                 "ai" to R.string.managed_ai,
@@ -183,7 +183,7 @@ class ManagedRoutingDesign(
             ColorOsFormPage(
                 title = stringResource(R.string.managed_routing),
                 saveLabel = stringResource(when {
-                    saving -> R.string.route_saving
+                    savingState -> R.string.route_saving
                     runningNow -> R.string.route_save_reconnect
                     else -> R.string.route_save
                 }),
@@ -245,7 +245,7 @@ class ManagedRoutingDesign(
                     NativeCouiAction(
                         title = stringResource(R.string.managed_source),
                         summary = status.toString(),
-                        enabled = !saving,
+                        enabled = !savingState,
                     ) { requests.trySend(Request.Refresh) }
                     Divider()
                     NativeCouiAction(

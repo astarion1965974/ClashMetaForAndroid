@@ -49,7 +49,7 @@ class AccessControlDesign(
     val dirty get() = selected != original || mode != originalMode
 
     private var loaded by mutableStateOf(false)
-    private var saving by mutableStateOf(false)
+    private var savingState by mutableStateOf(false)
     private var isRunning by mutableStateOf(running)
     private var keyword by mutableStateOf("")
     private var selectedOnly by mutableStateOf(false)
@@ -62,21 +62,21 @@ class AccessControlDesign(
     override val root: View = ComposeView(context).apply {
         setContent {
             version
-            val editable = !saving && mode != AccessControlMode.AcceptAll
+            val editable = !savingState && mode != AccessControlMode.AcceptAll
             ColorOsLazyFormPage(
                 title = stringResource(R.string.live_app_routing),
                 saveLabel = stringResource(when {
-                    saving -> R.string.route_saving
+                    savingState -> R.string.route_saving
                     isRunning -> R.string.route_save_reconnect
                     else -> R.string.route_save
                 }),
-                canSave = dirty && loaded && !saving,
+                canSave = dirty && loaded && !savingState,
                 onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
-                onSave = { if (dirty && loaded && !saving) requests.trySend(Request.Save) },
+                onSave = { if (dirty && loaded && !savingState) requests.trySend(Request.Save) },
             ) {
                 item(key = "app-filter-controls") {
                     AccessControls(
-                        modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !saving,
+                        modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !savingState,
                         onMode = ::chooseMode,
                         onKeyword = { keyword = it; refresh() },
                         onSelectedOnly = { selectedOnly = it; refresh() },
@@ -89,8 +89,8 @@ class AccessControlDesign(
                 }
                 item(key = "app-list-actions") {
                     ToolbarSectionBulk(
-                        onMore = { if (!saving) menu.show(mode != AccessControlMode.AcceptAll) },
-                        enabled = !saving,
+                        onMore = { if (!savingState) menu.show(mode != AccessControlMode.AcceptAll) },
+                        enabled = !savingState,
                     )
                 }
                 if (filteredApps.isEmpty()) {
@@ -129,10 +129,10 @@ class AccessControlDesign(
 
     fun patchApps(apps: List<AppInfo>) { allApps = apps; loaded = true; refresh() }
     fun rebindAll() = refresh()
-    fun setSaving(value: Boolean) { saving = value; refresh() }
+    fun setSaving(value: Boolean) { savingState = value; refresh() }
     fun updateRunning(value: Boolean) { isRunning = value }
     fun select(action: AppAccessPolicy.Selection) {
-        if (mode == AccessControlMode.AcceptAll || saving) return
+        if (mode == AccessControlMode.AcceptAll || savingState) return
         val result = AppAccessPolicy.select(
             selected, apps.map { it.packageName }.toSet(), action,
         )
@@ -165,7 +165,7 @@ class AccessControlDesign(
     }
 
     private fun chooseMode() {
-        if (saving) return
+        if (savingState) return
         val labels = listOf(R.string.app_mode_all, R.string.app_mode_allow, R.string.app_mode_bypass)
         context.showCouiContent { dismiss ->
             Dialog(
