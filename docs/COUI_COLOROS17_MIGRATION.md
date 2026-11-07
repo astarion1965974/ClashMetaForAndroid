@@ -152,3 +152,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `OverrideSettingsDesign` now renders all **34** general + DNS override controls using the new native COUI nullable value, enum choice, list and map editors. The original `ConfigurationOverride` instance and deferred persistence are unchanged.
 - DNS child controls are disabled when DNS strategy is explicitly false; the Reset header action still requests activity-level confirmation and override clearing.
 - Old `DesignSettingsOverideBinding` and XML `PreferenceScreen` are no longer used by this controller; its resource can be removed after confirming no other owner.
+
+## Native Meta feature settings
+
+- `MetaFeatureSettingsDesign` now renders native COUI Groups/Items for AGE X25519/hybrid keys, four primary meta settings, fourteen sniffing options and four GeoX import actions. The existing AGE key helper already used COUI dialogs and is retained unchanged.
+- Sniffer dependent fields disable when sniffing is explicitly disabled. All import/reset requests and core override property references are unchanged.
+- The previously commented-out GeoX URL override controls remain inactive as before; these are not user-facing pages.
