@@ -6,7 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.github.kr328.clash.design.ui.Surface
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.setOnInsertsChangedListener
-import com.google.android.material.snackbar.Snackbar
+import com.github.kr328.clash.design.dialog.CouiNoticeOptions
+import com.github.kr328.clash.design.dialog.showCouiNotice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -25,7 +26,7 @@ abstract class Design<R>(val context: Context) :
     suspend fun showToast(
         resId: Int,
         duration: ToastDuration,
-        configure: Snackbar.() -> Unit = {}
+        configure: CouiNoticeOptions.() -> Unit = {}
     ) {
         return showToast(context.getString(resId), duration, configure)
     }
@@ -33,23 +34,11 @@ abstract class Design<R>(val context: Context) :
     suspend fun showToast(
         message: CharSequence,
         duration: ToastDuration,
-        configure: Snackbar.() -> Unit = {}
+        configure: CouiNoticeOptions.() -> Unit = {}
     ) {
         withContext(Dispatchers.Main) {
-            // A Design may render its content as a tab inside MainActivity
-            // while its standalone root ComposeView remains detached.
-            // Anchor transient feedback to the actual visible window.
-            val anchor = if (root.isAttachedToWindow) root
-                else (context as? AppCompatActivity)?.window?.decorView ?: root
-            Snackbar.make(
-                anchor,
-                message,
-                when (duration) {
-                    ToastDuration.Short -> Snackbar.LENGTH_SHORT
-                    ToastDuration.Long -> Snackbar.LENGTH_LONG
-                    ToastDuration.Indefinite -> Snackbar.LENGTH_INDEFINITE
-                }
-            ).apply(configure).show()
+            val options = CouiNoticeOptions(context).apply(configure)
+            context.showCouiNotice(message, duration, options)
         }
     }
 
