@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.ComposeView
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.appcompat.R as AppCompatR
 import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
@@ -119,8 +123,11 @@ internal fun CouiRowAction(
     description: String,
     onClick: () -> Unit,
 ) {
+    val source = remember { MutableInteractionSource() }
     androidx.compose.foundation.layout.Box(
-        modifier = Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick),
+        modifier = Modifier.size(48.dp).clip(CircleShape)
+            .couiButtonFeedback(CouiTheme.isDark, source, enabled = true, list = false)
+            .clickable(source, null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Image(

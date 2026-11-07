@@ -182,3 +182,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Updated `BackGuardTest` to validate that saving/updating blocks page exit and dirty edits do not finish without COUI confirmation, instead of assuming Material AlertDialog objects exist.
 - Updated `PredictiveBackTest` to click the actual COUI back icon through Compose semantics, not removed XML `activity_bar_close_view`; targeting Android 35+ only in this test.
 - Updated the managed-routing UI smoke test to wait for COUI composition and check the Save control exists in the native semantics tree.
+
+## Eliminate obsolete adapter-specific UI tests and adopt COUI interactions
+
+- `CouiPreferenceTest` now validates native COUI switches, drawable-bearing COUI rows, profile selection/menu separation and COUI proxy card enabled/disabled interactions. The old tests no longer instantiate obsolete `ProfileAdapter`, `ProxyAdapter`, `PreferenceScreen` or `ActionLabel` Views.
+- The trailing row icon action now uses COUI `couiButtonFeedback` and Compose button semantics instead of a plain legacy ripple/clickable surface.

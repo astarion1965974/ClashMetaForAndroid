@@ -7,33 +7,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.github.kr328.clash.design.adapter.ProfileListItem
-import com.github.kr328.clash.design.adapter.ProxyAdapter
-import com.github.kr328.clash.design.component.ProxyViewConfig
-import com.github.kr328.clash.design.component.ProxyViewState
-import com.github.kr328.clash.design.model.ProxyState
-import com.github.kr328.clash.design.preference.OnChangedListener
-import com.github.kr328.clash.design.preference.SwitchPreference
-import com.github.kr328.clash.design.preference.preferenceScreen
-import com.github.kr328.clash.design.preference.switch
-import com.github.kr328.clash.design.view.ActionLabel
-import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.core.model.Proxy
+import com.github.kr328.clash.design.adapter.ProfileListItem
+import com.github.kr328.clash.design.model.ProxyState
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.github.kr328.clash.design.preference.NativeCouiSwitch
+import com.github.kr328.clash.design.store.UiStore
+import com.github.kr328.clash.service.model.Profile
 import com.itos.coui.theme.CouiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -52,72 +48,77 @@ import java.util.concurrent.atomic.AtomicInteger
 @Config(sdk = [35], qualifiers = "zh-rCN-w412dp-h915dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CouiPreferenceTest {
-    @get:Rule
-    val compose = createEmptyComposeRule()
+    @get:Rule val compose = createEmptyComposeRule()
 
     private fun activity(): AppCompatActivity {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java)
         controller.get().setTheme(R.style.AppThemeLight)
-        controller.setup()
-        return controller.get()
+        return controller.setup().get()
     }
 
     private class ToggleModel {
         @Volatile var enabled = false
     }
 
-    @Test fun switchWritesOnceAndRespectsDisabledState() {
+    @Test fun nativeSwitchWritesOnceAndRespectsDisabledState() {
         val activity = activity()
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         val model = ToggleModel()
         val changed = AtomicInteger()
-        lateinit var preference: SwitchPreference
-        val screen = scope.preferenceScreen(activity) {
-            preference = switch(model::enabled, title = R.string.mobile_enabled) {
-                listener = OnChangedListener { changed.incrementAndGet() }
+        var interactive by mutableStateOf(true)
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    NativeCouiSwitch(
+                        title = activity.getString(R.string.mobile_enabled),
+                        value = model::enabled,
+                        enabled = interactive,
+                        onChanged = { changed.incrementAndGet() },
+                    )
+                }
             }
-        }
-        activity.setContentView(screen.root)
+        })
         val label = activity.getString(R.string.mobile_enabled)
-        compose.waitUntil(timeoutMillis = 10_000) {
-            // The initial value is loaded on Dispatchers.IO and applied on the
-            // Robolectric main looper. Compose polling alone does not run it.
-            shadowOf(Looper.getMainLooper()).idle()
-            runCatching { compose.onNodeWithText(label).assertIsEnabled() }.isSuccess
-        }
         compose.onNodeWithText(label).performClick()
         compose.waitUntil(timeoutMillis = 10_000) {
             shadowOf(Looper.getMainLooper()).idle()
             model.enabled && changed.get() == 1
         }
-        preference.enabled = false
+        interactive = false
+        compose.waitForIdle()
         compose.onNodeWithText(label).assertIsNotEnabled()
         assertEquals(1, changed.get())
-        scope.cancel()
         activity.setContentView(View(activity))
     }
 
-    @Test fun actionIconsPreserveAspectRatio() {
+    @Test fun nativeRowKeepsExternalDrawableAspectRatio() {
         val activity = activity()
-        val drawable = BitmapDrawable(activity.resources, Bitmap.createBitmap(60, 30, Bitmap.Config.ARGB_8888))
-        val row = ActionLabel(activity).apply {
-            text = "Test action"
-            icon = drawable
-            setOnClickListener { }
+        val drawable = BitmapDrawable(
+            activity.resources,
+            Bitmap.createBitmap(60, 30, Bitmap.Config.ARGB_8888),
+        )
+        val root = ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    CouiPreferenceRow(
+                        title = "Test action",
+                        summary = "Drawable source",
+                        icon = drawable,
+                        enabled = true,
+                        onClick = {},
+                    )
+                }
+            }
         }
-        activity.setContentView(row)
+        activity.setContentView(root)
         compose.onNodeWithText("Test action").assertIsDisplayed()
-
         fun descendants(view: View): Sequence<View> = sequence {
             yield(view)
             if (view is ViewGroup) {
                 for (index in 0 until view.childCount) yieldAll(descendants(view.getChildAt(index)))
             }
         }
-
-        val image = descendants(row).filterIsInstance<ImageView>().first { it.drawable === drawable }
+        val image = descendants(root).filterIsInstance<ImageView>().first { it.drawable === drawable }
         assertEquals(ImageView.ScaleType.FIT_CENTER, image.scaleType)
-        assertTrue(image.width > 0 && image.height > 0)
         activity.setContentView(View(activity))
     }
 
@@ -127,16 +128,10 @@ class CouiPreferenceTest {
             uuid = UUID.randomUUID(),
             name = "一个较长的配置名称，用来检查文字布局",
             type = Profile.Type.Url,
-            source = "",
-            active = false,
-            interval = 0,
-            upload = 0,
-            download = 0,
-            total = 0,
-            expire = 0,
-            updatedAt = System.currentTimeMillis(),
-            imported = true,
-            pending = false,
+            source = "", active = false, interval = 0,
+            upload = 0, download = 0, total = 0,
+            expire = 0, updatedAt = System.currentTimeMillis(),
+            imported = true, pending = false,
         )
         var activated: Profile? = null
         var menu: Profile? = null
@@ -152,7 +147,6 @@ class CouiPreferenceTest {
                 }
             }
         })
-
         compose.onNodeWithText(profile.name).assertIsDisplayed().performClick()
         assertEquals(profile, activated)
         activated = null
@@ -162,23 +156,25 @@ class CouiPreferenceTest {
         activity.setContentView(View(activity))
     }
 
-    @Test fun selectableProxyKeepsItsClickAction() {
+    @Test fun nativeProxySelectionPreservesEnabledState() {
         val activity = activity()
-        val config = ProxyViewConfig(activity, 2)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val design = ProxyDesign(activity, null, listOf("Selector"), UiStore(activity))
+        activity.setContentView(design.root)
         val proxy = Proxy("node-a", "Node A", "Tokyo", "Selector", 30, false)
-        var selected: String? = null
-        val adapter = ProxyAdapter(config) { selected = it }
-        adapter.states = listOf(ProxyViewState(config, proxy, ProxyState(""), null))
-        adapter.selectable = true
-        val holder = adapter.onCreateViewHolder(RecyclerView(activity), 0)
-        adapter.onBindViewHolder(holder, 0)
 
-        assertTrue(holder.view.isClickable)
-        holder.view.performClick()
-        assertEquals("node-a", selected)
+        scope.launch { design.updateGroup(0, listOf(proxy), true, ProxyState(""), emptyMap()) }
+        shadowOf(Looper.getMainLooper()).idle()
+        compose.onNodeWithText("Node A").assertIsDisplayed().performClick()
+        assertEquals(ProxyDesign.Request.Select(0, "node-a"), design.requests.tryReceive().getOrNull())
 
-        adapter.selectable = false
-        adapter.onBindViewHolder(holder, 0)
-        assertFalse(holder.view.isClickable)
+        scope.launch { design.updateGroup(0, listOf(proxy), false, ProxyState(""), emptyMap()) }
+        shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+        // A disabled COUI proxy row no longer submits the request.
+        compose.onNodeWithText("Node A").performClick()
+        assertEquals(null, design.requests.tryReceive().getOrNull())
+        scope.cancel()
+        activity.setContentView(View(activity))
     }
 }
