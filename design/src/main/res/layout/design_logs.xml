@@ -38,7 +38,7 @@
                         android:layout_centerVertical="true"
                         android:layout_toStartOf="@id/delete_view" />
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:id="@+id/delete_view"
                         android:layout_width="@dimen/item_tailing_component_size"
                         android:layout_height="@dimen/item_tailing_component_size"

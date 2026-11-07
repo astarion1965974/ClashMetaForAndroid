@@ -60,7 +60,7 @@
                         android:layout_marginStart="@dimen/item_tailing_margin"
                         android:layout_toStartOf="@id/menu_view">
 
-                        <ImageView
+                        <com.github.kr328.clash.design.view.CouiIconButtonView
                             android:id="@+id/url_test_view"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
@@ -80,7 +80,7 @@
                             android:visibility="gone" />
                     </FrameLayout>
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:id="@+id/menu_view"
                         android:layout_width="48dp"
                         android:layout_height="48dp"

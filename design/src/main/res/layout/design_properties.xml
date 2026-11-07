@@ -144,7 +144,7 @@
                         android:indeterminate="true"
                         android:visibility="@{processing ? View.VISIBLE : View.GONE}" />
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:layout_width="@dimen/item_tailing_component_size"
                         android:layout_height="@dimen/item_tailing_component_size"
                         android:layout_gravity="end|center_vertical"

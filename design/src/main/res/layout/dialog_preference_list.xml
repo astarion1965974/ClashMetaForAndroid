@@ -33,7 +33,7 @@
                 android:ellipsize="end"
                 android:textAppearance="@style/TextAppearance.Live.Heading" />
 
-            <ImageView
+            <com.github.kr328.clash.design.view.CouiIconButtonView
                 android:id="@+id/new_view"
                 android:layout_width="@dimen/item_tailing_component_size"
                 android:layout_height="@dimen/item_tailing_component_size"
