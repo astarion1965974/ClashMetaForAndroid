@@ -9,10 +9,11 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -23,13 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.itos.coui.layout.CouiPageDefaults
+import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
@@ -102,20 +103,23 @@ fun Context.showCouiNotice(
                 val action = options.onAction
                 val label = options.actionLabel
                 if (action != null && label != null) {
-                    // Keep the click semantics on a container rather than
-                    // BasicText: its own text semantics can absorb test clicks.
-                    Box(
-                        modifier = Modifier.testTag("coui-notice-action")
-                            .clickable(role = Role.Button) {
+                    // Use the same COUI Item interaction primitive as other
+                    // actionable rows; it owns native feedback and click semantics.
+                    Box(Modifier.widthIn(min = 84.dp, max = 140.dp)) {
+                        Item(
+                            modifier = Modifier.testTag("coui-notice-action"),
+                            onClick = {
                                 action(host)
                                 close()
-                            }.padding(6.dp),
-                    ) {
-                        Text(
-                            text = label,
-                            kind = CouiTextKind.PreferenceTitle,
-                            color = colors.accent,
-                        )
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = label,
+                                kind = CouiTextKind.PreferenceTitle,
+                                color = colors.accent,
+                            )
+                        }
                     }
                 }
             }
