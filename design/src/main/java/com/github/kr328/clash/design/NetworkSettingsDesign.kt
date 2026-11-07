@@ -17,7 +17,6 @@ import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.service.store.ServiceStore
 import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
-import kotlinx.coroutines.launch
 
 /** Full COUI network settings, including VPN-dependent controls and routing links. */
 class NetworkSettingsDesign(
@@ -110,7 +109,11 @@ class NetworkSettingsDesign(
         }
     }
 
-    init {
-        if (running) launch { showToast(R.string.options_unavailable, ToastDuration.Indefinite) }
+    /**
+     * The COUI notice needs an attached Activity content/lifecycle host.
+     * NetworkSettingsActivity calls this only after setContentDesign has mounted the page.
+     */
+    suspend fun showRunningNotice() {
+        if (running) showToast(R.string.options_unavailable, ToastDuration.Indefinite)
     }
 }
