@@ -65,3 +65,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Existing `StartLogcat`, `DeleteAll`, `OpenFile` requests and deletion confirmation flow stay unchanged.
 - Lists are keyed by `LogFile.fileName` to preserve stable item identity. UI test verifies logcat and saved-file requests.
 - `LogFileAdapter` and the old `design_logs.xml` resource are retained until post-CI dead-code cleanup.
+
+## Fifth native secondary screen: create profile
+
+- `NewProfileDesign` now directly renders a COUI Compose lazy picker, replacing `DesignNewProfileBinding` and the XML `RecyclerView` with native COUI preference rows.
+- File, URL, QR scan and external-source actions and the external-provider long press are retained; a UI test checks the first three requests.
+- Existing legacy `ProfileProviderAdapter` is retained until all callers are verified.
+- Saved Logs' logcat entry now sits within the COUI `Group` surface, matching the settings card background and round corners.

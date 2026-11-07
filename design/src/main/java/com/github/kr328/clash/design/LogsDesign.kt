@@ -18,6 +18,7 @@ import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import com.github.kr328.clash.design.model.LogFile
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.util.format
+import com.itos.coui.layout.Group
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import kotlinx.coroutines.Dispatchers
@@ -46,11 +47,13 @@ class LogsDesign(context: Context) : Design<LogsDesign.Request>(context) {
                 },
             ) {
                 item(key = "start-logcat") {
-                    PageRow(
-                        R.drawable.ic_baseline_adb,
-                        stringResource(R.string.clash_logcat),
-                        stringResource(R.string.tap_to_start),
-                    ) { requests.trySend(Request.StartLogcat) }
+                    Group {
+                        PageRow(
+                            R.drawable.ic_baseline_adb,
+                            stringResource(R.string.clash_logcat),
+                            stringResource(R.string.tap_to_start),
+                        ) { requests.trySend(Request.StartLogcat) }
+                    }
                 }
                 item(key = "history-heading") {
                     Text(

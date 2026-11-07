@@ -303,6 +303,23 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun nativeCouiNewProfileOffersAllImportSources() {
+        val ctx = context(false)
+        val design = NewProfileDesign(ctx)
+        val file = com.github.kr328.clash.design.model.ProfileProvider.File(ctx)
+        val url = com.github.kr328.clash.design.model.ProfileProvider.Url(ctx)
+        val qr = com.github.kr328.clash.design.model.ProfileProvider.QR(ctx)
+        updateHome { design.patchProviders(listOf(file, url, qr)) }
+        ctx.setContentView(design.root)
+        compose.onNodeWithText(ctx.getString(R.string.file)).performClick()
+        assertEquals(NewProfileDesign.Request.Create(file), design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.url)).performClick()
+        assertEquals(NewProfileDesign.Request.Create(url), design.requests.tryReceive().getOrNull())
+        compose.onNodeWithText(ctx.getString(R.string.qr)).performClick()
+        assertEquals(NewProfileDesign.Request.LaunchScanner(qr), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun nativeCouiLogsKeepStartAndFileActions() {
         val ctx = context(false)
         val design = LogsDesign(ctx)
