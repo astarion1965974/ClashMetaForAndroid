@@ -72,3 +72,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - File, URL, QR scan and external-source actions and the external-provider long press are retained; a UI test checks the first three requests.
 - Existing legacy `ProfileProviderAdapter` is retained until all callers are verified.
 - Saved Logs' logcat entry now sits within the COUI `Group` surface, matching the settings card background and round corners.
+
+## Sixth native secondary screen: proxy/rule providers
+
+- `ProvidersDesign` now uses `ColorOsLazySubPage` and native COUI preference rows in a Compose lazy list, with a COUI-glass toolbar refresh-all button.
+- Preserves non-inline provider refresh requests, progress indicator, elapsed timestamps, `notifyUpdated()` retry and `notifyChanged()` success pathways.
+- Includes a regression test for refresh-all excluding inline providers and avoiding duplicate requests while an update is already running.
+- Legacy `ProviderAdapter` and `design_providers.xml` remain tracked for safe, post-verification cleanup.

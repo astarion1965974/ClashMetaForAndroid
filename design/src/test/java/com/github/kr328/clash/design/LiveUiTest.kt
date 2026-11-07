@@ -303,6 +303,29 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun nativeCouiProviderListKeepsRefreshRequests() {
+        val ctx = context(false)
+        val remote = com.github.kr328.clash.core.model.Provider(
+            name = "provider test", type = com.github.kr328.clash.core.model.Provider.Type.Proxy,
+            vehicleType = com.github.kr328.clash.core.model.Provider.VehicleType.HTTP,
+            updatedAt = 0,
+        )
+        val inline = remote.copy(name = "inline provider",
+            vehicleType = com.github.kr328.clash.core.model.Provider.VehicleType.Inline)
+        val design = ProvidersDesign(ctx, listOf(remote, inline))
+        ctx.setContentView(design.root)
+        compose.onNodeWithText("provider test").assertIsDisplayed()
+        design.requestUpdateAll()
+        assertEquals(ProvidersDesign.Request.Update(0, remote), design.requests.tryReceive().getOrNull())
+        assertNull("Inline providers must not be refreshed", design.requests.tryReceive().getOrNull())
+        design.requestUpdateAll()
+        assertNull("Already refreshing providers must not be duplicated", design.requests.tryReceive().getOrNull())
+        updateHome { design.notifyUpdated(0) }
+        design.requestUpdateAll()
+        assertEquals(ProvidersDesign.Request.Update(0, remote), design.requests.tryReceive().getOrNull())
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun nativeCouiNewProfileOffersAllImportSources() {
         val ctx = context(false)
         val design = NewProfileDesign(ctx)
