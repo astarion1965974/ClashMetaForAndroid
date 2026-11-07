@@ -164,3 +164,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - All 20 `*Design.kt` page controllers now use `ComposeView` roots. `BaseActivity` directly hosts these roots rather than injecting the old `wrapLegacyCouiPage` AndroidView-based toolbar/adapter bridge.
 - Removed `LegacyCouiPageHost.kt`, which still referenced obsolete View IDs from migrated XML layouts and failed Kotlin compilation. Root-native COUI components own their own glass toolbar, content Insets and navigation.
 - This does **not** imply that every popup, dialog, or adapter XML resource has been migrated; those are audited separately.
+
+## Complete native standalone configurations page
+
+- `ProfilesDesign.root` no longer inflates `design_profiles.xml` via `AndroidView`; both standalone and primary configuration tabs render the same pure COUI `ProfileListItem` lazy list with shared collapse behavior, floating bottom navigation and glass actions.
+- Removed `ProfileAdapter` RecyclerView and obsolete XML dialogs/row resources. `ProfileListItem` now lives in its own reusable Composable file.
+- Updated list state is Compose-observed, including update-all progress, elapsed time and active profile. QR sharing remains a native COUI dialog with bitmap rendering; old Data Binding menu callbacks are eliminated.
