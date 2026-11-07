@@ -81,7 +81,9 @@ subprojects {
             if (!isApp) {
                 consumerProguardFiles("consumer-rules.pro")
             } else {
-                setProperty("archivesBaseName", "cmfa-$versionName")
+                project.extensions.configure<org.gradle.api.plugins.BasePluginExtension> {
+                    archivesName.set("cmfa-$versionName")
+                }
             }
         }
 
