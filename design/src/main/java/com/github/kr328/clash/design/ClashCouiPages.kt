@@ -621,6 +621,43 @@ private fun PageRow(
     }
 }
 
+/** Shared COUI subpage for screens whose content is already Compose-based. */
+@Composable
+internal fun ColorOsSubPage(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val context = LocalContext.current
+    val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val density = LocalDensity.current
+    CouiTheme(darkTheme = dark) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                ColorOsLargeTopBar(
+                    title = title,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        ToolbarIcon(CouiIcons.Back,
+                            stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                            onBack)
+                    },
+                )
+            },
+        ) { padding ->
+            val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
+            Column(
+                modifier = Modifier.fillMaxSize().couiVerticalScroll(rememberScrollState())
+                    .padding(scrollPadding).consumeWindowInsets(padding)
+                    .padding(bottom = 24.dp),
+                content = content,
+            )
+        }
+    }
+}
+
 /** ColorOS 17 title: native COUI glass and collapse with a 32sp expanded visual size. */
 @Composable
 internal fun ColorOsLargeTopBar(

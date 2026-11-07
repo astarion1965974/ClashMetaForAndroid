@@ -3,77 +3,74 @@ package com.github.kr328.clash.design
 import android.content.Context
 import android.net.Uri
 import android.view.View
-import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
-import com.github.kr328.clash.design.preference.category
-import com.github.kr328.clash.design.preference.clickable
-import com.github.kr328.clash.design.preference.preferenceScreen
-import com.github.kr328.clash.design.preference.tips
-import com.github.kr328.clash.design.util.applyFrom
-import com.github.kr328.clash.design.util.bindAppBarElevation
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.root
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.itos.coui.layout.Divider
+import com.itos.coui.layout.Group
+import com.itos.coui.layout.Item
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
 
+/** Fully native COUI help page; no XML preference rows or AndroidView bridge. */
 class HelpDesign(
     context: Context,
     openLink: (Uri) -> Unit,
 ) : Design<Unit>(context) {
-    private val binding = DesignSettingsCommonBinding
-        .inflate(context.layoutInflater, context.root, false)
-
-    override val root: View
-        get() = binding.root
-
-    init {
-        binding.surface = surface
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.scrollRoot.bindAppBarElevation(binding.activityBarLayout)
-
-        val screen = preferenceScreen(context) {
-            tips(R.string.tips_help)
-
-            category(R.string.document)
-
-            clickable(
-                title = R.string.clash_wiki,
-                summary = R.string.clash_wiki_url
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            ColorOsSubPage(
+                title = stringResource(R.string.help),
+                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
             ) {
-                clicked {
-                    openLink(Uri.parse(context.getString(R.string.clash_wiki_url)))
+                Text(
+                    text = stringResource(R.string.tips_help),
+                    kind = CouiTextKind.PreferenceSummary,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                )
+                Group(title = stringResource(R.string.document)) {
+                    HelpLink(
+                        title = stringResource(R.string.clash_wiki),
+                        url = stringResource(R.string.clash_wiki_url),
+                        onOpen = openLink,
+                    )
+                    Divider()
+                    HelpLink(
+                        title = stringResource(R.string.clash_meta_wiki),
+                        url = stringResource(R.string.clash_meta_wiki_url),
+                        onOpen = openLink,
+                    )
                 }
-            }
-
-            clickable(
-                title = R.string.clash_meta_wiki,
-                summary = R.string.clash_meta_wiki_url
-            ) {
-                clicked {
-                    openLink(Uri.parse(context.getString(R.string.clash_meta_wiki_url)))
-                }
-            }
-
-            category(R.string.sources)
-
-            clickable(
-                title = R.string.clash_meta_core,
-                summary = R.string.clash_meta_core_url
-            ) {
-                clicked {
-                    openLink(Uri.parse(context.getString(R.string.clash_meta_core_url)))
-                }
-            }
-
-            clickable(
-                title = R.string.clash_meta_for_android,
-                summary = R.string.meta_github_url
-            ) {
-                clicked {
-                    openLink(Uri.parse(context.getString(R.string.meta_github_url)))
+                Group(title = stringResource(R.string.sources)) {
+                    HelpLink(
+                        title = stringResource(R.string.clash_meta_core),
+                        url = stringResource(R.string.clash_meta_core_url),
+                        onOpen = openLink,
+                    )
+                    Divider()
+                    HelpLink(
+                        title = stringResource(R.string.clash_meta_for_android),
+                        url = stringResource(R.string.meta_github_url),
+                        onOpen = openLink,
+                    )
                 }
             }
         }
+    }
+}
 
-        binding.content.addView(screen.root)
+@Composable
+private fun HelpLink(title: String, url: String, onOpen: (Uri) -> Unit) {
+    Item(
+        onClick = { onOpen(Uri.parse(url)) },
+        summary = {
+            Text(text = url, kind = CouiTextKind.PreferenceSummary)
+        },
+    ) {
+        Text(text = title, kind = CouiTextKind.PreferenceTitle)
     }
 }

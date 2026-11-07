@@ -296,6 +296,25 @@ class LiveUiTest {
         ctx.setContentView(View(ctx))
     }
 
+    @Test fun nativeCouiHelpLinksAndRecoveryPageKeepActions() {
+        val ctx = context(false)
+        var opened: android.net.Uri? = null
+        val help = HelpDesign(ctx) { opened = it }
+        ctx.setContentView(help.root)
+        compose.onNodeWithText(ctx.getString(R.string.clash_wiki)).performClick()
+        assertEquals(ctx.getString(R.string.clash_wiki_url), opened.toString())
+        val recovery = ApkBrokenDesign(ctx)
+        ctx.setContentView(recovery.root)
+        compose.onNodeWithText(ctx.getString(R.string.github_releases)).performClick()
+        assertEquals(ctx.getString(R.string.meta_github_url),
+            recovery.requests.tryReceive().getOrNull()?.url)
+        val crash = AppCrashedDesign(ctx)
+        crash.setAppLogs("COUI exception sample")
+        ctx.setContentView(crash.root)
+        compose.onNodeWithText("COUI exception sample").assertIsDisplayed()
+        ctx.setContentView(View(ctx))
+    }
+
     @Test fun primaryProfilesListUsesScaffoldInsets() {
         val ctx = context(false)
         val main = MainDesign(ctx)

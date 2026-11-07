@@ -40,3 +40,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `ColorOsLargeTopBar` adjusts visual title typography from 32sp expanded toward 24dp collapsed, instead of inheriting COUI Kit's oversized default 40sp HomeTitle.
 - This does **not** complete secondary/tertiary XML page migration, which is intentionally tracked separately.
 
+
+## Third batch: native secondary screens
+
+- Introduced `ColorOsSubPage`: common COUI `Scaffold`, 32sp large/24dp compact title, shared back button, proper nested scrolling and window Insets.
+- Converted **HelpDesign**, **ApkBrokenDesign** and **AppCrashedDesign** from XML-based `DesignSettingsCommonBinding` / `DesignAppCrashedBinding` pages to native Compose COUI bodies.
+- Existing web links, reinstall request and selectable crash logs remain available. Added a UI regression test for these actions.
+- The rest of the legacy settings, file, proxy and log pages still need native conversion. Old XML resources are kept until their remaining references have been audited.
