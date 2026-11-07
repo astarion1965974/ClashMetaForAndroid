@@ -16,6 +16,13 @@ import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.design.MainDesign
+import com.github.kr328.clash.design.ProfilesDesign
+import com.github.kr328.clash.design.SettingsDesign
+import com.github.kr328.clash.common.util.setUUID
+import com.github.kr328.clash.core.bridge.Bridge
+import com.github.kr328.clash.service.model.Profile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
@@ -33,21 +40,33 @@ import com.github.kr328.clash.design.R as DesignR
 class MainActivity : BaseActivity<MainDesign>() {
     override suspend fun main() {
         val design = MainDesign(this)
+        // Three main tabs now share one window and one native COUI glass bar.
+        // Keep the original Design controllers and their request channels so
+        // profile, home and settings business actions still behave identically.
+        val profilesDesign = ProfilesDesign(this)
+        val settingsDesign = SettingsDesign(this)
+        design.installPrimaryTabs(profilesDesign, settingsDesign)
+        interceptBack(design, { design.selectedPrimaryTab != 0 }) {
+            design.selectPrimaryTab(0)
+        }
 
         setContentDesign(design)
 
         design.fetch()
+        profilesDesign.fetch()
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
+        val profileTicker = ticker(TimeUnit.MINUTES.toMillis(1))
 
         while (isActive) {
             select<Unit> {
                 events.onReceive {
                     when (it) {
-                        Event.ActivityStart,
-                        Event.ServiceRecreated,
-                        Event.ClashStop, Event.ClashStart,
-                        Event.ProfileLoaded, Event.ProfileChanged -> design.fetch()
+                        Event.ActivityStart, Event.ProfileLoaded, Event.ProfileChanged -> {
+                            design.fetch()
+                            profilesDesign.fetch()
+                        }
+                        Event.ServiceRecreated, Event.ClashStop, Event.ClashStart -> design.fetch()
                         else -> Unit
                     }
                 }
@@ -62,13 +81,79 @@ class MainActivity : BaseActivity<MainDesign>() {
                         MainDesign.Request.OpenProxy ->
                             startActivity(ProxyActivity::class.intent)
                         MainDesign.Request.OpenProfiles ->
-                            startActivity(ProfilesActivity::class.intent)
+                            design.selectPrimaryTab(1)
                         MainDesign.Request.OpenProviders ->
                             startActivity(ProvidersActivity::class.intent)
                         MainDesign.Request.OpenSettings ->
-                            startActivity(SettingsActivity::class.intent)
+                            design.selectPrimaryTab(2)
                         MainDesign.Request.CheckDns -> launch { design.checkDns() }
                     }
+                }
+                profilesDesign.requests.onReceive { action ->
+                    when (action) {
+                        ProfilesDesign.Request.OpenHome -> design.selectPrimaryTab(0)
+                        ProfilesDesign.Request.OpenSettings -> design.selectPrimaryTab(2)
+                        ProfilesDesign.Request.Create ->
+                            startActivity(NewProfileActivity::class.intent)
+                        ProfilesDesign.Request.UpdateAll ->
+                            withProfile {
+                                try {
+                                    queryAll().forEach { profile ->
+                                        if (profile.imported && profile.type != Profile.Type.File)
+                                            update(profile.uuid)
+                                    }
+                                } finally {
+                                    withContext(Dispatchers.Main) { profilesDesign.finishUpdateAll() }
+                                }
+                            }
+                        is ProfilesDesign.Request.Update ->
+                            withProfile { update(action.profile.uuid) }
+                        is ProfilesDesign.Request.Delete ->
+                            withProfile { delete(action.profile.uuid) }
+                        is ProfilesDesign.Request.Edit ->
+                            startActivity(PropertiesActivity::class.intent.setUUID(action.profile.uuid))
+                        is ProfilesDesign.Request.Active ->
+                            withProfile {
+                                if (action.profile.imported) setActive(action.profile)
+                                else profilesDesign.requestSave(action.profile)
+                            }
+                        is ProfilesDesign.Request.Duplicate -> {
+                            val uuid = withProfile { clone(action.profile.uuid) }
+                            startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+                        }
+                        is ProfilesDesign.Request.ShareQrCode ->
+                            profilesDesign.showProfileQrCode(action.profile)
+                    }
+                }
+                settingsDesign.requests.onReceive { action ->
+                    when (action) {
+                        SettingsDesign.Request.OpenHome -> design.selectPrimaryTab(0)
+                        SettingsDesign.Request.OpenProfiles -> design.selectPrimaryTab(1)
+                        SettingsDesign.Request.StartApp ->
+                            startActivity(AppSettingsActivity::class.intent)
+                        SettingsDesign.Request.StartNetwork ->
+                            startActivity(NetworkSettingsActivity::class.intent)
+                        SettingsDesign.Request.StartOverride ->
+                            startActivity(OverrideSettingsActivity::class.intent)
+                        SettingsDesign.Request.StartMetaFeature ->
+                            startActivity(MetaFeatureSettingsActivity::class.intent)
+                        SettingsDesign.Request.OpenAppRouting ->
+                            startActivity(AccessControlActivity::class.intent)
+                        SettingsDesign.Request.OpenRouting ->
+                            startActivity(ManagedRoutingActivity::class.intent)
+                        SettingsDesign.Request.OpenLogs -> {
+                            val page = if (LogcatService.running)
+                                LogcatActivity::class else LogsActivity::class
+                            startActivity(page.intent)
+                        }
+                        SettingsDesign.Request.OpenHelp ->
+                            startActivity(HelpActivity::class.intent)
+                        SettingsDesign.Request.OpenAbout ->
+                            settingsDesign.showAbout(queryAppVersionName())
+                    }
+                }
+                if (activityStarted && design.selectedPrimaryTab == 1) {
+                    profileTicker.onReceive { profilesDesign.updateElapsed() }
                 }
                 if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
                     ticker.onReceive {
@@ -77,6 +162,15 @@ class MainActivity : BaseActivity<MainDesign>() {
                 }
             }
         }
+    }
+
+    private suspend fun ProfilesDesign.fetch() {
+        withProfile { patchProfiles(queryAll()) }
+    }
+
+    private suspend fun queryAppVersionName(): String = withContext(Dispatchers.IO) {
+        packageManager.getPackageInfo(packageName, 0).versionName + "\n" +
+            Bridge.nativeCoreVersion().replace("_", "-")
     }
 
     private suspend fun MainDesign.fetch() {
@@ -125,7 +219,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         if (active == null || !active.imported) {
             showToast(DesignR.string.no_profile_selected, ToastDuration.Long) {
                 setAction(DesignR.string.profiles) {
-                    startActivity(ProfilesActivity::class.intent)
+                    selectPrimaryTab(1)
                 }
             }
 
@@ -146,6 +240,34 @@ class MainActivity : BaseActivity<MainDesign>() {
             }
         } catch (e: Exception) {
             design?.showToast(DesignR.string.unable_to_start_vpn, ToastDuration.Long)
+        }
+    }
+
+    override fun onProfileUpdateCompleted(uuid: java.util.UUID?) {
+        super.onProfileUpdateCompleted(uuid)
+        if (uuid == null) return
+        launch {
+            val name = withProfile { queryByUUID(uuid)?.name }
+            design?.showToast(
+                getString(DesignR.string.toast_profile_updated_complete, name),
+                ToastDuration.Long,
+            )
+        }
+    }
+
+    override fun onProfileUpdateFailed(uuid: java.util.UUID?, reason: String?) {
+        super.onProfileUpdateFailed(uuid, reason)
+        if (uuid == null) return
+        launch {
+            val name = withProfile { queryByUUID(uuid)?.name }
+            design?.showToast(
+                getString(DesignR.string.toast_profile_updated_failed, name, reason),
+                ToastDuration.Long,
+            ) {
+                setAction(DesignR.string.edit) {
+                    startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+                }
+            }
         }
     }
 

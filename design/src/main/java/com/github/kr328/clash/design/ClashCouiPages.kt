@@ -4,6 +4,15 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,6 +45,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -121,6 +131,27 @@ internal fun ClashHome(
             }
         },
     ) {
+        HomeTabContent(
+            running, paused, profileName, quota, days, dns, dnsLoading,
+            forwarded, mode, hasProviders, onRequest,
+        )
+    }
+}
+
+@Composable
+internal fun HomeTabContent(
+    running: Boolean,
+    paused: Boolean,
+    profileName: String?,
+    quota: HomeQuota?,
+    days: List<HomeTrafficDay>,
+    dns: List<HomeDnsResult>,
+    dnsLoading: Boolean,
+    forwarded: String?,
+    mode: String?,
+    hasProviders: Boolean,
+    onRequest: (HomeRequest) -> Unit,
+) {
         HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
         HomeQuotaCard(quota)
         HomeTrafficCard(days, forwarded, running && !paused)
@@ -141,7 +172,6 @@ internal fun ClashHome(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -170,6 +200,12 @@ internal fun ClashSettings(
             },
         )
     }) {
+        SettingsTabContent(onRequest)
+    }
+}
+
+@Composable
+internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
         Group(title = stringResource(R.string.live_settings_intro),
             footer = stringResource(R.string.live_settings_intro_hint)) {
             PageRow(R.drawable.ic_baseline_settings, stringResource(R.string.app),
@@ -207,6 +243,118 @@ internal fun ClashSettings(
             Divider()
             Item(onClick = { onRequest(SettingsRequest.OpenAbout) }) {
                 Text(text = stringResource(R.string.about), kind = CouiTextKind.PreferenceTitle)
+            }
+        }
+}
+
+/**
+ * Stable main-tab shell: COUI's glass NavigationBar remains composed while only
+ * the page body transitions. The blur is applied to real content on Android,
+ * never to the floating bar or its backdrop source itself.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+internal fun ClashPrimaryTabs(
+    selected: Int,
+    onSelected: (Int) -> Unit,
+    profiles: ProfilesDesign,
+    running: Boolean,
+    paused: Boolean,
+    profileName: String?,
+    quota: HomeQuota?,
+    days: List<HomeTrafficDay>,
+    dns: List<HomeDnsResult>,
+    dnsLoading: Boolean,
+    forwarded: String?,
+    mode: String?,
+    hasProviders: Boolean,
+    onHomeRequest: (HomeRequest) -> Unit,
+    onSettingsRequest: (SettingsRequest) -> Unit,
+) {
+    val context = LocalContext.current
+    val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
+    val homeScroll = rememberScrollState()
+    val settingsScroll = rememberScrollState()
+    CouiTheme(darkTheme = dark) {
+        Scaffold(
+            modifier = Modifier.semantics { testTagsAsResourceId = true },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(when (selected) {
+                                1 -> R.string.profiles
+                                2 -> R.string.settings
+                                else -> R.string.application_name
+                            }),
+                            kind = CouiTextKind.Toolbar,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    actions = {
+                        when (selected) {
+                            0 -> ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                                onSelected(2)
+                            }
+                            1 -> profiles.PrimaryTabActions()
+                        }
+                    },
+                )
+            },
+            bottomBar = {
+                PrimaryBottomBar(
+                    selected = selected,
+                    modifier = resourceName("home_navigation"),
+                    onSelection = onSelected,
+                )
+            },
+        ) { padding ->
+            Box(Modifier.fillMaxSize()) {
+                for (page in 0..2) {
+                    AnimatedVisibility(
+                        visible = selected == page,
+                        modifier = Modifier.fillMaxSize()
+                            .zIndex(if (selected == page) 1f else 0f),
+                        enter = fadeIn(tween(280)) + scaleIn(
+                            initialScale = 0.94f, animationSpec = tween(300),
+                        ),
+                        exit = fadeOut(tween(210)) + scaleOut(
+                            targetScale = 1.045f, animationSpec = tween(260),
+                        ),
+                        label = "coui-main-page-$page",
+                    ) {
+                        val blurRadius by transition.animateDp(label = "coui-page-blur") { phase ->
+                            if (phase == EnterExitState.Visible) 0.dp else 12.dp
+                        }
+                        // Robolectric emulates Android's graphics APIs but cannot
+                        // execute the actual RenderEffect backend.
+                        val blur = if (Build.VERSION.SDK_INT >= 31 &&
+                            !Build.FINGERPRINT.equals("robolectric", ignoreCase = true)
+                        ) Modifier.blur(blurRadius) else Modifier
+                        Box(Modifier.fillMaxSize().then(blur)) {
+                            when (page) {
+                                0 -> Column(
+                                    Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
+                                        .padding(padding).consumeWindowInsets(padding)
+                                        .padding(bottom = 16.dp),
+                                ) {
+                                    HomeTabContent(
+                                        running, paused, profileName, quota, days, dns,
+                                        dnsLoading, forwarded, mode, hasProviders, onHomeRequest,
+                                    )
+                                }
+                                1 -> profiles.PrimaryTabContent()
+                                2 -> Column(
+                                    Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
+                                        .padding(padding).consumeWindowInsets(padding)
+                                        .padding(bottom = 16.dp),
+                                ) {
+                                    SettingsTabContent(onSettingsRequest)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -251,12 +399,15 @@ internal fun PrimaryBottomBar(
     modifier: Modifier = Modifier,
     onSelection: (Int) -> Unit,
 ) {
-    val home = ImageVector.vectorResource(R.drawable.ic_navigation_home)
-    val profiles = ImageVector.vectorResource(R.drawable.ic_baseline_view_list)
+    val home = ImageVector.vectorResource(R.drawable.ic_navigation_home_outline)
+    val homeSelected = ImageVector.vectorResource(R.drawable.ic_navigation_home)
+    val profiles = ImageVector.vectorResource(R.drawable.ic_navigation_profiles_outline)
+    val profilesSelected = ImageVector.vectorResource(R.drawable.ic_baseline_view_list)
+    val settingsSelected = ImageVector.vectorResource(R.drawable.ic_navigation_settings_filled)
     val items = listOf(
-        CouiNavigationItem(stringResource(R.string.coui_home_tab), home, home),
-        CouiNavigationItem(stringResource(R.string.profiles), profiles, profiles),
-        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Settings, CouiIcons.Settings),
+        CouiNavigationItem(stringResource(R.string.coui_home_tab), home, homeSelected),
+        CouiNavigationItem(stringResource(R.string.profiles), profiles, profilesSelected),
+        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Settings, settingsSelected),
     )
     var selectedIndex by remember(selected) { mutableIntStateOf(selected) }
     val lifecycle = LocalView.current.findViewTreeLifecycleOwner()?.lifecycle
@@ -306,7 +457,7 @@ internal fun PrimaryBottomBar(
                         .padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Image(item.icon, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(color))
+                    Image(if (selected) item.selectedIcon else item.icon, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(color))
                     Text(text = item.title, kind = CouiTextKind.Description, color = color,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }

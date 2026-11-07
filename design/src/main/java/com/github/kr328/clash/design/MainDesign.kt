@@ -3,6 +3,7 @@ package com.github.kr328.clash.design
 import android.content.Context
 import android.view.View
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
@@ -36,9 +37,47 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     var pausedAtHome by mutableStateOf(false)
         private set
 
+    var selectedPrimaryTab by mutableIntStateOf(0)
+        private set
+    private var primaryProfiles by mutableStateOf<ProfilesDesign?>(null)
+    private var primarySettings by mutableStateOf<SettingsDesign?>(null)
+
+    fun installPrimaryTabs(profiles: ProfilesDesign, settings: SettingsDesign) {
+        primaryProfiles = profiles
+        primarySettings = settings
+    }
+
+    fun selectPrimaryTab(index: Int) {
+        require(index in 0..2) { "Invalid primary tab $index" }
+        if (selectedPrimaryTab != index) {
+            selectedPrimaryTab = index
+            onBackStateChanged()
+        }
+    }
+
     override val root: View = ComposeView(context).apply {
         setContent {
-            ClashHome(
+            val profiles = primaryProfiles
+            val settings = primarySettings
+            if (profiles != null && settings != null) {
+                ClashPrimaryTabs(
+                    selected = selectedPrimaryTab,
+                    onSelected = ::selectPrimaryTab,
+                    profiles = profiles,
+                    running = running,
+                    paused = pausedAtHome,
+                    profileName = profileName,
+                    quota = quota,
+                    days = days,
+                    dns = dns,
+                    dnsLoading = dnsLoading,
+                    forwarded = forwarded,
+                    mode = modeLabel,
+                    hasProviders = hasProviders,
+                    onHomeRequest = ::request,
+                    onSettingsRequest = settings::request,
+                )
+            } else ClashHome(
                 running = running,
                 paused = pausedAtHome,
                 profileName = profileName,

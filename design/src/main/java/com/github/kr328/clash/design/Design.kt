@@ -36,8 +36,13 @@ abstract class Design<R>(val context: Context) :
         configure: Snackbar.() -> Unit = {}
     ) {
         withContext(Dispatchers.Main) {
+            // A Design may render its content as a tab inside MainActivity
+            // while its standalone root ComposeView remains detached.
+            // Anchor transient feedback to the actual visible window.
+            val anchor = if (root.isAttachedToWindow) root
+                else (context as? AppCompatActivity)?.window?.decorView ?: root
             Snackbar.make(
-                root,
+                anchor,
                 message,
                 when (duration) {
                     ToastDuration.Short -> Snackbar.LENGTH_SHORT

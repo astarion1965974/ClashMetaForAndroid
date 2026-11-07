@@ -131,6 +131,35 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     }
 
+    /**
+     * Renders the existing profile RecyclerView in MainActivity's shared
+     * COUI Scaffold without a nested top or bottom navigation bar.
+     */
+    @androidx.compose.runtime.Composable
+    internal fun PrimaryTabContent() {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                (binding.root.parent as? ViewGroup)?.removeView(binding.root)
+                binding.root
+            },
+        )
+    }
+
+    @androidx.compose.runtime.Composable
+    internal fun PrimaryTabActions() {
+        if (canUpdate) {
+            ToolbarIcon(
+                ImageVector.vectorResource(R.drawable.ic_baseline_sync),
+                context.getString(R.string.update),
+            ) { requestUpdateAll() }
+        }
+        ToolbarIcon(
+            ImageVector.vectorResource(R.drawable.ic_baseline_add),
+            context.getString(R.string._new),
+        ) { requestCreate() }
+    }
+
     suspend fun patchProfiles(profiles: List<Profile>) {
         adapter.apply {
             patchDataSet(this::profiles, profiles, id = { it.uuid })

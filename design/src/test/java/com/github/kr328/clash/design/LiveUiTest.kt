@@ -266,6 +266,36 @@ class LiveUiTest {
         assertTrue(design.root.findViewById<View>(R.id.save_view).bottom <= 360)
     }
 
+    @Test fun primaryTabsKeepOneCOUINavigationAndSwitchWithinHost() {
+        val ctx = context(false)
+        val main = MainDesign(ctx)
+        val profiles = ProfilesDesign(ctx)
+        val settings = SettingsDesign(ctx)
+        main.installPrimaryTabs(profiles, settings)
+        ctx.setContentView(main.root)
+
+        val bar = hasAnyAncestor(hasTestTag("${ctx.packageName}:id/home_navigation"))
+        compose.onNode(bar and hasText(ctx.getString(R.string.coui_home_tab))).assertIsSelected()
+
+        compose.onNode(bar and hasText(ctx.getString(R.string.settings))).performClick()
+        assertEquals(2, main.selectedPrimaryTab)
+        compose.waitForIdle()
+        compose.onNode(bar and hasText(ctx.getString(R.string.settings))).assertIsSelected()
+
+        compose.onNode(bar and hasText(ctx.getString(R.string.profiles))).performClick()
+        assertEquals(1, main.selectedPrimaryTab)
+        compose.waitForIdle()
+        compose.onNode(bar and hasText(ctx.getString(R.string.profiles))).assertIsSelected()
+
+        compose.onNode(bar and hasText(ctx.getString(R.string.coui_home_tab))).performClick()
+        assertEquals(0, main.selectedPrimaryTab)
+        compose.waitForIdle()
+        compose.onNode(bar and hasText(ctx.getString(R.string.coui_home_tab))).assertIsSelected()
+        // Navigation is a persistent COUI Scaffold child, not a fresh Activity.
+        assertTrue(ctx.window.decorView.findViewById<View>(android.R.id.content).isAttachedToWindow)
+        ctx.setContentView(View(ctx))
+    }
+
     @Test @Config(qualifiers = "zh-rCN-w320dp-h640dp-mdpi")
     fun homeSupportsNarrowScreensAndLargeText() {
         RuntimeEnvironment.setFontScale(1.3f)
