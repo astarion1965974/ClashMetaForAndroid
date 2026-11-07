@@ -137,3 +137,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 
 - Deleted 12 old `design_*.xml` screen layouts after migrating their owners to Compose; these layouts no longer have active UI callers. This prevents stale Data Binding generation from compiling classes/method references for eliminated View controllers.
 - Remaining layouts are retained until their actual owning pages and dialogs are migrated and audited; the legacy adapter and View resources are not deleted wholesale.
+
+## Native override value editors
+
+- Added `NativeCouiValueEditor` and typed COUI native editors for nullable port, text, string-list and map override fields. The dialogs distinguish an explicit null Reset from a real empty value and use COUI typography and controls; this replaces the View-based editable-list / map editing pathway for migrated pages.
+- Multi-line lists use one value per line; maps use `key=value` pairs. Port editor validates 0–65535 before saving. Existing core `ConfigurationOverride` property references remain the data source.
