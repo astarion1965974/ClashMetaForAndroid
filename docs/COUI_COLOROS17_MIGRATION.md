@@ -87,3 +87,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 - `ColorOsLazySubPage` now accepts optional `LazyListState` and `reverseLayout`, with defaults preserving existing callers.
 - Added a viewer regression test for appended messages and action routing.
 - Legacy `LogMessageAdapter` and XML layout remain temporarily until complete dead-code verification.
+
+## Native app and network settings
+
+- `AppSettingsDesign` and `NetworkSettingsDesign` now use `ColorOsSubPage` and COUI `Group`, `Item`, `Switch`, `RadioButton`, and `Dialog` instead of the old `DesignSettingsCommonBinding` and `PreferenceScreen` View hierarchy.
+- Added `NativeCouiPreferences.kt` for stateful native COUI switch, choice and clickable preference rows. Store writes use `Dispatchers.IO`; callback requests stay on main and controls are disabled while writes are in progress.
+- App settings preserve automatic restart, appearance switch/recreate events, app icon hiding, recents, live notification/group settings, and traffic notifications. ColorOS 17 exclusively targets Android 36+ so old SDK visibility branches are gone.
+- Network settings preserve live VPN option lockout, dependent VPN options, tun stack choice, and deep links to application routing, managed routing and mobile settings.

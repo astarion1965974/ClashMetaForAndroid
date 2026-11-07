@@ -1,146 +1,116 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
-import android.os.Build
 import android.view.View
-import com.github.kr328.clash.design.databinding.DesignSettingsCommonBinding
-import com.github.kr328.clash.design.preference.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import com.github.kr328.clash.design.preference.NativeCouiAction
+import com.github.kr328.clash.design.preference.NativeCouiSelect
+import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.ui.ToastDuration
-import com.github.kr328.clash.design.util.applyFrom
-import com.github.kr328.clash.design.util.bindAppBarElevation
-import com.github.kr328.clash.design.util.layoutInflater
-import com.github.kr328.clash.design.util.root
-import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
+import com.itos.coui.layout.Divider
+import com.itos.coui.layout.Group
 import kotlinx.coroutines.launch
 
+/** Full COUI network settings, including VPN-dependent controls and routing links. */
 class NetworkSettingsDesign(
     context: Context,
     uiStore: UiStore,
     srvStore: ServiceStore,
     running: Boolean,
 ) : Design<NetworkSettingsDesign.Request>(context) {
-    enum class Request {
-        StartAccessControlList, StartManagedRouting, StartMobileNetwork
+    enum class Request { StartAccessControlList, StartManagedRouting, StartMobileNetwork }
+
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            var vpnEnabled by remember { mutableStateOf(uiStore.enableVpn) }
+            ColorOsSubPage(
+                title = stringResource(R.string.network),
+                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+            ) {
+                Group {
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.route_system_traffic),
+                        summary = stringResource(R.string.routing_via_vpn_service),
+                        icon = R.drawable.ic_baseline_vpn_lock,
+                        value = uiStore::enableVpn,
+                        enabled = !running,
+                        onChanged = { vpnEnabled = it },
+                    )
+                }
+                Group(title = stringResource(R.string.vpn_service_options)) {
+                    val editable = !running && vpnEnabled
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.bypass_private_network),
+                        summary = stringResource(R.string.bypass_private_network_summary),
+                        value = srvStore::bypassPrivateNetwork, enabled = editable,
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.dns_hijacking),
+                        summary = stringResource(R.string.dns_hijacking_summary),
+                        value = srvStore::dnsHijacking, enabled = editable,
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.allow_bypass),
+                        summary = stringResource(R.string.allow_bypass_summary),
+                        value = srvStore::allowBypass, enabled = editable,
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.allow_ipv6),
+                        summary = stringResource(R.string.allow_ipv6_summary),
+                        value = srvStore::allowIpv6, enabled = editable,
+                    )
+                    Divider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.system_proxy),
+                        summary = stringResource(R.string.system_proxy_summary),
+                        value = srvStore::systemProxy, enabled = editable,
+                    )
+                    Divider()
+                    NativeCouiSelect(
+                        title = stringResource(R.string.tun_stack_mode),
+                        value = srvStore::tunStackMode,
+                        values = listOf("system", "gvisor", "mixed", "mips"),
+                        labels = listOf(
+                            stringResource(R.string.tun_stack_system),
+                            stringResource(R.string.tun_stack_gvisor),
+                            stringResource(R.string.tun_stack_mixed),
+                            stringResource(R.string.tun_stack_mips),
+                        ),
+                        enabled = editable,
+                    )
+                }
+                Group {
+                    NativeCouiAction(
+                        title = stringResource(R.string.mobile_title),
+                        summary = stringResource(R.string.mobile_ready),
+                    ) { requests.trySend(Request.StartMobileNetwork) }
+                    Divider()
+                    NativeCouiAction(
+                        title = stringResource(R.string.app_routing),
+                        summary = stringResource(R.string.app_routing_summary),
+                    ) { requests.trySend(Request.StartAccessControlList) }
+                    Divider()
+                    NativeCouiAction(
+                        title = stringResource(R.string.managed_routing),
+                        summary = stringResource(R.string.managed_summary),
+                    ) { requests.trySend(Request.StartManagedRouting) }
+                }
+            }
+        }
     }
 
-    private val binding = DesignSettingsCommonBinding
-        .inflate(context.layoutInflater, context.root, false)
-
-    override val root: View
-        get() = binding.root
-
     init {
-        binding.surface = surface
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.scrollRoot.bindAppBarElevation(binding.activityBarLayout)
-
-        val screen = preferenceScreen(context) {
-            val vpnDependencies: MutableList<Preference> = mutableListOf()
-
-            val vpn = switch(
-                value = uiStore::enableVpn,
-                icon = R.drawable.ic_baseline_vpn_lock,
-                title = R.string.route_system_traffic,
-                summary = R.string.routing_via_vpn_service
-            ) {
-                listener = OnChangedListener {
-                    vpnDependencies.forEach {
-                        it.enabled = uiStore.enableVpn
-                    }
-                }
-            }
-
-            category(R.string.vpn_service_options)
-
-            switch(
-                value = srvStore::bypassPrivateNetwork,
-                title = R.string.bypass_private_network,
-                summary = R.string.bypass_private_network_summary,
-                configure = vpnDependencies::add,
-            )
-
-            switch(
-                value = srvStore::dnsHijacking,
-                title = R.string.dns_hijacking,
-                summary = R.string.dns_hijacking_summary,
-                configure = vpnDependencies::add,
-            )
-
-            switch(
-                value = srvStore::allowBypass,
-                title = R.string.allow_bypass,
-                summary = R.string.allow_bypass_summary,
-                configure = vpnDependencies::add,
-            )
-
-            switch(
-                value = srvStore::allowIpv6,
-                title = R.string.allow_ipv6,
-                summary = R.string.allow_ipv6_summary,
-                configure = vpnDependencies::add,
-            )
-
-            if (Build.VERSION.SDK_INT >= 29) {
-                switch(
-                    value = srvStore::systemProxy,
-                    title = R.string.system_proxy,
-                    summary = R.string.system_proxy_summary,
-                    configure = vpnDependencies::add,
-                )
-            }
-
-            selectableList(
-                value = srvStore::tunStackMode,
-                values = arrayOf(
-                    "system",
-                    "gvisor",
-                    "mixed",
-                    "mips"
-                ),
-                valuesText = arrayOf(
-                    R.string.tun_stack_system,
-                    R.string.tun_stack_gvisor,
-                    R.string.tun_stack_mixed,
-                    R.string.tun_stack_mips
-                ),
-                title = R.string.tun_stack_mode,
-                configure = vpnDependencies::add,
-            )
-
-            clickable(title = R.string.mobile_title, summary = R.string.mobile_ready) {
-                clicked { requests.trySend(Request.StartMobileNetwork) }
-            }
-            clickable(
-                title = R.string.app_routing,
-                summary = R.string.app_routing_summary,
-            ) { clicked { requests.trySend(Request.StartAccessControlList) } }
-
-            clickable(
-                title = R.string.managed_routing,
-                summary = R.string.managed_summary,
-            ) { clicked { requests.trySend(Request.StartManagedRouting) } }
-
-            if (running) {
-                vpn.enabled = false
-
-                vpnDependencies.forEach {
-                    it.enabled = false
-                }
-            } else {
-                vpn.listener?.onChanged()
-            }
-        }
-
-        binding.content.addView(screen.root)
-
-        if (running) {
-            launch {
-                showToast(R.string.options_unavailable, ToastDuration.Indefinite)
-            }
-        }
+        if (running) launch { showToast(R.string.options_unavailable, ToastDuration.Indefinite) }
     }
 }
