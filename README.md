@@ -84,3 +84,7 @@ APP package name is `com.github.metacubex.clash.meta`
 - Manually triggering `Build Release` actions will compile, tag and publish a `Release` version.
   - You must fill the blank `Release Tag` with the tag you want to release in the format of `v1.2.3`.
   - `versionName` and `versionCode` in `build.gradle.kts` will be automatically bumped to the tag you filled above.
+
+### COUI 仪表盘数据
+
+套餐剩余量来自当前订阅返回的流量信息；七日流量仅统计此版本运行期间由服务采样的上传和下载。DNS 检测由用户手动触发，使用内核解析器，解析结果不代表连接实际采用的分流出口。
