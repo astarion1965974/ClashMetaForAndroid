@@ -205,3 +205,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Window roots for main/light/dark/full-screen/bottom-sheet dialogs now inherit from AndroidX AppCompat themes, while all visible screen controls remain in Compose/COUI. Removes the previous `Theme.MaterialComponents.*` parent for app windows.
 - The unused Material button and text-input style attributes and old `TextAppearance.Live.*` / `Widget.Live.*` XML definitions were removed. Historical ColorOS color tokens remain until callers are audited.
 - The Material library dependency is temporarily retained for legacy named bottom-sheet resources and color attributes, to avoid eliminating transitive resources without a successful build audit.
+
+## Remove Data Binding and legacy inset observers
+
+- Native COUI `Scaffold` handles system/window Insets directly, so the old `Design.surface` Data Binding observer is removed with its obsolete `Surface`, `Insets`, `ObservableCurrentTime`, `setOnInsertsChangedListener` and landscape-padding adapters.
+- Removed `kotlin("kapt")` from the app/design modules; neither module retains Android XML layouts or Kotlin Data Binding generated `BR` references. Existing activity navigation and core model behavior remain unchanged.

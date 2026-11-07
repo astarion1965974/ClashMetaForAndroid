@@ -2,10 +2,7 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
-import com.github.kr328.clash.design.ui.Surface
 import com.github.kr328.clash.design.ui.ToastDuration
-import com.github.kr328.clash.design.util.setOnInsertsChangedListener
 import com.github.kr328.clash.design.dialog.CouiNoticeOptions
 import com.github.kr328.clash.design.dialog.showCouiNotice
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +17,6 @@ abstract class Design<R>(val context: Context) :
     // Designs notify synchronously when dirty/busy state changes, before the next gesture.
     var onBackStateChanged: () -> Unit = {}
 
-    val surface = Surface()
     val requests: Channel<R> = Channel(Channel.UNLIMITED)
 
     suspend fun showToast(
@@ -42,15 +38,4 @@ abstract class Design<R>(val context: Context) :
         }
     }
 
-    init {
-        when (context) {
-            is AppCompatActivity -> {
-                context.window.decorView.setOnInsertsChangedListener {
-                    if (surface.insets != it) {
-                        surface.insets = it
-                    }
-                }
-            }
-        }
-    }
 }
