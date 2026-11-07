@@ -2,7 +2,6 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +28,7 @@ import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.component.ProxyMenu
 import com.github.kr328.clash.design.model.ProxyState
+import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
@@ -191,9 +191,7 @@ class ProxyDesign(
     }
 
     suspend fun showModeSwitchTips() {
-        withContext(Dispatchers.Main) {
-            Toast.makeText(context, R.string.mode_switch_tips, Toast.LENGTH_LONG).show()
-        }
+        showToast(R.string.mode_switch_tips, ToastDuration.Long)
     }
 
     fun requestUrlTesting() {
