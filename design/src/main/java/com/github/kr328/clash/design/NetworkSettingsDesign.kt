@@ -13,7 +13,6 @@ import com.github.kr328.clash.design.preference.NativeCouiAction
 import com.github.kr328.clash.design.preference.NativeCouiSelect
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.design.store.UiStore
-import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.service.store.ServiceStore
 import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
@@ -44,7 +43,10 @@ class NetworkSettingsDesign(
                         onChanged = { vpnEnabled = it },
                     )
                 }
-                Group(title = stringResource(R.string.vpn_service_options)) {
+                Group(
+                    title = stringResource(R.string.vpn_service_options),
+                    footer = if (running) stringResource(R.string.options_unavailable) else null,
+                ) {
                     val editable = !running && vpnEnabled
                     NativeCouiSwitch(
                         title = stringResource(R.string.bypass_private_network),
@@ -109,11 +111,4 @@ class NetworkSettingsDesign(
         }
     }
 
-    /**
-     * The COUI notice needs an attached Activity content/lifecycle host.
-     * NetworkSettingsActivity calls this only after setContentDesign has mounted the page.
-     */
-    suspend fun showRunningNotice() {
-        if (running) showToast(R.string.options_unavailable, ToastDuration.Indefinite)
-    }
 }
