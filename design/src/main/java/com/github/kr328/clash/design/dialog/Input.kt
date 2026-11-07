@@ -1,12 +1,17 @@
 package com.github.kr328.clash.design.dialog
 
 import android.content.Context
-import androidx.appcompat.app.AlertDialog
-import androidx.core.widget.doOnTextChanged
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.databinding.DialogTextFieldBinding
-import com.github.kr328.clash.design.util.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.github.kr328.clash.design.util.Validator
+import com.github.kr328.clash.design.util.ValidatorAcceptAll
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.InputDialog
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -16,9 +21,7 @@ suspend fun Context.requestModelTextInput(
     hint: CharSequence? = null,
     error: CharSequence? = null,
     validator: Validator = ValidatorAcceptAll,
-): String {
-    return this.requestModelTextInput(initial, title, null, hint, error, validator)!!
-}
+): String = requestModelTextInput(initial, title, null, hint, error, validator)!!
 
 suspend fun Context.requestModelTextInput(
     initial: String?,
@@ -27,70 +30,29 @@ suspend fun Context.requestModelTextInput(
     hint: CharSequence? = null,
     error: CharSequence? = null,
     validator: Validator = ValidatorAcceptAll,
-): String? {
-    return suspendCancellableCoroutine {
-        val binding = DialogTextFieldBinding
-            .inflate(layoutInflater, this.root, false)
-
-        val builder = MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setView(binding.root)
-            .setCancelable(true)
-            .setPositiveButton(R.string.ok) { _, _ ->
-                val text = binding.textField.text?.toString() ?: ""
-
-                if (validator(text))
-                    it.resume(text)
-                else
-                    it.resume(initial)
-            }
-            .setNegativeButton(R.string.cancel) { _, _ -> }
-            .setOnDismissListener { _ ->
-                if (!it.isCompleted)
-                    it.resume(initial)
-            }
-
-        if (reset != null) {
-            builder.setNeutralButton(reset) { _, _ ->
-                it.resume(null)
-            }
+): String? = suspendCancellableCoroutine { continuation ->
+    val close = showCouiContent { dismiss ->
+        var value by remember { mutableStateOf(TextFieldValue(initial.orEmpty(), TextRange(0, initial?.length ?: 0))) }
+        val valid = validator(value.text)
+        fun finish(result: String?) {
+            dismiss()
+            if (continuation.isActive) continuation.resume(result)
         }
-
-        val dialog = builder.create()
-
-        it.invokeOnCancellation {
-            dialog.dismiss()
-        }
-
-        dialog.setOnShowListener {
-            if (hint != null)
-                binding.textLayout.hint = hint
-
-            binding.textField.apply {
-                binding.textLayout.isErrorEnabled = error != null
-
-                doOnTextChanged { text, _, _, _ ->
-                    if (!validator(text?.toString() ?: "")) {
-                        if (error != null)
-                            binding.textLayout.error = error
-
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
-                    } else {
-                        if (error != null)
-                            binding.textLayout.error = null
-
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
-                    }
-                }
-
-                setText(initial)
-
-                setSelection(0, initial?.length ?: 0)
-
-                requestTextInput()
-            }
-        }
-
-        dialog.show()
+        InputDialog(
+            value = value,
+            onValueChange = { value = it },
+            onDismissRequest = { finish(initial) },
+            title = title.toString(),
+            message = if (reset != null) getString(R.string.coui_input_back_cancel) else null,
+            placeholder = hint?.toString(),
+            counter = if (!valid) error?.toString() else null,
+            counterIsError = !valid,
+            clearContentDescription = getString(R.string.coui_clear),
+            confirmAction = CouiDialogAction(getString(R.string.ok), { finish(value.text) }, enabled = valid),
+            dismissAction = CouiDialogAction(reset?.toString() ?: getString(R.string.cancel), {
+                finish(if (reset == null) initial else null)
+            }),
+        )
     }
+    continuation.invokeOnCancellation { close() }
 }

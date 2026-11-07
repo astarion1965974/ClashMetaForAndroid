@@ -78,6 +78,14 @@ Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryTrafficTotal(JNIEnv *e
     return (jlong) (down_scale_traffic(upload) << 32u | down_scale_traffic(download));
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryDnsDiagnostic(JNIEnv *env, jobject thiz,
+                                                                         jstring domain) {
+    scoped_string host = get_string(domain);
+    scoped_string response = queryDnsDiagnostic(host);
+    return new_string(response);
+}
+
 JNIEXPORT void JNICALL
 Java_com_github_kr328_clash_core_bridge_Bridge_nativeNotifyDnsChanged(JNIEnv *env, jobject thiz,
                                                                       jstring dns_list) {

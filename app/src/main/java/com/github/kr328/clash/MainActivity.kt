@@ -22,6 +22,10 @@ import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
@@ -63,6 +67,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             startActivity(ProvidersActivity::class.intent)
                         MainDesign.Request.OpenSettings ->
                             startActivity(SettingsActivity::class.intent)
+                        MainDesign.Request.CheckDns -> launch { design.checkDns() }
                     }
                 }
                 if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
@@ -88,14 +93,29 @@ class MainActivity : BaseActivity<MainDesign>() {
         setMode(state.mode)
         setHasProviders(providers.isNotEmpty())
 
-        withProfile {
-            setProfileName(queryActive()?.name)
-        }
+        withProfile { setProfile(queryActive()) }
+        withClash { setTrafficHistory(queryTrafficHistory()) }
     }
 
     private suspend fun MainDesign.fetchTraffic() {
         withClash {
             setForwarded(queryTrafficTotal())
+            setTrafficHistory(queryTrafficHistory())
+        }
+    }
+
+    private suspend fun MainDesign.checkDns() {
+        if (!clashRunning || pausedAtHome) return
+        setDnsLoading(true)
+        try {
+            val results = coroutineScope {
+                listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").map { domain ->
+                    async { domain to runCatching { withClash { queryDnsDiagnostic(domain) } }.getOrDefault("{}") }
+                }.awaitAll()
+            }
+            setDnsResults(results)
+        } finally {
+            setDnsLoading(false)
         }
     }
 

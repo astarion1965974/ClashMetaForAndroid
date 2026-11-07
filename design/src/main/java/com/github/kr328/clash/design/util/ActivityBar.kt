@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -23,6 +24,7 @@ import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 import com.itos.coui.topappbar.TopAppBar
+import com.itos.coui.topappbar.CouiTopAppBarDefaults
 
 fun ActivityBarLayout.applyFrom(context: Context) {
     if (context is Activity) {
@@ -41,9 +43,11 @@ fun ActivityBarLayout.applyFrom(context: Context) {
             CouiTheme(darkTheme = dark) {
                 Scaffold(
                     modifier = Modifier.widthIn(max = screenWidth).height(56.dp),
+                    containerColor = Color.Transparent,
                     windowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         TopAppBar(
+                            colors = CouiTopAppBarDefaults.colors(backgroundColor = Color.Transparent),
                             windowInsets = WindowInsets(0, 0, 0, 0),
                             title = {
                                 Text(

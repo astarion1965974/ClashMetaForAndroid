@@ -40,6 +40,10 @@ private fun trafficString(scaled: Long): String {
     }
 }
 
+fun Traffic.trafficUploadBytes(): Long = scaleTraffic(this ushr 32)
+
+fun Traffic.trafficDownloadBytes(): Long = scaleTraffic(this and 0xFFFFFFFF)
+
 private fun scaleTraffic(value: Long): Long {
     val type = (value ushr 30) and 0x3
     val data = value and 0x3FFFFFFF

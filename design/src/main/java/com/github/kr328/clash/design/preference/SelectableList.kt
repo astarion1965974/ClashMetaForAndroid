@@ -2,11 +2,14 @@ package com.github.kr328.clash.design.preference
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.appcompat.widget.ListPopupWindow
 import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.adapter.PopupListAdapter
-import com.github.kr328.clash.design.util.getPixels
-import com.github.kr328.clash.design.util.measureWidth
+import com.github.kr328.clash.design.dialog.showCouiContent
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog
+import com.itos.coui.layout.Item
+import com.itos.coui.radiobutton.RadioButton
+import com.itos.coui.text.CouiTextKind
+import com.itos.coui.text.Text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -59,38 +62,21 @@ private fun <T> PreferenceScreen.popupSelectMenu(
     valuesText: List<CharSequence>,
     values: Array<T>,
 ) {
-    ListPopupWindow(context).apply {
-        val adapter = PopupListAdapter(
-            context,
-            valuesText,
-            impl.selected,
-        )
-
-        setAdapter(adapter)
-
-        anchorView = impl.view
-
-        width = adapter.measureWidth(context)
-            .coerceAtLeast(context.getPixels(R.dimen.dialog_menu_min_width))
-
-        isModal = true
-
-        horizontalOffset = context.getPixels(R.dimen.item_header_component_size) +
-                context.getPixels(R.dimen.item_header_margin) * 2
-
-        setOnItemClickListener { _, _, position, _ ->
-            dismiss()
-
-            launch(Dispatchers.Main) {
-                withContext(Dispatchers.IO) {
-                    value.set(values[position])
+    context.showCouiContent { dismiss ->
+        Dialog(onDismissRequest = dismiss, title = impl.title.toString(),
+            confirmAction = CouiDialogAction(context.getString(R.string.cancel), dismiss)) {
+            valuesText.forEachIndexed { position, label ->
+                Item(onClick = {
+                    dismiss()
+                    launch(Dispatchers.Main) {
+                        withContext(Dispatchers.IO) { value.set(values[position]) }
+                        impl.selected = position
+                        impl.listener?.onChanged()
+                    }
+                }, trailing = { RadioButton(selected = position == impl.selected) }) {
+                    Text(text = label.toString(), kind = CouiTextKind.PreferenceTitle)
                 }
-
-                impl.selected = position
-                impl.listener?.onChanged()
             }
         }
-
-        show()
     }
 }

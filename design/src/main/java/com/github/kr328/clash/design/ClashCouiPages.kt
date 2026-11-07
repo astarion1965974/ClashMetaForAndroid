@@ -86,6 +86,10 @@ internal fun ClashHome(
     running: Boolean,
     paused: Boolean,
     profileName: String?,
+    quota: HomeQuota?,
+    days: List<HomeTrafficDay>,
+    dns: List<HomeDnsResult>,
+    dnsLoading: Boolean,
     forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
@@ -94,21 +98,22 @@ internal fun ClashHome(
     ClashPage(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.application_name),
-                        kind = CouiTextKind.Toolbar,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                title = {},
+                actions = {
+                    ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                        onRequest(HomeRequest.OpenSettings)
+                    }
                 },
             )
         },
         bottomBar = { HomeBottomBar(onRequest) },
-        contentArrangement = Arrangement.Center,
     ) {
-        ConnectionCard(running, paused) { onRequest(HomeRequest.ToggleStatus) }
-        ConnectionOverview(profileName, forwarded, mode, connected = running && !paused)
+        Text(text = stringResource(R.string.application_name), kind = CouiTextKind.HomeTitle,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp))
+        HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
+        HomeQuotaCard(quota)
+        HomeTrafficCard(days, forwarded, running && !paused)
+        HomeDnsCard(mode, dns, dnsLoading, running && !paused) { onRequest(HomeRequest.CheckDns) }
 
         if (running) {
             Group(title = stringResource(R.string.coui_home_section_connection)) {

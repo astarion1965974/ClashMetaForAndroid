@@ -8,6 +8,8 @@ import com.github.kr328.kaidl.BinderInterface
 interface IClashManager {
     fun queryTunnelState(): TunnelState
     fun queryTrafficTotal(): Long
+    fun queryTrafficHistory(): String
+    fun queryDnsDiagnostic(domain: String): String
     fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>
     fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup
     fun queryConfiguration(): UiConfiguration

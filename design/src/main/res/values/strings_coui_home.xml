@@ -13,4 +13,21 @@
     <string name="coui_home_providers_title">Rule providers</string>
     <string name="coui_settings_routing">Routing</string>
     <string name="coui_settings_support">Tools &amp; help</string>
+    <string name="coui_quota_title">Remaining quota</string>
+    <string name="coui_quota_detail">Used %1$s / Total %2$s</string>
+    <string name="coui_quota_missing">No quota information in this subscription</string>
+    <string name="coui_traffic_week">Last 7 days</string>
+    <string name="coui_traffic_legend">Green download　Blue upload</string>
+    <string name="coui_traffic_empty">Traffic will be recorded when connected</string>
+    <string name="coui_traffic_note">Recorded while the service runs; the top value is the current session.</string>
+    <string name="coui_dns_title">Routing &amp; DNS</string>
+    <string name="coui_dns_mode">Current mode: %1$s</string>
+    <string name="coui_dns_check">Check</string>
+    <string name="coui_dns_checking">Checking</string>
+    <string name="coui_dns_pending">Not checked</string>
+    <string name="coui_dns_result">%1$s · %2$d ms</string>
+    <string name="coui_dns_failed">Lookup failed or timed out</string>
+    <string name="coui_dns_note">Resolved by the core; results do not identify the actual routing destination.</string>
+    <string name="coui_clear">Clear</string>
+    <string name="coui_input_back_cancel">Press back to cancel</string>
 </resources>
