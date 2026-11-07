@@ -17,7 +17,7 @@ import com.itos.coui.text.Text
 
 /** Native selectable crash logs inside the same COUI subpage shell. */
 class AppCrashedDesign(context: Context) : Design<Unit>(context) {
-    private var appLogs by mutableStateOf("")
+    private var crashLogsText by mutableStateOf("")
 
     override val root: View = ComposeView(context).apply {
         setContent {
@@ -28,7 +28,7 @@ class AppCrashedDesign(context: Context) : Design<Unit>(context) {
             ) {
                 SelectionContainer {
                     Text(
-                        text = appLogs,
+                        text = crashLogsText,
                         kind = CouiTextKind.Body,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                     )
@@ -38,6 +38,6 @@ class AppCrashedDesign(context: Context) : Design<Unit>(context) {
     }
 
     fun setAppLogs(logs: String) {
-        appLogs = logs
+        crashLogsText = logs
     }
 }
