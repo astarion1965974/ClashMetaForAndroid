@@ -78,6 +78,9 @@ class CouiPreferenceTest {
         activity.setContentView(screen.root)
         val label = activity.getString(R.string.mobile_enabled)
         compose.waitUntil(timeoutMillis = 10_000) {
+            // The initial value is loaded on Dispatchers.IO and applied on the
+            // Robolectric main looper. Compose polling alone does not run it.
+            shadowOf(Looper.getMainLooper()).idle()
             runCatching { compose.onNodeWithText(label).assertIsEnabled() }.isSuccess
         }
         compose.onNodeWithText(label).performClick()
