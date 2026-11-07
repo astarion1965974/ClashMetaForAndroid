@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -91,7 +90,7 @@ class ProxyDesign(
                     modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
                     topBar = {
                         ColorOsLargeTopBar(
-                            title = stringResource(R.string.proxies),
+                            title = stringResource(R.string.proxy),
                             scrollBehavior = scrollBehavior,
                             navigationIcon = {
                                 ToolbarIcon(
