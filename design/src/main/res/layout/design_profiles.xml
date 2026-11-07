@@ -46,7 +46,7 @@
                     android:layout_centerVertical="true"
                     android:layout_toStartOf="@id/add_view">
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:id="@+id/update_view"
                         android:layout_width="@dimen/item_tailing_component_size"
                         android:layout_height="@dimen/item_tailing_component_size"
@@ -62,7 +62,7 @@
                         android:visibility="gone" />
                 </FrameLayout>
 
-                <ImageView
+                <com.github.kr328.clash.design.view.CouiIconButtonView
                     android:id="@+id/add_view"
                     android:layout_width="@dimen/item_tailing_component_size"
                     android:layout_height="@dimen/item_tailing_component_size"

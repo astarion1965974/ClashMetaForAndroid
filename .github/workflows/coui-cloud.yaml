@@ -1,6 +1,7 @@
 name: Build COUI APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'feat/coui-cloud'
@@ -20,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.repository == 'astarion1965974/ClashMetaForAndroid'
+    if: github.repository == 'astarion1965974/ClashMetaForAndroid' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/feat/coui-cloud')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:

@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.view.View
 import android.widget.Toast
 import androidx.viewpager2.widget.ViewPager2
@@ -18,7 +17,11 @@ import com.github.kr328.clash.design.util.applyFrom
 import com.github.kr328.clash.design.util.layoutInflater
 import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.root
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.itos.coui.theme.CouiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -53,6 +56,7 @@ class ProxyDesign(
         get() = binding.pagesView.adapter!! as ProxyPageAdapter
 
     private var horizontalScrolling = false
+    private var selectedPage by mutableIntStateOf(0)
     private val verticalBottomScrolled: Boolean
         get() = adapter.states[binding.pagesView.currentItem].bottom
     private var urlTesting: Boolean
@@ -107,10 +111,6 @@ class ProxyDesign(
             binding.pagesView.visibility = View.GONE
             binding.urlTestFloatView.visibility = View.GONE
         } else {
-            binding.urlTestFloatView.supportImageTintList = ColorStateList.valueOf(
-                context.resolveThemedColor(com.google.android.material.R.attr.colorOnPrimary)
-            )
-
             binding.pagesView.apply {
                 adapter = ProxyPageAdapter(
                     surface,
@@ -133,14 +133,17 @@ class ProxyDesign(
                     }
 
                     override fun onPageSelected(position: Int) {
+                        selectedPage = position
                         uiStore.proxyLastGroup = groupNames[position]
                     }
                 })
             }
 
-            TabLayoutMediator(binding.tabLayoutView, binding.pagesView) { tab, index ->
-                tab.text = groupNames[index]
-            }.attach()
+            binding.tabLayoutView.setContent {
+                CouiTheme(darkTheme = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
+                    ProxyTabs(groupNames, selectedPage) { binding.pagesView.setCurrentItem(it, true) }
+                }
+            }
 
             val initialPosition = groupNames.indexOf(uiStore.proxyLastGroup)
 

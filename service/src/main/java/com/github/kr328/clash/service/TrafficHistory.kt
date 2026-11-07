@@ -3,8 +3,6 @@ package com.github.kr328.clash.service
 import android.content.Context
 import android.util.AtomicFile
 import com.github.kr328.clash.core.Clash
-import com.github.kr328.clash.core.util.trafficDownloadBytes
-import com.github.kr328.clash.core.util.trafficUploadBytes
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -38,9 +36,9 @@ object TrafficHistory {
     @Synchronized
     fun sample(context: Context) {
         if (!sampling) return
-        val total = Clash.queryTrafficTotal()
-        val upload = total.trafficUploadBytes()
-        val download = total.trafficDownloadBytes()
+        val total = Clash.queryTrafficBytes()
+        val upload = total[0].coerceAtLeast(0)
+        val download = total[1].coerceAtLeast(0)
         // A core reload can reset its counters independently of the service.
         val deltaUp = if (upload >= previousUpload) upload - previousUpload else upload
         val deltaDown = if (download >= previousDownload) download - previousDownload else download

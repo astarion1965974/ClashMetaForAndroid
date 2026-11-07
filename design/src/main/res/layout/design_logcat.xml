@@ -56,7 +56,7 @@
                         android:layout_height="wrap_content"
                         android:visibility="@{streaming ? View.GONE : View.VISIBLE}">
 
-                        <ImageView
+                        <com.github.kr328.clash.design.view.CouiIconButtonView
                             android:layout_width="@dimen/item_tailing_component_size"
                             android:layout_height="@dimen/item_tailing_component_size"
                             android:layout_marginStart="@dimen/item_tailing_margin"
@@ -68,7 +68,7 @@
                             android:padding="@dimen/toolbar_image_action_padding"
                             android:src="@drawable/ic_baseline_delete" />
 
-                        <ImageView
+                        <com.github.kr328.clash.design.view.CouiIconButtonView
                             android:layout_width="@dimen/item_tailing_component_size"
                             android:layout_height="@dimen/item_tailing_component_size"
                             android:layout_marginStart="@dimen/item_tailing_margin"
@@ -81,7 +81,7 @@
                             android:src="@drawable/ic_baseline_publish" />
                     </LinearLayout>
 
-                    <ImageView
+                    <com.github.kr328.clash.design.view.CouiIconButtonView
                         android:layout_width="@dimen/item_tailing_component_size"
                         android:layout_height="@dimen/item_tailing_component_size"
                         android:layout_gravity="end"
