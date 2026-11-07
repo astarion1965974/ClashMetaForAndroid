@@ -50,6 +50,8 @@ object Clash {
         return Bridge.nativeQueryTrafficTotal()
     }
 
+    fun queryTrafficBytes(): LongArray = Bridge.nativeQueryTrafficBytes()
+
     fun queryDnsDiagnostic(domain: String): String = Bridge.nativeQueryDnsDiagnostic(domain)
 
     fun notifyDnsChanged(dns: List<String>) {
