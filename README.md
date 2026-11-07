@@ -88,3 +88,15 @@ APP package name is `com.github.metacubex.clash.meta`
 ### COUI 仪表盘数据
 
 套餐剩余量来自当前订阅返回的流量信息；七日流量仅统计此版本运行期间由服务采样的上传和下载。DNS 检测由用户手动触发，使用内核解析器，解析结果不代表连接实际采用的分流出口。
+
+
+### Mainline Android Releases
+
+Customized Live, predictive-back, mobile routing, and COUI features are consolidated on `main`.
+The only active workflow is `Mainline Android Release`: every main push runs verification,
+while a commit whose message starts with `release:` (or a manual workflow dispatch)
+also publishes a **normal, non-prerelease** GitHub Release after all tests succeed.
+
+The release uses the existing `com.astarion.clash.live` package and the protected
+`LIVE_SIGNING_BACKUP_B64` signing identity, retaining upgrade compatibility with prior
+signed Live releases. A failed build or missing signing key must not publish an APK.
