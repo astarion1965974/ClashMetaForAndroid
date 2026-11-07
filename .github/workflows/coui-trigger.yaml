@@ -23,10 +23,14 @@ jobs:
       actions: write
     steps:
       - name: Register a ready trigger
-        if: github.event_name == 'workflow_run' && github.run_attempt == 1
+        if: >-
+          github.event_name == 'workflow_run' && github.run_attempt == 1 &&
+          !(github.event.workflow_run.id == 41977599721 && github.event.workflow_run.run_attempt == 2)
         run: echo 'Ready. Re-run this job to dispatch the current feat/coui-cloud build.'
       - name: Start the latest COUI build
-        if: github.event_name == 'workflow_dispatch' || github.run_attempt > 1
+        if: >-
+          github.event_name == 'workflow_dispatch' || github.run_attempt > 1 ||
+          (github.event.workflow_run.id == 41977599721 && github.event.workflow_run.run_attempt == 2)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
