@@ -60,7 +60,7 @@ jobs:
       - name: Build tested ARM64 release
         run: |
           ./gradlew --no-daemon --console=plain --max-workers=2 \
-            design:testAlphaReleaseUnitTest service:testAlphaReleaseUnitTest app:assembleAlphaRelease \
+            design:testAlphaDebugUnitTest service:testAlphaDebugUnitTest app:assembleAlphaRelease \
             -Pcmfa.abis=arm64-v8a "-Pcmfa.mainlineBuildNumber=$GITHUB_RUN_NUMBER"
       - name: Verify candidate identity
         shell: bash
