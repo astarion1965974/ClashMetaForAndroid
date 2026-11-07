@@ -113,3 +113,8 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Bulk operations, installed-app filtering, sorting, import/export, VPN selection modes, live selected count and save/reconnect requests continue using the original `AccessControlActivity` contract.
 - Removed the unused View constructor parameter from `AccessControlMenu`; its COUI dialog options and request channel are untouched.
 - Tests for application routing and the managed-routing save footer were migrated from XML View-ID assumptions to Compose semantics.
+
+## Native configuration file manager
+
+- `FilesDesign` now hosts an entirely COUI Compose lazy list, native glass Add toolbar action, COUI file/folder cards with more menus, and stable file IDs. Old `DesignFilesBinding`, `FileAdapter`, dialog binding and `RecyclerView` no longer participate in the screen.
+- Directory back-stack handling and preview capture, root-level import restrictions, rename/delete/export requests, file-name validation, and elapsed-update behavior are preserved.

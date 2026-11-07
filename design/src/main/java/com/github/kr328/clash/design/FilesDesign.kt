@@ -1,20 +1,32 @@
 package com.github.kr328.clash.design
 
-import android.app.Dialog
 import android.content.Context
 import android.view.View
-import com.github.kr328.clash.design.adapter.FileAdapter
-import com.github.kr328.clash.design.databinding.DesignFilesBinding
-import com.github.kr328.clash.design.databinding.DialogFilesMenuBinding
-import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
-import com.github.kr328.clash.design.dialog.requestModelTextInput
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
+import com.github.kr328.clash.common.compat.getDrawableCompat
 import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.requestModelTextInput
 import com.github.kr328.clash.design.dialog.showCouiMenu
 import com.github.kr328.clash.design.model.File
-import com.github.kr328.clash.design.util.*
+import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.github.kr328.clash.design.preference.CouiRowAction
+import com.github.kr328.clash.design.util.DirectoryBackCallback
+import com.github.kr328.clash.design.util.ValidatorFileName
+import com.github.kr328.clash.design.util.elapsedIntervalString
+import com.github.kr328.clash.design.util.toBytesString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** COUI configuration file manager with native lazy list and glass toolbar actions. */
 class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
     sealed class Request {
         data class OpenFile(val file: File) : Request()
@@ -23,102 +35,89 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
         data class DeleteFile(val file: File) : Request()
         data class ImportFile(val file: File?) : Request()
         data class ExportFile(val file: File) : Request()
-
         object PopStack : Request()
     }
 
-    private val binding = DesignFilesBinding
-        .inflate(context.layoutInflater, context.root, false)
-    private val adapter: FileAdapter = FileAdapter(context, this::requestOpen, this::requestMore)
+    var configurationEditable by mutableStateOf(false)
+    private var currentInBaseDir by mutableStateOf(true)
+    private var files by mutableStateOf<List<File>>(emptyList())
+    private var currentTime by mutableLongStateOf(System.currentTimeMillis())
 
-    override val root: View
-        get() = binding.root
-
-    var configurationEditable: Boolean
-        get() = binding.configurationEditable
-        set(value) {
-            binding.configurationEditable = value
+    override val root: View = ComposeView(context).apply {
+        setContent {
+            ColorOsLazySubPage(
+                title = (context as? AppCompatActivity)?.title?.toString()
+                    ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profiles),
+                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                actions = {
+                    if (!currentInBaseDir) ToolbarIcon(
+                        ImageVector.vectorResource(R.drawable.ic_baseline_add),
+                        stringResource(R.string._new),
+                    ) { requestNew() }
+                },
+            ) {
+                items(files, key = { it.id }) { file ->
+                    val icon = if (file.isDirectory)
+                        R.drawable.ic_outline_folder else R.drawable.ic_outline_article
+                    val summary = if (file.isDirectory) null else
+                        "${file.size.toBytesString()} · ${(currentTime - file.lastModified).elapsedIntervalString(context)}"
+                    CouiPreferenceRow(
+                        title = file.name,
+                        summary = summary,
+                        icon = context.getDrawableCompat(icon),
+                        enabled = true,
+                        onClick = { requestOpen(file) },
+                        trailing = {
+                            CouiRowAction(
+                                R.drawable.ic_baseline_more_vert,
+                                stringResource(R.string.more),
+                            ) { requestMore(file) }
+                        },
+                    )
+                }
+            }
         }
+    }
 
     suspend fun swapFiles(files: List<File>, currentInBaseDir: Boolean) {
         withContext(Dispatchers.Main) {
-            adapter.swapDataSet(adapter::files, files)
-            binding.currentInBaseDir = currentInBaseDir
+            this@FilesDesign.files = files
+            this@FilesDesign.currentInBaseDir = currentInBaseDir
         }
     }
 
     fun captureBackPreview(): ByteArray? = DirectoryBackCallback.capture(root)
+    fun updateElapsed() { currentTime = System.currentTimeMillis() }
 
-    fun updateElapsed() {
-        adapter.updateElapsed()
-    }
-
-    suspend fun requestFileName(name: String): String {
-        return context.requestModelTextInput(
+    suspend fun requestFileName(name: String): String =
+        context.requestModelTextInput(
             initial = name,
             title = context.getText(R.string.file_name),
             hint = context.getText(R.string.file_name),
             error = context.getText(R.string.invalid_file_name),
             validator = ValidatorFileName,
         )
-    }
-
-    init {
-        binding.self = this
-
-        binding.activityBarLayout.applyFrom(context)
-
-        binding.mainList.recyclerList.also {
-            it.applyLinearAdapter(context, adapter)
-            it.bindAppBarElevation(binding.activityBarLayout)
-        }
-    }
 
     private fun requestOpen(file: File) {
-        if (file.isDirectory) {
-            requests.trySend(Request.OpenDirectory(file))
-        } else {
-            requests.trySend(Request.OpenFile(file))
-        }
+        requests.trySend(
+            if (file.isDirectory) Request.OpenDirectory(file) else Request.OpenFile(file),
+        )
     }
 
-    fun requestRename(dialog: Dialog, file: File) {
-        requests.trySend(Request.RenameFile(file))
-
-        dialog.dismiss()
-    }
-
-    fun requestImport(dialog: Dialog, file: File) {
-        requests.trySend(Request.ImportFile(file))
-
-        dialog.dismiss()
-    }
-
-    fun requestExport(dialog: Dialog, file: File) {
-        requests.trySend(Request.ExportFile(file))
-
-        dialog.dismiss()
-    }
-
-    fun requestDelete(dialog: Dialog, file: File) {
-        requests.trySend(Request.DeleteFile(file))
-
-        dialog.dismiss()
-    }
-
-    fun requestNew() {
-        requests.trySend(Request.ImportFile(null))
-    }
+    fun requestNew() { requests.trySend(Request.ImportFile(null)) }
 
     private fun requestMore(file: File) {
         val options = mutableListOf<CouiMenuOption>()
-        fun add(res: Int, request: Request) { options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) }) }
-        if (!file.isDirectory && (!binding.currentInBaseDir || binding.configurationEditable)) add(R.string.import_, Request.ImportFile(file))
+        fun add(resource: Int, request: Request) {
+            options.add(CouiMenuOption(context.getString(resource)) { requests.trySend(request) })
+        }
+        if (!file.isDirectory && (!currentInBaseDir || configurationEditable))
+            add(R.string.import_, Request.ImportFile(file))
         if (!file.isDirectory && file.size > 0) add(R.string.export, Request.ExportFile(file))
-        if (!binding.currentInBaseDir) {
+        if (!currentInBaseDir) {
             add(R.string.rename, Request.RenameFile(file))
             add(R.string.delete, Request.DeleteFile(file))
         }
-        context.showCouiMenu(options)
+        if (options.isNotEmpty()) context.showCouiMenu(options)
     }
 }
