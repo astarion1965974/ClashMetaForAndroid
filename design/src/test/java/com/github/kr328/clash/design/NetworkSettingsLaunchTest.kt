@@ -1,6 +1,5 @@
 package com.github.kr328.clash.design
 
-import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
@@ -9,24 +8,19 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
  * Regression: the network page used to put a Compose notification on the Activity
  * during construction, before BaseActivity.setContentDesign mounted the root view.
+ * The warning now renders inline, even when the service is running.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "zh-rCN-w412dp-h915dp-mdpi")
@@ -47,12 +41,11 @@ class NetworkSettingsLaunchTest {
         activity.setContentView(design.root)
         compose.onNodeWithText(activity.getString(R.string.route_system_traffic)).assertIsDisplayed()
 
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        scope.launch { design.showRunningNotice() }
-        shadowOf(Looper.getMainLooper()).idle()
+        // No floating notice: the running-service warning remains visible as an
+        // inline COUI group footer, without attaching a second ComposeView.
         compose.onNodeWithText(activity.getString(R.string.options_unavailable)).assertIsDisplayed()
+        assertNull(parent.findViewWithTag<View>("clash-live-coui-notice"))
 
-        scope.cancel()
         activity.setContentView(View(activity))
     }
 }
