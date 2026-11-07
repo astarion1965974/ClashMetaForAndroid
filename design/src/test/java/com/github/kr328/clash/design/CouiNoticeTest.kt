@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.github.kr328.clash.design.dialog.CouiNoticeOptions
 import com.github.kr328.clash.design.dialog.showCouiNotice
@@ -37,7 +38,10 @@ class CouiNoticeTest {
         activity.showCouiNotice("COUI 状态消息", ToastDuration.Indefinite, options)
 
         compose.onNodeWithText("COUI 状态消息").assertIsDisplayed()
-        compose.onNodeWithText("查看详情").performClick()
+        compose.onNodeWithTag("coui-notice-action").performClick()
+        // Compose semantics actions can be dispatched on the next idle frame.
+        // Verify the actual callback, rather than allowing a silent click.
+        compose.waitUntil(timeoutMillis = 5_000) { actions == 1 }
         assertEquals(1, actions)
 
         controller.pause().stop().destroy()

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleOwner
@@ -104,10 +105,11 @@ fun Context.showCouiNotice(
                         text = label,
                         kind = CouiTextKind.PreferenceTitle,
                         color = colors.accent,
-                        modifier = Modifier.clickable(role = Role.Button) {
-                            action(host)
-                            close()
-                        }.padding(6.dp),
+                        modifier = Modifier.testTag("coui-notice-action")
+                            .clickable(role = Role.Button) {
+                                action(host)
+                                close()
+                            }.padding(6.dp),
                     )
                 }
             }
