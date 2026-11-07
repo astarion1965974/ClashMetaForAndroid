@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
-import com.github.kr328.clash.design.dialog.FullScreenDialog
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.DirectoryBackCallback
 import com.github.kr328.clash.service.model.AccessControlMode
@@ -150,34 +149,5 @@ class PredictiveBackTest {
         assertEquals(1, back)
     }
 
-    @Test fun fullScreenDialogCancelDoesNotDismissAndNonCancelableDialogStaysOpen() {
-        val activity = activity()
-        val dialog = FullScreenDialog(activity)
-        val editor = FrameLayout(activity)
-        dialog.setContentView(editor)
-        activity.window.decorView.apply {
-            measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY))
-            layout(0, 0, 400, 800)
-        }
-        var canceled = 0
-        dialog.setOnCancelListener { canceled++ }
-        dialog.show()
-        dialog.onBackPressedDispatcher.dispatchOnBackStarted(event(0f))
-        dialog.onBackPressedDispatcher.dispatchOnBackProgressed(event(0.6f))
-        assertEquals(2, (editor.parent as FrameLayout).childCount)
-        dialog.onBackPressedDispatcher.dispatchOnBackCancelled()
-        assertEquals(1, (editor.parent as FrameLayout).childCount)
-        assertTrue(dialog.isShowing)
-        assertEquals(0, canceled)
-        dialog.onBackPressedDispatcher.onBackPressed()
-        assertFalse(dialog.isShowing)
-        dialog.show()
-        dialog.setCancelable(false)
-        dialog.onBackPressedDispatcher.onBackPressed()
-        assertTrue(dialog.isShowing)
-        dialog.setCancelable(true)
-        dialog.onBackPressedDispatcher.onBackPressed()
-        assertFalse(dialog.isShowing)
-    }
+
 }

@@ -187,3 +187,10 @@ Renderer initialization error handling remains (including the simple in-app fall
 
 - `CouiPreferenceTest` now validates native COUI switches, drawable-bearing COUI rows, profile selection/menu separation and COUI proxy card enabled/disabled interactions. The old tests no longer instantiate obsolete `ProfileAdapter`, `ProxyAdapter`, `PreferenceScreen` or `ActionLabel` Views.
 - The trailing row icon action now uses COUI `couiButtonFeedback` and Compose button semantics instead of a plain legacy ripple/clickable surface.
+
+## Dead Material/View UI cleanup
+
+- Removed **49 unused legacy Kotlin UI files**, including former RecyclerView adapters, proxy ViewPager components, XML preferences, Material bottom-sheet/fullscreen-dialog helpers and old ActivityBar/Layout wrappers. Kept native Compose page controllers, COUI preferences, native menus, request channels, and shared business/domain models.
+- Removed **26 orphaned legacy layout XML resources** after the 20 screen controllers migrated to Compose roots. No currently mounted page or COUI dialog depends on these layouts.
+- Reduced `CouiPreferenceView.kt` to reusable Compose COUI row/action/icon functions, eliminating its per-row FrameLayout + ComposeView bridge. The dynamic Android Drawable icon remains as a justified `AndroidView` because Android app/provider icons arrive as `Drawable` instances.
+- Retired the obsolete FullScreenDialog-specific back test; remaining predictive back tests still cover native COUI toolbar and directory snapshot gestures.

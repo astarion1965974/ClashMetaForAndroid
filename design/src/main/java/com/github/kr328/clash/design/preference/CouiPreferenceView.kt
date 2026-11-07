@@ -1,9 +1,7 @@
 package com.github.kr328.clash.design.preference
 
-import android.content.Context
 import android.graphics.drawable.Drawable
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,22 +18,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.appcompat.R as AppCompatR
-import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
@@ -43,30 +35,7 @@ import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
-/** Hosts a COUI row while retaining the View enabled state used by existing screens. */
-internal class CouiPreferenceView(context: Context) : FrameLayout(context) {
-    var contentEnabled by mutableStateOf(true)
-        private set
-
-    private val composeView = ComposeView(context)
-
-    init {
-        addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-    }
-
-    override fun setEnabled(enabled: Boolean) {
-        super.setEnabled(enabled)
-        contentEnabled = enabled
-    }
-
-    fun setContent(content: @Composable () -> Unit) {
-        composeView.setContent {
-            val dark = !context.resolveThemedBoolean(AppCompatR.attr.isLightTheme)
-            CouiTheme(darkTheme = dark, content = content)
-        }
-    }
-}
-
+/** Reusable native COUI preference row; no legacy ComposeView wrapper. */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 internal fun CouiPreferenceRow(
