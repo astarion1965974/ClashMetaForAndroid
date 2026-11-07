@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.resolveThemedBoolean
@@ -117,7 +118,7 @@ fun Context.showCouiNotice(
         ToastDuration.Long -> 4500L
         ToastDuration.Indefinite -> null
     }
-    if (timeout != null) owner.lifecycleScope.launch {
+    if (timeout != null) (owner as? LifecycleOwner)?.lifecycleScope?.launch {
         delay(timeout)
         if (host.parent != null) close()
     }
