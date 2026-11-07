@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -80,49 +81,13 @@ fun Context.showCouiNotice(
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM,
     )
     parent.addView(host, layout)
+    val callback = options.onAction
+    val action: (() -> Unit)? = callback?.let { handler ->
+        { handler(host); close() }
+    }
     host.setContent {
         CouiTheme(darkTheme = !owner.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)) {
-            val colors = CouiTheme.colorScheme
-            Row(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .shadow(12.dp, CouiPageDefaults.shape)
-                    .clip(CouiPageDefaults.shape).background(colors.card)
-                    .heightIn(min = 52.dp)
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Text(
-                    text = message.toString(),
-                    kind = CouiTextKind.PreferenceSummary,
-                    color = colors.onSurface,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 3,
-                )
-                val action = options.onAction
-                val label = options.actionLabel
-                if (action != null && label != null) {
-                    // Use the same COUI Item interaction primitive as other
-                    // actionable rows; it owns native feedback and click semantics.
-                    Box(Modifier.widthIn(min = 84.dp, max = 140.dp)) {
-                        Item(
-                            modifier = Modifier.testTag("coui-notice-action"),
-                            onClick = {
-                                action(host)
-                                close()
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
-                        ) {
-                            Text(
-                                text = label,
-                                kind = CouiTextKind.PreferenceTitle,
-                                color = colors.accent,
-                            )
-                        }
-                    }
-                }
-            }
+            CouiNoticeCard(message.toString(), options.actionLabel, action)
         }
     }
     val timeout = when (duration) {
@@ -133,5 +98,48 @@ fun Context.showCouiNotice(
     if (timeout != null) (owner as? LifecycleOwner)?.lifecycleScope?.launch {
         delay(timeout)
         if (host.parent != null) close()
+    }
+}
+
+/** Testable COUI notification UI, independent from the Android overlay host. */
+@Composable
+internal fun CouiNoticeCard(
+    message: String,
+    actionLabel: String?,
+    onAction: (() -> Unit)?,
+) {
+    val colors = CouiTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .shadow(12.dp, CouiPageDefaults.shape)
+            .clip(CouiPageDefaults.shape).background(colors.card)
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            text = message,
+            kind = CouiTextKind.PreferenceSummary,
+            color = colors.onSurface,
+            modifier = Modifier.weight(1f),
+            maxLines = 3,
+        )
+        if (actionLabel != null && onAction != null) {
+            Box(Modifier.widthIn(min = 84.dp, max = 140.dp)) {
+                Item(
+                    modifier = Modifier.testTag("coui-notice-action"),
+                    onClick = onAction,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = actionLabel,
+                        kind = CouiTextKind.PreferenceTitle,
+                        color = colors.accent,
+                    )
+                }
+            }
+        }
     }
 }
