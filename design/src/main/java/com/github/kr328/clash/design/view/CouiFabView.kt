@@ -31,10 +31,15 @@ import com.itos.coui.floatingactionbutton.Fab
 import com.itos.coui.theme.CouiTheme
 
 class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
+    // Keep values on the View instead of capturing initializer locals inside
+    // nested Compose lambdas (avoids Kotlin IR symbol-mapping failures).
+    private val fabIcon: Int
+    private val fabLabel: String?
+
     init {
         val a = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.src, android.R.attr.contentDescription))
-        val icon = a.getResourceId(0, 0)
-        val label = a.getString(1)
+        fabIcon = a.getResourceId(0, 0)
+        fabLabel = a.getString(1)
         a.recycle()
         addView(ComposeView(context).apply {
             setContent {
@@ -47,13 +52,13 @@ class CouiFabView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                         Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(Color.Transparent))
                         if (Build.VERSION.SDK_INT >= 34 && renderer != null) {
                             Fab(backdrop = backdrop, renderer = renderer, onClick = { this@CouiFabView.performClick() }) {
-                                if (icon != 0) Image(painterResource(icon), label, Modifier.size(24.dp),
+                                if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                     colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent))
                             }
                         } else {
                             Box(Modifier.size(56.dp).clip(CircleShape).background(CouiTheme.colorScheme.accent)
                                 .clickable(role = Role.Button) { this@CouiFabView.performClick() }, contentAlignment = Alignment.Center) {
-                                if (icon != 0) Image(painterResource(icon), label, Modifier.size(24.dp),
+                                if (fabIcon != 0) Image(painterResource(fabIcon), fabLabel, Modifier.size(24.dp),
                                     colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onAccent))
                             }
                         }
