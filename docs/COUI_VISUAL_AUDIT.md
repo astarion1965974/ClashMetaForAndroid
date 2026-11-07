@@ -67,6 +67,20 @@ COUI text or buttons.
 - Migrate remaining XML/Compose hybrids as whole page-host layers before
   claiming full-scene blur. Do not synthesize blur by tinting a flat rectangle.
 
+## Proxy node selection layout fix (2026-11-07)
+
+- COUI proxy-node grid now renders equal-height 96dp cards with consistent 12dp
+  gutters instead of reusing vertically padded full-width preference rows.
+- Long node names are capped at two lines, with a single-line proxy
+  protocol/delay summary.
+- The active selector has an accent border, softly tinted card, check-circle
+  indicator, and selected accessibility semantics. A successful proxy selection
+  immediately updates Compose snapshot state, including linked group labels.
+- Native, service, app and Compose/Robolectric tests passed on mainline build
+  42363945397 (source commit `88a0687`). ColorOS 17 on-device visual review
+  is still pending; this is a release of tested code, not a claim of device
+  visual certification.
+
 ## Manual acceptance before a new stable release
 
 On real ColorOS/Android 17 hardware (light and dark themes):
