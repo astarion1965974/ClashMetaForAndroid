@@ -33,7 +33,7 @@ class NetworkSettingsDesign(
             var vpnEnabled by remember { mutableStateOf(uiStore.enableVpn) }
             ColorOsSubPage(
                 title = stringResource(R.string.network),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 Group {
                     NativeCouiSwitch(

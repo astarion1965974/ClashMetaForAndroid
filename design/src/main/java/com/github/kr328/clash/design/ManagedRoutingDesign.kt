@@ -188,7 +188,7 @@ class ManagedRoutingDesign(
                     else -> R.string.route_save
                 }),
                 canSave = dirty && editable,
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 onSave = { if (dirty && editable) requests.trySend(Request.Save) },
             ) {
                 Group {

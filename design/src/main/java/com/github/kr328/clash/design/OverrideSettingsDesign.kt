@@ -40,7 +40,7 @@ class OverrideSettingsDesign(
             val dnsEditable = configuration.dns.enable != false
             ColorOsSubPage(
                 title = stringResource(R.string.override),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     ToolbarIcon(
                         ImageVector.vectorResource(R.drawable.ic_baseline_replay),

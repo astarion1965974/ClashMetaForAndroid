@@ -52,7 +52,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
             val active = currentProfile
             ColorOsSubPage(
                 title = stringResource(R.string.properties),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     if (active != null && !progressing) {
                         ToolbarIcon(

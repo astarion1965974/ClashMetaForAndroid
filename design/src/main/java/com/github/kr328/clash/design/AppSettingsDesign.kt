@@ -32,7 +32,7 @@ class AppSettingsDesign(
         setContent {
             ColorOsSubPage(
                 title = stringResource(R.string.app),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
             ) {
                 Group(title = stringResource(R.string.behavior)) {
                     NativeCouiSwitch(

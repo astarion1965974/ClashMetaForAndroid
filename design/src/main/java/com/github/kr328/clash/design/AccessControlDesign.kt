@@ -71,7 +71,7 @@ class AccessControlDesign(
                     else -> R.string.route_save
                 }),
                 canSave = dirty && loaded && !savingState,
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 onSave = { if (dirty && loaded && !savingState) requests.trySend(Request.Save) },
             ) {
                 item(key = "app-filter-controls") {

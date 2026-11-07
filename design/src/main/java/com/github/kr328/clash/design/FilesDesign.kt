@@ -48,7 +48,7 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
             ColorOsLazySubPage(
                 title = (context as? AppCompatActivity)?.title?.toString()
                     ?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profiles),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     if (!currentInBaseDir) ToolbarIcon(
                         ImageVector.vectorResource(R.drawable.ic_baseline_add),

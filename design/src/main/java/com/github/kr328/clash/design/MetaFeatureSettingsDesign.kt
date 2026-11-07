@@ -50,7 +50,7 @@ class MetaFeatureSettingsDesign(
             val snifferEditable = configuration.sniffer.enable != false
             ColorOsSubPage(
                 title = stringResource(R.string.meta_features),
-                onBack = { (context as? AppCompatActivity)?.onSupportNavigateUp() },
+                onBack = { context.colorOsNavigateBack() },
                 actions = {
                     ToolbarIcon(
                         ImageVector.vectorResource(R.drawable.ic_baseline_replay),
