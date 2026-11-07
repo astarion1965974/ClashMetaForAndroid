@@ -94,3 +94,9 @@ Renderer initialization error handling remains (including the simple in-app fall
 - Added `NativeCouiPreferences.kt` for stateful native COUI switch, choice and clickable preference rows. Store writes use `Dispatchers.IO`; callback requests stay on main and controls are disabled while writes are in progress.
 - App settings preserve automatic restart, appearance switch/recreate events, app icon hiding, recents, live notification/group settings, and traffic notifications. ColorOS 17 exclusively targets Android 36+ so old SDK visibility branches are gone.
 - Network settings preserve live VPN option lockout, dependent VPN options, tun stack choice, and deep links to application routing, managed routing and mobile settings.
+
+## Native mobile network form
+
+- Added `ColorOsFormPage` with a fixed COUI Save bar, shared large collapsing glass title, primary back action, and insets-aware scrollable content.
+- `MobileNetworkDesign` no longer inflates `design_mobile_network.xml` or legacy `PreferenceScreen`. It now uses native COUI groups/switches/actions and the reusable form scaffold.
+- Preserved in-memory editable settings model, dirty/back interception, Save/BindWifi/Permissions/AppRouting events, Wi-Fi bind/unbind, node multi-select (max five), save disabled and reconnect labels.
