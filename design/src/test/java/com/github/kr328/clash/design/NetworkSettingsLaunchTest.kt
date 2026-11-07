@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import com.github.kr328.clash.common.Global
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
 import org.junit.Assert.assertNull
@@ -32,6 +33,8 @@ class NetworkSettingsLaunchTest {
         val activity = Robolectric.buildActivity(AppCompatActivity::class.java).apply {
             get().setTheme(R.style.AppThemeLight)
         }.setup().get()
+        // The app initializes Global from MainApplication; plain Robolectric activities do not.
+        Global.init(activity.application)
         val design = NetworkSettingsDesign(
             activity, UiStore(activity), ServiceStore(activity), running = true,
         )
