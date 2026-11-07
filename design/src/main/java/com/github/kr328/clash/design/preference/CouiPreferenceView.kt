@@ -1,8 +1,6 @@
 package com.github.kr328.clash.design.preference
 
 import android.graphics.drawable.Drawable
-import android.view.View
-import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -27,7 +25,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
+import android.graphics.Bitmap
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
@@ -108,16 +109,15 @@ internal fun CouiRowAction(
     }
 }
 
+/** Render Android icon drawables as Compose bitmaps; never mount a legacy ImageView. */
 @Composable
 private fun PreferenceIcon(drawable: Drawable, size: Dp) {
-    AndroidView(
-        modifier = Modifier.size(size),
-        factory = { context ->
-            ImageView(context).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-        },
-        update = { it.setImageDrawable(drawable) },
-    )
+    val icon = remember(drawable) {
+        val width = drawable.intrinsicWidth.takeIf { it > 0 }?.coerceAtMost(144) ?: 96
+        val height = drawable.intrinsicHeight.takeIf { it > 0 }?.coerceAtMost(144) ?: 96
+        drawable.toBitmap(width = width, height = height, config = Bitmap.Config.ARGB_8888)
+            .asImageBitmap()
+    }
+    Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(size),
+        contentScale = ContentScale.Fit)
 }
