@@ -33,7 +33,9 @@ object DomesticAppCatalog {
     fun parseProcessPackages(yaml: String): Set<String> =
         yaml.lineSequence()
             .mapNotNull { exactRule.matchEntire(it)?.groupValues?.get(1) }
-            .filterNot { it in excludedExact || excludedPrefixes.any(it::startsWith) }
+            .filterNot { pkg ->
+                pkg in excludedExact || excludedPrefixes.any { prefix -> pkg.startsWith(prefix) }
+            }
             .toSet()
 
     /**
