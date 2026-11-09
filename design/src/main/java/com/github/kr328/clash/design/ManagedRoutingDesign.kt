@@ -187,6 +187,7 @@ class ManagedRoutingDesign(
                     else -> R.string.route_save
                 }),
                 canSave = dirty && editable,
+                saveInToolbar = true,
                 onBack = { context.colorOsNavigateBack() },
                 onSave = { if (dirty && editable) requests.trySend(Request.Save) },
             ) {
