@@ -70,5 +70,7 @@
     <string name="managed_status_loaded">当前加载 %1$d 个规则集 · 缓存时间：%2$s</string>
     <string name="app_import_bypass">导入不经过 Clash 的应用</string>
     <string name="app_export_bypass">导出不经过 Clash 的应用</string>
-    <string name="app_domestic_defaults">将常见国内应用设为不经过 Clash</string>
+    <string name="app_domestic_defaults">更新并应用国内应用名单</string>
+    <string name="app_domestic_catalog_updated">已匹配 %1$d 个已安装应用，修改仍需保存</string>
+    <string name="app_domestic_catalog_offline">在线名单不可用，已使用内置名单；请检查后保存</string>
 </resources>
