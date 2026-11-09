@@ -64,6 +64,35 @@ jobs:
           ./gradlew --no-daemon --console=plain --max-workers=2 \
             :design:testAlphaDebugUnitTest :service:testAlphaDebugUnitTest :app:testAlphaDebugUnitTest \
             -Pcmfa.abis=arm64-v8a "-Pcmfa.mainlineBuildNumber=$GITHUB_RUN_NUMBER"
+      # Cache GeoData between builds; assemble itself never downloads GeoData.
+      - name: Restore verified GeoData cache
+        id: geo-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            app/src/main/assets/geoip.metadb
+            app/src/main/assets/geosite.dat
+            app/src/main/assets/ASN.mmdb
+            app/src/main/assets/BundleMRS.7z
+            .geoassets/sha256sums
+          key: geoassets-${{ runner.os }}-bundled-v1
+      - name: Prepare validated GeoData (cache, signed Release, then upstream)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 .github/scripts/prepare_geoassets.py --self-test
+          python3 .github/scripts/prepare_geoassets.py
+      - name: Save GeoData cache before Android assembly
+        if: steps.geo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            app/src/main/assets/geoip.metadb
+            app/src/main/assets/geosite.dat
+            app/src/main/assets/ASN.mmdb
+            app/src/main/assets/BundleMRS.7z
+            .geoassets/sha256sums
+          key: geoassets-${{ runner.os }}-bundled-v1
       - name: Assemble ARM64 release with R8
         run: |
           ./gradlew --no-daemon --console=plain --max-workers=2 \
