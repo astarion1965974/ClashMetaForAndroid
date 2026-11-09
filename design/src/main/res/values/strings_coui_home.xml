@@ -27,6 +27,8 @@
     <string name="coui_dns_pending">Not checked</string>
     <string name="coui_dns_result">%1$s · %2$d ms</string>
     <string name="coui_dns_failed">Lookup failed or timed out</string>
+    <string name="coui_dns_failed_detail">DNS error: %1$s</string>
+    <string name="coui_dns_timeout_detail">DNS lookup timed out; check upstream and proxy connectivity</string>
     <string name="coui_dns_note">Shows configured DNS upstream candidates, not captured per-query transport. RULES, cache and fallback can change the actual DNS path.</string>
     <string name="coui_clear">Clear</string>
     <string name="coui_input_back_cancel">Press back to cancel</string>
