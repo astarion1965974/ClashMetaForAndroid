@@ -38,7 +38,8 @@ import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.itos.coui.effect.couiButtonFeedback
-import com.itos.coui.theme.CouiThemeimport com.github.kr328.clash.design.store.UiStore
+import com.itos.coui.theme.CouiTheme
+import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
 import com.itos.coui.checkbox.Checkbox
