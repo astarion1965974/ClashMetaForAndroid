@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,6 +50,8 @@ import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.itos.coui.backdrop.couiBackdrop
+import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Scaffold
 import com.itos.coui.text.CouiTextKind
@@ -101,6 +104,7 @@ class ProxyDesign(
             val density = LocalDensity.current
             val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
             val gridState = rememberLazyGridState()
+            val tabsBackdrop = rememberCouiBackdrop()
             CouiTheme(darkTheme = dark) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -139,20 +143,16 @@ class ProxyDesign(
                                 modifier = Modifier.padding(24.dp),
                             )
                         } else {
-                            ProxyTabs(
-                                groupNames,
-                                selectedPage.coerceIn(groupNames.indices),
-                            ) { index ->
-                                selectedPage = index
-                                uiStore.proxyLastGroup = groupNames[index]
-                            }
-                            val current = groups.getOrNull(selectedPage)
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
-                                state = gridState,
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(bottom = 24.dp),
-                            ) {
+                            Box(Modifier.weight(1f)) {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
+                                    state = gridState,
+                                    modifier = Modifier.fillMaxSize()
+                                        .couiBackdrop(tabsBackdrop)
+                                        .background(CouiTheme.colorScheme.background),
+                                    // Nodes pass behind the glass tabs when scrolling.
+                                    contentPadding = PaddingValues(top = 72.dp, bottom = 24.dp),
+                                ) {
                                 itemsIndexed(
                                     current?.proxies.orEmpty(),
                                     key = { _, proxy -> proxy.name },
@@ -175,6 +175,14 @@ class ProxyDesign(
                                             requests.trySend(Request.Select(selectedPage, proxy.name))
                                         },
                                     )
+                                }
+                                ProxyTabs(
+                                    groupNames,
+                                    selectedPage.coerceIn(groupNames.indices),
+                                    tabsBackdrop,
+                                ) { index ->
+                                    selectedPage = index
+                                    uiStore.proxyLastGroup = groupNames[index]
                                 }
                             }
                         }
