@@ -57,6 +57,56 @@ object DomesticAppDefaults {
         "com.UCMobile",                    // UC Browser
         "com.quark.browser",               // Quark
         "cn.wps.moffice_eng",              // WPS
+        // Banking / finance (verified Android identifiers)
+        "cmb.pb",                            // CMB
+        "com.icbc",                          // ICBC
+        "com.chinamworld.main",              // CCB
+        "com.chinamworld.bocmbci",           // Bank of China
+        "com.android.bankabc",               // ABC
+        "com.bankcomm.Bankcomm",             // Bank of Communications
+        "com.pingan.paces.ccms",             // Ping An Bank
+        "com.cebbank.mobile.cemb",           // CEB
+        "cn.com.spdb.mobilebank.per",        // SPD Bank
+        "com.yitong.mbank.psbc",             // Postal Savings Bank
+        "com.unionpay",                      // UnionPay
+        "com.jd.jrapp",                      // JD Finance
+        "com.antfortune.wealth",             // Ant Fortune
+        "com.cmbchina.ccd.pluto.cmbActivity", // CMB credit card
+        // Travel, shopping and local service
+        "com.Qunar",                         // Qunar
+        "com.tongcheng.android",             // Tongcheng
+        "com.taobao.trip",                   // Fliggy
+        "com.shizhuang.duapp",               // Dewu
+        "com.achievo.vipshop",               // Vipshop
+        "com.wudaokou.hippo",                // Hema
+        "com.jingdong.pdj",                  // JD Daojia
+        "com.tmri.app.main",                 // Traffic Police 12123
+        "com.tencent.map",                   // Tencent Maps
+        "com.sankuai.meituan.dispatch.crowdsource", // Meituan Crowdsource
+        // Common domestic utilities
+        "com.coolapk.market",                // Coolapk
+        "com.baidu.netdisk",                 // Baidu Netdisk
+        "com.alicloud.databox",              // Aliyun Drive
+        "com.tencent.androidqqmail",         // QQ Mail
+        "com.netease.mail",                  // NetEase Mail
+        "com.xiaomi.smarthome",              // Mi Home
+        "com.tencent.android.qqdownloader", // MyApp
+        "com.hicorenational.antifraud",     // National Anti-fraud Center
+        "cn.gov.tax.its",                    // IIT
+        "cn.hsa.app",                        // National Healthcare Service
+        // Reading / entertainment
+        "com.douban.frodo",                  // Douban
+        "com.douban.radio",                  // Douban FM
+        "com.bilibili.comic",                // Bilibili Comics
+        "tv.danmaku.bilibilihd",            // Bilibili HD
+        "com.tencent.news",                  // Tencent News
+        "com.qq.reader",                     // QQ Reader
+        "app.podcast.cosmos",                // Xiaoyuzhou
+        "com.lofter.android",                // LOFTER
+        "com.netease.gl",                    // NetEase Dashen
+        "com.ss.android.ugc.live",           // Douyin Huoshan
+        "com.kuaishou.nebula",              // Kuaishou Lite
+        "com.sina.weibolite",                // Weibo Lite
     )
 
     fun shouldInitialize(hasModeSetting: Boolean, hasPackageSetting: Boolean): Boolean =
