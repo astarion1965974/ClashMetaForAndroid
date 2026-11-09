@@ -729,6 +729,7 @@ internal fun ColorOsCompactTopBar(
     title: String,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    backgroundColor: Color? = null,
 ) {
     TopAppBar(
         title = {
@@ -742,7 +743,7 @@ internal fun ColorOsCompactTopBar(
         navigationIcon = navigationIcon,
         actions = actions,
         colors = CouiTopAppBarDefaults.colors(
-            backgroundColor = CouiPageDefaults.themeColors().background,
+            backgroundColor = backgroundColor ?: CouiPageDefaults.themeColors().background,
         ),
     )
 }
