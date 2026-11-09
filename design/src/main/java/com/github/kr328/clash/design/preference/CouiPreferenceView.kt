@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
+import com.itos.coui.layout.Divider
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
@@ -51,6 +53,9 @@ internal fun CouiPreferenceRow(
     onLongClick: (() -> Unit)? = null,
     afterSummary: (@Composable () -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
+    grouped: Boolean = false,
+    firstInGroup: Boolean = false,
+    lastInGroup: Boolean = false,
 ) {
     val colors = CouiPageDefaults.themeColors()
     val source = remember { MutableInteractionSource() }
@@ -64,10 +69,22 @@ internal fun CouiPreferenceRow(
                 onLongClick = onLongClick,
             )
     } else Modifier
+    // Native COUI connected card: all app entries share straight internal edges
+    // and only the first/last row own the outer 24dp rounded corners.
+    val shape = if (grouped) RoundedCornerShape(
+        topStart = if (firstInGroup) 24.dp else 0.dp,
+        topEnd = if (firstInGroup) 24.dp else 0.dp,
+        bottomStart = if (lastInGroup) 24.dp else 0.dp,
+        bottomEnd = if (lastInGroup) 24.dp else 0.dp,
+    ) else CouiPageDefaults.shape
+    Column(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = CouiPageDefaults.horizontalMargin)
+            .then(if (grouped) Modifier else Modifier.padding(vertical = 4.dp))
+            .clip(shape).background(colors.card),
+    ) {
     Item(
-        modifier = Modifier.fillMaxWidth().padding(
-                horizontal = CouiPageDefaults.horizontalMargin, vertical = 4.dp,
-            ).clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
+        modifier = Modifier.fillMaxWidth().then(longClickModifier),
         icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable, iconSize) } },
         iconSize = iconSize,
         summary = if (!summary.isNullOrEmpty() || afterSummary != null) {
@@ -93,6 +110,13 @@ internal fun CouiPreferenceRow(
             Text(text = title.toString(), kind = CouiTextKind.PreferenceTitle,
                 color = if (enabled) colors.title else colors.disabled)
         }
+    }
+    if (grouped && !lastInGroup) {
+        Divider(
+            startIndent = CouiPageDefaults.rowPadding + iconSize + CouiPageDefaults.iconSpacing,
+            endIndent = CouiPageDefaults.rowPadding,
+        )
+    }
     }
 }
 
