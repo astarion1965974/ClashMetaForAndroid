@@ -176,7 +176,6 @@ class LiveUiTest {
             val design = MainDesign(ctx)
             updateHome {
                 design.setClashRunning(true)
-                design.setForwarded(128L * 1024 * 1024)
                 design.setMode(TunnelState.Mode.Rule)
                 design.setProfileName("我的日常订阅")
                 design.setHasProviders(true)

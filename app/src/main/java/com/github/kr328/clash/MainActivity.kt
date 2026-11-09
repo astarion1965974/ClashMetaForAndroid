@@ -14,6 +14,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
+import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.design.HomeDnsTargets
 import com.github.kr328.clash.design.MainDesign
 import com.github.kr328.clash.design.ProfilesDesign
@@ -57,7 +58,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         design.fetch()
         profilesDesign.fetch()
 
-        val profileTicker = com.github.kr328.clash.common.util.ticker(60_000L)
+        val profileTicker = ticker(60_000L)
 
         while (isActive) {
             select<Unit> {
