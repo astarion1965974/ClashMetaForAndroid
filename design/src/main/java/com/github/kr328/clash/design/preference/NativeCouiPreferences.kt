@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -79,7 +80,8 @@ internal fun NativeCouiAction(
             if (trailingAction != null) {
                 Box(
                     Modifier.size(40.dp).clip(CircleShape)
-                        .clickable(role = Role.Button, onClick = trailingAction)
+                        .testTag("coui-setting-reset")
+                        .clickable(enabled = enabled, role = Role.Button, onClick = trailingAction)
                         .then(if (trailingDescription != null) Modifier.semantics {
                             contentDescription = trailingDescription
                         } else Modifier),
@@ -119,7 +121,7 @@ private fun NativePreferenceChevron(enabled: Boolean) {
     Image(
         painter = painterResource(R.drawable.ic_live_chevron),
         contentDescription = null,
-        modifier = Modifier.padding(start = 8.dp).size(16.dp),
+        modifier = Modifier.padding(start = 8.dp).size(16.dp).testTag("coui-setting-chevron"),
         colorFilter = ColorFilter.tint(if (enabled) colors.summary else colors.disabled),
     )
 }
