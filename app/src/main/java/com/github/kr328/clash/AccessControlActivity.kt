@@ -13,11 +13,14 @@ import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.toAppInfo
 import com.github.kr328.clash.service.model.AppAccessPolicy
+import com.github.kr328.clash.service.model.DomesticAppCatalog
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.restartForRouting
 import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import kotlinx.coroutines.*
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.selects.select
 
 class AccessControlActivity : BaseActivity<AccessControlDesign>() {
@@ -57,7 +60,33 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.SelectAll -> design.select(AppAccessPolicy.Selection.All)
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
-                        AccessControlDesign.Request.ApplyDomesticDefaults -> design.applyDomesticDefaults()
+                        AccessControlDesign.Request.ApplyDomesticDefaults -> {
+                            // Optional online catalog refresh, never on cold start or
+                            // on every VPN connection. Do not override previous saved
+                            // explicit decisions until Save & Reconnect is pressed.
+                            val installed = design.allApps.map(AppInfo::packageName).toSet()
+                            saving = true
+                            design.setSaving(true)
+                            try {
+                                val extra = fetchDomesticInstalledPackages(installed)
+                                design.setSaving(false)
+                                if (extra == null) {
+                                    design.applyDomesticDefaults()
+                                    design.showToast(
+                                        R.string.app_domestic_catalog_offline, ToastDuration.Short,
+                                    )
+                                } else {
+                                    design.applyDomesticDefaults(extra)
+                                    design.showToast(
+                                        getString(R.string.app_domestic_catalog_updated, extra.size),
+                                        ToastDuration.Short,
+                                    )
+                                }
+                            } finally {
+                                saving = false
+                                design.setSaving(false)
+                            }
+                        }
                         AccessControlDesign.Request.Import -> {
                             val clip = getSystemService<ClipboardManager>()?.primaryClip
                             if (clip != null && clip.itemCount > 0) {
@@ -102,6 +131,39 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                 }
             }
         }
+    }
+
+    /** Fetch the community-maintained app-market package catalog only on an
+     * explicit user action; sanitize data and import IDs from installed apps.
+     * No background telemetry, network call on VPN launch, or wildcard rules.
+     */
+    private suspend fun fetchDomesticInstalledPackages(
+        installed: Set<String>,
+    ): Set<String>? = withContext(Dispatchers.IO) {
+        runCatching {
+            val connection = URL(DomesticAppCatalog.sourceUrl).openConnection()
+                as HttpURLConnection
+            try {
+                connection.connectTimeout = 7_000
+                connection.readTimeout = 7_000
+                connection.instanceFollowRedirects = true
+                connection.setRequestProperty("Accept", "text/plain")
+                check(connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    "Domestic catalog HTTP ${connection.responseCode}"
+                }
+                val payload = connection.inputStream.bufferedReader(Charsets.UTF_8).use {
+                    it.readText()
+                }
+                require(payload.length in 10_000..650_000) {
+                    "Domestic catalog response size invalid"
+                }
+                val catalog = DomesticAppCatalog.parseProcessPackages(payload)
+                require(catalog.size >= 500) { "Domestic catalog not a valid ruleset" }
+                catalog.intersect(installed)
+            } finally {
+                connection.disconnect()
+            }
+        }.getOrNull()
     }
 
     private suspend fun loadApps(selected: Set<String>, mode: AccessControlMode): List<AppInfo> = withContext(Dispatchers.IO) {
