@@ -55,7 +55,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_brightness_4,
                         onChanged = { requests.trySend(Request.ReCreateAllActivities) },
                     )
-                    SettingDivider()
+                    SettingDivider(withIcon = true)
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_app_icon_title),
                         summary = stringResource(R.string.hide_app_icon_desc),
@@ -63,7 +63,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_hide,
                         onChanged = onHideIconChange,
                     )
-                    SettingDivider()
+                    SettingDivider(withIcon = true)
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_from_recents_title),
                         summary = stringResource(R.string.hide_from_recents_desc),
@@ -80,7 +80,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_domain,
                         enabled = !running,
                     )
-                    SettingDivider()
+                    SettingDivider(withIcon = true)
                     NativeCouiAction(
                         title = stringResource(R.string.live_notification_group),
                         summary = srvStore.notificationProxyGroup.ifBlank {
@@ -98,7 +98,7 @@ class AppSettingsDesign(
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                         context.startActivity(intent)
                     }
-                    SettingDivider()
+                    SettingDivider(withIcon = true)
                     NativeCouiSwitch(
                         title = stringResource(R.string.show_traffic),
                         summary = stringResource(R.string.show_traffic_summary),

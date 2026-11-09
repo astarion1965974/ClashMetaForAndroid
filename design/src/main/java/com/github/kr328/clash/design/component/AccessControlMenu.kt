@@ -15,10 +15,14 @@ class AccessControlMenu(
     private val requests: Channel<Request>,
 ) {
     fun show(selectionEnabled: Boolean = true) {
+        context.showCouiMenu(options(selectionEnabled))
+    }
+
+    internal fun options(selectionEnabled: Boolean = true): List<CouiMenuOption> {
         fun option(res: Int, selected: Boolean? = null, enabled: Boolean = true, action: () -> Unit) =
             CouiMenuOption(context.getString(res), selected, enabled, action)
         fun sort(value: AppInfoSort) { uiStore.accessControlSort = value; requests.trySend(Request.ReloadApps) }
-        context.showCouiMenu(listOf(
+        return listOf(
             option(R.string.app_bulk_all, enabled = selectionEnabled) { requests.trySend(Request.SelectAll) },
             option(R.string.app_bulk_none, enabled = selectionEnabled) { requests.trySend(Request.SelectNone) },
             option(R.string.app_bulk_invert, enabled = selectionEnabled) { requests.trySend(Request.SelectInvert) },
@@ -29,6 +33,6 @@ class AccessControlMenu(
             option(R.string.reverse, uiStore.accessControlReverse) { uiStore.accessControlReverse = !uiStore.accessControlReverse; requests.trySend(Request.ReloadApps) },
             option(R.string.import_from_clipboard, enabled = selectionEnabled) { requests.trySend(Request.Import) },
             option(R.string.export_to_clipboard) { requests.trySend(Request.Export) },
-        ))
+        )
     }
 }

@@ -1,19 +1,9 @@
 package com.github.kr328.clash.design
 
-import android.os.Build
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,11 +22,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -53,14 +43,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -76,8 +66,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.github.kr328.clash.design.MainDesign.Request as HomeRequest
 import com.github.kr328.clash.design.SettingsDesign.Request as SettingsRequest
 import com.github.kr328.clash.design.util.resolveThemedBoolean
@@ -119,9 +107,12 @@ internal fun ClashHome(
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
 ) {
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scroll = rememberScrollState()
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { scroll.maxValue > 0 })
     ClashPage(
         scrollBehavior = scrollBehavior,
+        scrollState = scroll,
         topBar = {
             ColorOsLargeTopBar(
                 title = stringResource(R.string.application_name),
@@ -175,7 +166,7 @@ internal fun HomeTabContent(
                     onRequest(HomeRequest.OpenProxy)
                 }
                 if (hasProviders) {
-                    SettingDivider()
+                    SettingDivider(withIcon = true)
                     PageRow(R.drawable.ic_baseline_swap_vertical_circle, stringResource(R.string.coui_home_providers_title),
                         stringResource(R.string.providers), resourceName("home_providers_view")) {
                         onRequest(HomeRequest.OpenProviders)
@@ -190,9 +181,12 @@ internal fun ClashSettings(
     onBack: () -> Unit,
     onRequest: (SettingsRequest) -> Unit,
 ) {
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scroll = rememberScrollState()
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { scroll.maxValue > 0 })
     ClashPage(
         scrollBehavior = scrollBehavior,
+        scrollState = scroll,
         bottomBar = {
             PrimaryBottomBar(selected = 2, modifier = resourceName("settings_navigation")) { index ->
                 when (index) {
@@ -221,8 +215,19 @@ internal fun ClashSettings(
 
 /** Consistent group separator: span the icon gutter but retain COUI's card insets. */
 @Composable
-internal fun SettingDivider() {
-    Divider(startIndent = CouiPageDefaults.rowPadding, endIndent = CouiPageDefaults.rowPadding)
+internal fun SettingDivider(withIcon: Boolean = false) {
+    // alpha8 DemoCatalog: icon-bearing separators begin at the title, not the icon.
+    val start = CouiPageDefaults.rowPadding +
+        if (withIcon) CouiPageDefaults.iconSize + CouiPageDefaults.iconSpacing else 0.dp
+    // Put semantics on the painted segment, not its full-width padding box,
+    // so geometry regression tests measure the visible line (alpha8 contract).
+    Divider(
+        modifier = Modifier.padding(
+            start = start, end = CouiPageDefaults.rowPadding,
+        ).testTag("coui-setting-divider"),
+        startIndent = 0.dp,
+        endIndent = 0.dp,
+    )
 }
 
 @Composable
@@ -231,13 +236,13 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
             footer = stringResource(R.string.live_settings_intro_hint)) {
             PageRow(R.drawable.ic_baseline_settings, stringResource(R.string.app),
                 stringResource(R.string.live_setting_app_hint)) { onRequest(SettingsRequest.StartApp) }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.network),
                 stringResource(R.string.live_setting_network_hint)) { onRequest(SettingsRequest.StartNetwork) }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_extension, stringResource(R.string.override),
                 stringResource(R.string.live_setting_override_hint)) { onRequest(SettingsRequest.StartOverride) }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_meta, stringResource(R.string.meta_features),
                 stringResource(R.string.live_setting_meta_hint)) { onRequest(SettingsRequest.StartMetaFeature) }
         }
@@ -247,7 +252,7 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
                 stringResource(R.string.live_app_hint), resourceName("app_routing_view")) {
                 onRequest(SettingsRequest.OpenAppRouting)
             }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.live_rules),
                 stringResource(R.string.live_rules_hint), resourceName("rule_routing_view")) {
                 onRequest(SettingsRequest.OpenRouting)
@@ -257,10 +262,10 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
         Group(title = stringResource(R.string.coui_settings_support)) {
             PageRow(R.drawable.ic_baseline_assignment, stringResource(R.string.logs),
                 stringResource(R.string.live_logs_hint)) { onRequest(SettingsRequest.OpenLogs) }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_help_center,
                 stringResource(R.string.help), null) { onRequest(SettingsRequest.OpenHelp) }
-            SettingDivider()
+            SettingDivider(withIcon = true)
             PageRow(R.drawable.ic_baseline_info,
                 stringResource(R.string.about), null) { onRequest(SettingsRequest.OpenAbout) }
         }
@@ -296,9 +301,12 @@ internal fun ClashPrimaryTabs(
     val profilesScroll = rememberLazyListState()
     val settingsScroll = rememberScrollState()
     // Keep the three large-title states independent while changing tabs.
-    val homeTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val profilesTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val settingsTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val homeTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { homeScroll.maxValue > 0 })
+    val profilesTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { profilesScroll.canScrollForward || profilesScroll.canScrollBackward })
+    val settingsTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { settingsScroll.maxValue > 0 })
     val activeTopBar = when (selected) {
         1 -> profilesTopBar
         2 -> settingsTopBar
@@ -338,50 +346,24 @@ internal fun ClashPrimaryTabs(
             val homePadding = homeTopBar.state.contentPadding(padding, density)
             val profilesPadding = profilesTopBar.state.contentPadding(padding, density)
             val settingsPadding = settingsTopBar.state.contentPadding(padding, density)
-            Box(Modifier.fillMaxSize()) {
-                for (page in 0..2) {
-                    AnimatedVisibility(
-                        visible = selected == page,
-                        modifier = Modifier.fillMaxSize()
-                            .zIndex(if (selected == page) 1f else 0f),
-                        enter = fadeIn(tween(280)) + scaleIn(
-                            initialScale = 0.94f, animationSpec = tween(300),
-                        ),
-                        exit = fadeOut(tween(210)) + scaleOut(
-                            targetScale = 1.045f, animationSpec = tween(260),
-                        ),
-                        label = "coui-main-page-$page",
-                    ) {
-                        val blurRadius by transition.animateDp(label = "coui-page-blur") { phase ->
-                            if (phase == EnterExitState.Visible) 0.dp else 12.dp
-                        }
-                        // Robolectric emulates Android's graphics APIs but cannot
-                        // execute the actual RenderEffect backend.
-                        val blur = if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true))
-                            Modifier.blur(blurRadius) else Modifier
-                        Box(Modifier.fillMaxSize().then(blur)) {
-                            when (page) {
-                                0 -> Column(
-                                    Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
-                                        .padding(homePadding).consumeWindowInsets(padding)
-                                        .padding(bottom = 16.dp),
-                                ) {
-                                    HomeTabContent(
-                                        running, paused, profileName, quota, days, dns,
-                                        dnsLoading, forwarded, mode, hasProviders, onHomeRequest,
-                                    )
-                                }
-                                1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
-                                2 -> Column(
-                                    Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
-                                        .padding(settingsPadding).consumeWindowInsets(padding)
-                                        .padding(bottom = 16.dp),
-                                ) {
-                                    SettingsTabContent(onSettingsRequest)
-                                }
-                            }
-                        }
-                    }
+            // Follow DemoApp: keep scroll/title state, switch only the active body.
+            // The native COUI NavigationBar owns its own transition.
+            when (selected) {
+                0 -> Column(
+                    Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
+                        .padding(homePadding).consumeWindowInsets(padding)
+                        .padding(bottom = CouiPageDefaults.groupSpacing),
+                ) {
+                    HomeTabContent(running, paused, profileName, quota, days, dns,
+                        dnsLoading, forwarded, mode, hasProviders, onHomeRequest)
+                }
+                1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
+                2 -> Column(
+                    Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
+                        .padding(settingsPadding).consumeWindowInsets(padding)
+                        .padding(bottom = CouiPageDefaults.groupSpacing),
+                ) {
+                    SettingsTabContent(onSettingsRequest)
                 }
             }
         }
@@ -393,6 +375,7 @@ internal fun ClashPrimaryTabs(
 private fun ClashPage(
     topBar: @Composable () -> Unit,
     scrollBehavior: CouiTopAppBarScrollBehavior? = null,
+    scrollState: ScrollState,
     bottomBar: @Composable () -> Unit = {},
     contentArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
@@ -414,7 +397,7 @@ private fun ClashPage(
                     // Inset padding belongs INSIDE the scrolling content so
                     // the translucent toolbar and navigation sample real rows.
                     // Their separate Scaffold slots remain above the content.
-                    .couiVerticalScroll(rememberScrollState())
+                    .couiVerticalScroll(scrollState)
                     .padding(contentPadding)
                     .consumeWindowInsets(padding)
                     .padding(bottom = 16.dp),
@@ -441,17 +424,7 @@ internal fun PrimaryBottomBar(
         CouiNavigationItem(stringResource(R.string.profiles), profiles, profilesSelected),
         CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Filled.Setting, settingsSelected),
     )
-    var selectedIndex by remember(selected) { mutableIntStateOf(selected) }
-    val lifecycle = LocalView.current.findViewTreeLifecycleOwner()?.lifecycle
-    DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) selectedIndex = selected
-        }
-        lifecycle?.addObserver(observer)
-        onDispose { lifecycle?.removeObserver(observer) }
-    }
     val select: (Int) -> Unit = { index ->
-        selectedIndex = index
         if (index != selected) onSelection(index)
     }
     val renderer = remember { createFloatingRenderer { CouiFloatingRenderer() } }
@@ -460,7 +433,7 @@ internal fun PrimaryBottomBar(
             modifier = modifier,
             renderer = renderer,
             items = items,
-            selectedIndex = selectedIndex,
+            selectedIndex = selected,
             onSelection = select,
         )
         return
@@ -479,15 +452,15 @@ internal fun PrimaryBottomBar(
                 .selectableGroup(),
         ) {
             items.forEachIndexed { index, item ->
-                val selected = index == selectedIndex
-                val color = if (selected) colors.accentOnSurface else colors.onSurfaceVariant
+                val itemSelected = index == selected
+                val color = if (itemSelected) colors.accentOnSurface else colors.onSurfaceVariant
                 Column(
                     modifier = Modifier.weight(1f)
-                        .selectable(selected, role = Role.Tab, onClick = { select(index) })
+                        .selectable(itemSelected, role = Role.Tab, onClick = { select(index) })
                         .padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Image(if (selected) item.selectedIcon else item.icon, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(color))
+                    Image(if (itemSelected) item.selectedIcon else item.icon, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(color))
                     Text(text = item.title, kind = CouiTextKind.Description, color = color,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -624,7 +597,13 @@ internal fun PageRow(
             Text(text = description, kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         } },
-        trailing = { PageIcon(R.drawable.ic_live_chevron, colors.onSurfaceVariant, Modifier.size(16.dp)) },
+        trailing = {
+            Image(
+                CouiIcons.Filled.Back, null,
+                Modifier.padding(start = 4.dp).size(width = 12.dp, height = 24.dp).rotate(180f),
+                colorFilter = ColorFilter.tint(colors.onSurfaceVariant),
+            )
+        },
         contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = CouiPageDefaults.contentPadding),
         onClick = onClick,
     ) {
@@ -642,7 +621,9 @@ internal fun ColorOsSubPage(
 ) {
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val pageScroll = rememberScrollState()
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { pageScroll.maxValue > 0 })
     val density = LocalDensity.current
     CouiTheme(darkTheme = dark) {
         Scaffold(
@@ -662,7 +643,7 @@ internal fun ColorOsSubPage(
         ) { padding ->
             val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
             Column(
-                modifier = Modifier.fillMaxSize().couiVerticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxSize().couiVerticalScroll(pageScroll)
                     .padding(scrollPadding).consumeWindowInsets(padding)
                     .padding(bottom = 24.dp),
                 content = content,
@@ -684,7 +665,10 @@ internal fun ColorOsLazySubPage(
     val context = LocalContext.current
     val density = LocalDensity.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val fallbackListState = rememberLazyListState()
+    val actualListState = listState ?: fallbackListState
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { actualListState.canScrollForward || actualListState.canScrollBackward })
     CouiTheme(darkTheme = dark) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -703,10 +687,15 @@ internal fun ColorOsLazySubPage(
         ) { padding ->
             val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
             LazyColumn(
-                state = listState ?: rememberLazyListState(),
+                state = actualListState,
                 reverseLayout = reverseLayout,
-                modifier = Modifier.fillMaxSize().padding(scrollPadding).consumeWindowInsets(padding),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
+                contentPadding = PaddingValues(
+                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current),
+                    top = scrollPadding.calculateTopPadding(),
+                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current),
+                    bottom = scrollPadding.calculateBottomPadding() + 24.dp,
+                ),
                 content = content,
             )
         }
@@ -721,9 +710,7 @@ internal fun ColorOsLargeTopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    // alpha8 owns its large-title type ramp, easing, position and scale.
-    // Inheriting its provided style prevents the double scaling of the old
-    // manually interpolated font size.
+    // Let COUI alpha8 own the expanded/collapsed type ramp, material and typography.
     LargeTopAppBar(
         title = {
             BasicText(
@@ -736,8 +723,9 @@ internal fun ColorOsLargeTopBar(
         navigationIcon = navigationIcon,
         actions = actions,
         scrollBehavior = scrollBehavior,
-        expandedTitleSize = 32.sp,
-        collapsedTitleSize = 24.sp,
+        colors = CouiTopAppBarDefaults.colors(
+            backgroundColor = CouiPageDefaults.themeColors().background,
+        ),
     )
 }
 

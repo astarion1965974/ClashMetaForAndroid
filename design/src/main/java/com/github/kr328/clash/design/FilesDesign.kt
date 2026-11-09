@@ -15,7 +15,7 @@ import androidx.compose.ui.res.vectorResource
 import com.github.kr328.clash.common.compat.getDrawableCompat
 import com.github.kr328.clash.design.dialog.CouiMenuOption
 import com.github.kr328.clash.design.dialog.requestModelTextInput
-import com.github.kr328.clash.design.dialog.showCouiMenu
+import com.github.kr328.clash.design.dialog.CouiAnchoredMenu
 import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.preference.CouiRowAction
@@ -68,10 +68,14 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
                         enabled = true,
                         onClick = { requestOpen(file) },
                         trailing = {
-                            CouiRowAction(
-                                R.drawable.ic_baseline_more_vert,
-                                stringResource(R.string.more),
-                            ) { requestMore(file) }
+                            val options = menuOptions(file)
+                            if (options.isNotEmpty()) CouiAnchoredMenu(options) { open ->
+                                CouiRowAction(
+                                    R.drawable.ic_baseline_more_vert,
+                                    stringResource(R.string.more),
+                                    open,
+                                )
+                            }
                         },
                     )
                 }
@@ -106,7 +110,7 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
 
     fun requestNew() { requests.trySend(Request.ImportFile(null)) }
 
-    private fun requestMore(file: File) {
+    private fun menuOptions(file: File): List<CouiMenuOption> {
         val options = mutableListOf<CouiMenuOption>()
         fun add(resource: Int, request: Request) {
             options.add(CouiMenuOption(context.getString(resource)) { requests.trySend(request) })
@@ -118,6 +122,6 @@ class FilesDesign(context: Context) : Design<FilesDesign.Request>(context) {
             add(R.string.rename, Request.RenameFile(file))
             add(R.string.delete, Request.DeleteFile(file))
         }
-        if (options.isNotEmpty()) context.showCouiMenu(options)
+        return options
     }
 }

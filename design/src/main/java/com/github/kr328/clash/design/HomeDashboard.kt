@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.layout.Item
@@ -155,7 +156,7 @@ internal fun HomeDnsCard(mode: String?, results: List<HomeDnsResult>, loading: B
                 }
             }
             listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").forEachIndexed { index, domain ->
-                if (index > 0) Divider()
+                if (index > 0) Divider(startIndent = CouiPageDefaults.rowPadding, endIndent = CouiPageDefaults.rowPadding)
                 val result = results.find { it.domain == domain }
                 val detail = when {
                     result == null -> stringResource(R.string.coui_dns_pending)

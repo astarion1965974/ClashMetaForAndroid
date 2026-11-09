@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
@@ -18,11 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
@@ -50,38 +54,68 @@ internal fun AccessControls(
     val backdrop = rememberCouiBackdrop()
     var searchExpanded by remember { mutableStateOf(false) }
     val searchState = rememberCouiSearchBarState(searchExpanded)
+    val density = LocalDensity.current
+    var modeHeightPx by remember { mutableIntStateOf(0) }
+    var searchHeightPx by remember { mutableIntStateOf(0) }
+
     ProvideCouiBackdrop(backdrop) {
-      Box(Modifier.fillMaxWidth()) {
-        Spacer(Modifier.matchParentSize().couiBackdrop(backdrop).background(CouiTheme.colorScheme.background))
-        Column(Modifier.fillMaxWidth()) {
-            Item(onClick = onMode, enabled = enabled, summary = {
-                Text(text = hint, kind = CouiTextKind.PreferenceSummary, color = CouiTheme.colorScheme.onSurfaceVariant)
-            }) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
-            // Keep the native COUI glass search capsule on real Android devices.
-            // Robolectric cannot create COUI-Kit's native MeshSpecification shader.
-            // Only the headless test environment uses the basic search fallback.
-            if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
-                SearchBar(
-                    state = searchState,
-                    query = keyword,
-                    onQueryChange = onKeyword,
-                    onExpandedChange = { searchExpanded = it },
-                    placeholder = stringResource(R.string.app_search),
-                    cancelText = stringResource(R.string.cancel),
-                    clearDescription = stringResource(R.string.coui_clear),
-                    enabled = enabled,
+        Box(Modifier.fillMaxWidth()) {
+            // DemoChromeDetail: record actual neighboring rows separately from the
+            // floating glass control. A flat Spacer is not a meaningful sample source.
+            Column(
+                Modifier.fillMaxWidth().couiBackdrop(backdrop)
+                    .background(CouiTheme.colorScheme.background),
+            ) {
+                Item(
+                    modifier = Modifier.onSizeChanged { modeHeightPx = it.height },
+                    onClick = onMode, enabled = enabled,
+                    summary = {
+                        Text(
+                            text = hint, kind = CouiTextKind.PreferenceSummary,
+                            color = CouiTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                ) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
+                Spacer(Modifier.fillMaxWidth().height(with(density) { searchHeightPx.toDp() }))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterToggle(
+                        stringResource(R.string.app_selected_only), selectedOnly, enabled,
+                        Modifier.weight(1f), onSelectedOnly,
+                    )
+                    FilterToggle(
+                        stringResource(R.string.app_system), system, enabled,
+                        Modifier.weight(1f), onSystem,
+                    )
+                }
+                Text(
+                    text = count, kind = CouiTextKind.Description,
+                    color = CouiTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                 )
-            } else {
-                StableSearchField(keyword, enabled, onKeyword)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                FilterToggle(stringResource(R.string.app_selected_only), selectedOnly, enabled, Modifier.weight(1f), onSelectedOnly)
-                FilterToggle(stringResource(R.string.app_system), system, enabled, Modifier.weight(1f), onSystem)
+            // The search capsule samples the recorded mode/filter area without
+            // including itself, preventing feedback and preserving COUI material.
+            Box(
+                Modifier.align(Alignment.TopCenter)
+                    .padding(top = with(density) { modeHeightPx.toDp() })
+                    .onSizeChanged { searchHeightPx = it.height },
+            ) {
+                if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
+                    SearchBar(
+                        state = searchState,
+                        query = keyword,
+                        onQueryChange = onKeyword,
+                        onExpandedChange = { searchExpanded = it },
+                        placeholder = stringResource(R.string.app_search),
+                        cancelText = stringResource(R.string.cancel),
+                        clearDescription = stringResource(R.string.coui_clear),
+                        enabled = enabled,
+                    )
+                } else {
+                    StableSearchField(keyword, enabled, onKeyword)
+                }
             }
-            Text(text = count, kind = CouiTextKind.Description, color = CouiTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
         }
-      }
     }
 }
 

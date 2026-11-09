@@ -12,6 +12,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import com.github.kr328.clash.design.component.AccessControlMenu
+import com.github.kr328.clash.design.dialog.CouiAnchoredMenu
+import com.github.kr328.clash.design.dialog.CouiMenuOption
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
@@ -89,7 +91,7 @@ class AccessControlDesign(
                 }
                 item(key = "app-list-actions") {
                     ToolbarSectionBulk(
-                        onMore = { if (!savingState) menu.show(mode != AccessControlMode.AcceptAll) },
+                        options = menu.options(mode != AccessControlMode.AcceptAll),
                         enabled = !savingState,
                     )
                 }
@@ -188,12 +190,15 @@ class AccessControlDesign(
 
 /** COUI toolbar-style operation displayed inside the app list, not a second XML action bar. */
 @androidx.compose.runtime.Composable
-private fun ToolbarSectionBulk(onMore: () -> Unit, enabled: Boolean) {
+private fun ToolbarSectionBulk(options: List<CouiMenuOption>, enabled: Boolean) {
     com.itos.coui.layout.Group {
-        com.github.kr328.clash.design.preference.NativeCouiAction(
-            title = stringResource(R.string.more),
-            enabled = enabled,
-            onClick = onMore,
-        )
+        CouiAnchoredMenu(options) { open ->
+            com.github.kr328.clash.design.preference.NativeCouiAction(
+                title = stringResource(R.string.more),
+                enabled = enabled,
+                navigation = true,
+                onClick = { if (enabled) open() },
+            )
+        }
     }
 }

@@ -8,6 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
@@ -156,6 +159,74 @@ class CouiPreferenceTest {
         compose.onNodeWithContentDescription(activity.getString(R.string.more)).performClick()
         assertEquals(profile, menu)
         assertEquals(null, activated)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun iconBearingDividerMatchesDemoTitleInset() {
+        val activity = activity()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    com.itos.coui.layout.Group {
+                        com.itos.coui.layout.Item(
+                            icon = {
+                                androidx.compose.foundation.layout.Box(
+                                    androidx.compose.ui.Modifier.size(
+                                        com.itos.coui.layout.CouiPageDefaults.iconSize,
+                                    )
+                                )
+                            },
+                        ) { com.itos.coui.text.Text(
+                            text = "Before icon row",
+                            kind = com.itos.coui.text.CouiTextKind.PreferenceTitle,
+                        ) }
+                        SettingDivider(withIcon = true)
+                        com.itos.coui.layout.Item(
+                            icon = {
+                                androidx.compose.foundation.layout.Box(
+                                    androidx.compose.ui.Modifier.size(
+                                        com.itos.coui.layout.CouiPageDefaults.iconSize,
+                                    )
+                                )
+                            },
+                        ) { com.itos.coui.text.Text(
+                            text = "Aligned icon title",
+                            kind = com.itos.coui.text.CouiTextKind.PreferenceTitle,
+                        ) }
+                    }
+                }
+            }
+        })
+        val divider = compose.onNodeWithTag("coui-setting-divider", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val title = compose.onNodeWithText("Aligned icon title", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals("Icon divider must begin at COUI row text, never icon area", title.left, divider.left, 1f)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun plainDividerMatchesDemoTitleInset() {
+        val activity = activity()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    com.itos.coui.layout.Group {
+                        com.itos.coui.layout.Item { com.itos.coui.text.Text(
+                            text = "Before plain row", kind = com.itos.coui.text.CouiTextKind.PreferenceTitle,
+                        ) }
+                        SettingDivider()
+                        com.itos.coui.layout.Item { com.itos.coui.text.Text(
+                            text = "Aligned plain title", kind = com.itos.coui.text.CouiTextKind.PreferenceTitle,
+                        ) }
+                    }
+                }
+            }
+        })
+        val divider = compose.onNodeWithTag("coui-setting-divider", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val title = compose.onNodeWithText("Aligned plain title", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals("Plain divider must align with row title", title.left, divider.left, 1f)
         activity.setContentView(View(activity))
     }
 

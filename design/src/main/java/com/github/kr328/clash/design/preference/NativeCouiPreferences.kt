@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.itos.coui.`switch`.Switch
+import com.itos.coui.`switch`.CouiSwitchDefaults
+import com.itos.coui.icons.CouiIcons
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.effect.couiButtonFeedback
@@ -119,9 +122,10 @@ private fun NativePreferenceIcon(@DrawableRes icon: Int, enabled: Boolean) {
 private fun NativePreferenceChevron(enabled: Boolean) {
     val colors = CouiPageDefaults.themeColors()
     Image(
-        painter = painterResource(R.drawable.ic_live_chevron),
+        imageVector = CouiIcons.Filled.Back,
         contentDescription = null,
-        modifier = Modifier.padding(start = 8.dp).size(16.dp).testTag("coui-setting-chevron"),
+        modifier = Modifier.padding(start = 4.dp).size(width = 12.dp, height = 24.dp)
+            .rotate(180f).testTag("coui-setting-chevron"),
         colorFilter = ColorFilter.tint(if (enabled) colors.summary else colors.disabled),
     )
 }
@@ -176,8 +180,11 @@ internal fun NativeCouiSwitch(
         trailing = {
             // The row owns click semantics; the switch only handles drag gestures.
             Switch(
+                modifier = Modifier.padding(start = CouiPageDefaults.rowPadding),
                 checked = checked,
                 onCheckedChange = null,
+                dark = CouiTheme.isDark,
+                colors = CouiSwitchDefaults.colors(colors.accent, CouiTheme.isDark),
                 enabled = active,
                 interactionSource = source,
                 onDragCheckedChange = change,
@@ -226,6 +233,9 @@ internal fun <T> NativeCouiSelect(
                                             withContext(Dispatchers.IO) { value.set(choice) }
                                             selected = choice
                                             onChanged(choice)
+                                        } catch (_: Exception) {
+                                            // Source remains authoritative after a failed write.
+                                            selected = value.get()
                                         } finally {
                                             saving = false
                                         }
