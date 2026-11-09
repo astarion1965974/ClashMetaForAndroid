@@ -122,7 +122,8 @@ class LiveUiTest {
             ctx.setContentView(design.root)
             compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
             compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
-            compose.onNodeWithTag("proxy-tab-0").assertIsSelected()
+            // UiStore may persist a different initial group across test cases.
+            compose.onNodeWithTag("proxy-tab-0").performClick().assertIsSelected()
             compose.onNodeWithTag("proxy-tab-1").performClick().assertIsSelected()
             compose.onNodeWithTag("proxy-tab-0").assertExists()
             savePreview(compose.onRoot().captureToImage().asAndroidBitmap(),
