@@ -123,7 +123,7 @@ class AccessControlDesign(
                     AppRoutingListHeader(
                         count = count,
                         options = menu.options(!savingState && !presetLoading),
-                        enabled = !savingState,
+                        enabled = !savingState && !presetLoading,
                     )
                 }
                 if (filteredApps.isEmpty()) {
