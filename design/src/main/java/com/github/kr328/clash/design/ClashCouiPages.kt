@@ -227,10 +227,14 @@ internal fun SettingDivider(withIcon: Boolean = false) {
     // alpha8 DemoCatalog: icon-bearing separators begin at the title, not the icon.
     val start = CouiPageDefaults.rowPadding +
         if (withIcon) CouiPageDefaults.iconSize + CouiPageDefaults.iconSpacing else 0.dp
+    // Put semantics on the painted segment, not its full-width padding box,
+    // so geometry regression tests measure the visible line (alpha8 contract).
     Divider(
-        modifier = Modifier.testTag("coui-setting-divider"),
-        startIndent = start,
-        endIndent = CouiPageDefaults.rowPadding,
+        modifier = Modifier.padding(
+            start = start, end = CouiPageDefaults.rowPadding,
+        ).testTag("coui-setting-divider"),
+        startIndent = 0.dp,
+        endIndent = 0.dp,
     )
 }
 
