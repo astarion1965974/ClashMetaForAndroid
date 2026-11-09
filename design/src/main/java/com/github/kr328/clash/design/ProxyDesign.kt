@@ -143,6 +143,7 @@ class ProxyDesign(
                                 modifier = Modifier.padding(24.dp),
                             )
                         } else {
+                            val current = groups.getOrNull(selectedPage)
                             Box(Modifier.weight(1f)) {
                                 LazyVerticalGrid(
                                     columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
@@ -175,6 +176,7 @@ class ProxyDesign(
                                             requests.trySend(Request.Select(selectedPage, proxy.name))
                                         },
                                     )
+                                }
                                 }
                                 ProxyTabs(
                                     groupNames,
