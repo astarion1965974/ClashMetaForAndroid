@@ -50,16 +50,13 @@ internal fun ColorOsFormPage(
 ) {
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-    val density = LocalDensity.current
     val scroll = rememberScrollState()
-    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        canScroll = { scroll.maxValue > 0 })
     CouiTheme(darkTheme = dark) {
         Scaffold(
-            modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             topBar = {
-                ColorOsLargeTopBar(
-                    title = title, scrollBehavior = behavior,
+                ColorOsCompactTopBar(
+                    title = title,
                     navigationIcon = {
                         ToolbarIcon(
                             CouiIcons.Filled.Back,
@@ -93,7 +90,7 @@ internal fun ColorOsFormPage(
                 }
             },
         ) { padding ->
-            val scrollPadding = behavior.state.contentPadding(padding, density)
+            val scrollPadding = padding
             Column(
                 modifier = Modifier.fillMaxSize().couiVerticalScroll(scroll)
                     .padding(scrollPadding).consumeWindowInsets(padding)
@@ -117,15 +114,12 @@ internal fun ColorOsLazyFormPage(
 ) {
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-    val density = LocalDensity.current
     val state = rememberLazyListState()
-    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        canScroll = { state.canScrollForward || state.canScrollBackward })
     CouiTheme(darkTheme = dark) {
         Scaffold(
-            modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             topBar = {
-                ColorOsLargeTopBar(title = title, scrollBehavior = behavior, navigationIcon = {
+                ColorOsCompactTopBar(title = title, navigationIcon = {
                     ToolbarIcon(
                         CouiIcons.Filled.Back,
                         stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
@@ -156,7 +150,7 @@ internal fun ColorOsLazyFormPage(
                 }
             },
         ) { padding ->
-            val scrollingPadding = behavior.state.contentPadding(padding, density)
+            val scrollingPadding = padding
             LazyColumn(
                 state = state,
                 modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),

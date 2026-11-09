@@ -91,6 +91,7 @@ import com.itos.coui.theme.LocalCouiTextStyle
 import com.itos.coui.topappbar.CouiTopAppBarScrollBehavior
 import com.itos.coui.topappbar.CouiTopAppBarDefaults
 import com.itos.coui.topappbar.LargeTopAppBar
+import com.itos.coui.topappbar.TopAppBar
 import com.itos.coui.topappbar.TopAppBarButton
 
 @Composable
@@ -182,10 +183,7 @@ internal fun ClashSettings(
     onRequest: (SettingsRequest) -> Unit,
 ) {
     val scroll = rememberScrollState()
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        canScroll = { scroll.maxValue > 0 })
     ClashPage(
-        scrollBehavior = scrollBehavior,
         scrollState = scroll,
         bottomBar = {
             PrimaryBottomBar(selected = 2, modifier = resourceName("settings_navigation")) { index ->
@@ -196,9 +194,8 @@ internal fun ClashSettings(
             }
         },
         topBar = {
-            ColorOsLargeTopBar(
+            ColorOsCompactTopBar(
                 title = stringResource(R.string.settings),
-                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     ToolbarIcon(
                         icon = CouiIcons.Filled.Back,
@@ -611,7 +608,7 @@ internal fun PageRow(
     }
 }
 
-/** Shared COUI subpage for screens whose content is already Compose-based. */
+/** Secondary/tertiary pages use a compact, non-collapsing ColorOS toolbar. */
 @Composable
 internal fun ColorOsSubPage(
     title: String,
@@ -622,16 +619,12 @@ internal fun ColorOsSubPage(
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
     val pageScroll = rememberScrollState()
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        canScroll = { pageScroll.maxValue > 0 })
-    val density = LocalDensity.current
     CouiTheme(darkTheme = dark) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             topBar = {
-                ColorOsLargeTopBar(
+                ColorOsCompactTopBar(
                     title = title,
-                    scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
@@ -641,18 +634,17 @@ internal fun ColorOsSubPage(
                 )
             },
         ) { padding ->
-            val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
             Column(
                 modifier = Modifier.fillMaxSize().couiVerticalScroll(pageScroll)
-                    .padding(scrollPadding).consumeWindowInsets(padding)
-                    .padding(bottom = 24.dp),
+                    .padding(padding).consumeWindowInsets(padding)
+                    .padding(bottom = CouiPageDefaults.groupSpacing),
                 content = content,
             )
         }
     }
 }
 
-/** Native lazy-list variant for long secondary pages such as saved logs. */
+/** Virtualized lists keep the same fixed-height toolbar and safe insets. */
 @Composable
 internal fun ColorOsLazySubPage(
     title: String,
@@ -663,19 +655,15 @@ internal fun ColorOsLazySubPage(
     content: LazyListScope.() -> Unit,
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
     val fallbackListState = rememberLazyListState()
     val actualListState = listState ?: fallbackListState
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        canScroll = { actualListState.canScrollForward || actualListState.canScrollBackward })
     CouiTheme(darkTheme = dark) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             topBar = {
-                ColorOsLargeTopBar(
+                ColorOsCompactTopBar(
                     title = title,
-                    scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
@@ -685,21 +673,44 @@ internal fun ColorOsLazySubPage(
                 )
             },
         ) { padding ->
-            val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
             LazyColumn(
                 state = actualListState,
                 reverseLayout = reverseLayout,
                 modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
                 contentPadding = PaddingValues(
-                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current),
-                    top = scrollPadding.calculateTopPadding(),
-                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current),
-                    bottom = scrollPadding.calculateBottomPadding() + 24.dp,
+                    start = padding.calculateLeftPadding(LocalLayoutDirection.current),
+                    top = padding.calculateTopPadding(),
+                    end = padding.calculateRightPadding(LocalLayoutDirection.current),
+                    bottom = padding.calculateBottomPadding() + CouiPageDefaults.groupSpacing,
                 ),
                 content = content,
             )
         }
     }
+}
+
+/** COUI-Kit alpha8 compact toolbar: native 18dp title, no large-title morph. */
+@Composable
+internal fun ColorOsCompactTopBar(
+    title: String,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    TopAppBar(
+        title = {
+            BasicText(
+                text = title,
+                style = LocalCouiTextStyle.current.copy(color = CouiTheme.colorScheme.onSurface),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        navigationIcon = navigationIcon,
+        actions = actions,
+        colors = CouiTopAppBarDefaults.colors(
+            backgroundColor = CouiPageDefaults.themeColors().background,
+        ),
+    )
 }
 
 /** ColorOS 17 title: native COUI glass and collapse with a 32sp expanded visual size. */

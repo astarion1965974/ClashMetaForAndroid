@@ -79,16 +79,12 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
             val listState = rememberLazyListState()
-            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                canScroll = { listState.canScrollForward || listState.canScrollBackward })
-            val density = LocalDensity.current
             CouiTheme(darkTheme = dark) {
                 Scaffold(
-                    modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
+                    modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        ColorOsLargeTopBar(
+                        ColorOsCompactTopBar(
                             title = context.getString(R.string.profiles),
-                            scrollBehavior = behavior,
                             navigationIcon = {
                                 ToolbarIcon(
                                     CouiIcons.Filled.Back,
@@ -110,7 +106,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
                         }
                     },
                 ) { padding ->
-                    PrimaryTabContent(padding, behavior.state.contentPadding(padding, density), listState)
+                    PrimaryTabContent(padding, padding, listState)
                 }
             }
         }
