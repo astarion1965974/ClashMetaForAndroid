@@ -45,7 +45,7 @@ jobs:
           EOF
       - name: Install patched Go toolchain
         run: |
-          curl --fail --location --retry 3 https://github.com/MetaCubeX/go/releases/download/build/go1.26.linux-amd64.tar.gz -o "$RUNNER_TEMP/go.tar.gz"
+          curl --fail --location --retry 12 --retry-all-errors --retry-delay 4 --connect-timeout 20 --max-time 180 https://github.com/MetaCubeX/go/releases/download/build/go1.26.linux-amd64.tar.gz -o "$RUNNER_TEMP/go.tar.gz"
           mkdir -p "$RUNNER_TEMP/cmfa-go"
           tar -xzf "$RUNNER_TEMP/go.tar.gz" -C "$RUNNER_TEMP/cmfa-go"
           echo "GOROOT=$RUNNER_TEMP/cmfa-go/go" >> "$GITHUB_ENV"
