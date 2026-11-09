@@ -300,7 +300,7 @@ class LiveUiTest {
         val search = compose.onNodeWithTag("app-routing-search-container").getUnclippedBoundsInRoot()
         val count = compose.onNodeWithTag("app-routing-count-label").getUnclippedBoundsInRoot()
         assertEquals("App-count label must align with search and card outer margins",
-            search.left, count.left, 1f)
+            search.left.value, count.left.value, 1f)
         compose.onNodeWithText(ctx.getString(R.string.access_control_mode)).assertDoesNotExist()
         assertTrue(selected.contains("org.example.chat"))
         // The public policy setter is used by each of the two native Dialog choices.
