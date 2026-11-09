@@ -25,6 +25,7 @@ import org.robolectric.shadows.ShadowToast
 class CouiNoticeTest {
     @Test fun ordinaryFeedbackUsesSystemToast() {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java)
+        controller.get().setTheme(R.style.AppThemeLight)
         val activity = controller.setup().get()
         val design = object : Design<Unit>(activity) {
             override val root: View = View(activity)
