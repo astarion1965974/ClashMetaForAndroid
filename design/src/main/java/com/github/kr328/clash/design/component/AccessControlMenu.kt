@@ -23,7 +23,7 @@ class AccessControlMenu(
             CouiMenuOption(context.getString(res), selected, enabled, action)
         fun sort(value: AppInfoSort) { uiStore.accessControlSort = value; requests.trySend(Request.ReloadApps) }
         return listOf(
-            option(R.string.app_domestic_defaults, enabled = selectionEnabled) {
+            option(R.string.app_domestic_online_action, enabled = selectionEnabled) {
                 requests.trySend(Request.ApplyDomesticDefaults)
             },
             option(R.string.app_bulk_all, enabled = selectionEnabled) { requests.trySend(Request.SelectAll) },

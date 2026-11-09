@@ -172,17 +172,26 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             }
 
             // Access Control
-            when (store.accessControlMode) {
-                AccessControlMode.AcceptAll -> Unit
-                AccessControlMode.AcceptSelected -> {
-                    (store.accessControlPackages + packageName).forEach {
-                        runCatching { addAllowedApplication(it) }
+            // Remote Android package catalogs may contain thousands of packages,
+            // including apps not yet installed. Keep the full list in preferences
+            // for future installs, but submit only installed package IDs to the
+            // VPN builder (which otherwise performs thousands of failed lookups).
+            val mode = store.accessControlMode
+            if (mode != AccessControlMode.AcceptAll) {
+                val installed = packageManager.getInstalledPackages(0)
+                    .asSequence().map { it.packageName }.toSet()
+                when (mode) {
+                    AccessControlMode.AcceptSelected -> {
+                        ((store.accessControlPackages intersect installed) + packageName).forEach {
+                            runCatching { addAllowedApplication(it) }
+                        }
                     }
-                }
-                AccessControlMode.DenySelected -> {
-                    (store.accessControlPackages - packageName).forEach {
-                        runCatching { addDisallowedApplication(it) }
+                    AccessControlMode.DenySelected -> {
+                        (store.accessControlPackages intersect installed).asSequence()
+                            .filter { it != packageName }
+                            .forEach { runCatching { addDisallowedApplication(it) } }
                     }
+                    AccessControlMode.AcceptAll -> Unit
                 }
             }
 

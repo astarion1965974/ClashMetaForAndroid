@@ -71,4 +71,7 @@
     <string name="app_import_bypass">导入不经过 Clash 的应用</string>
     <string name="app_export_bypass">导出不经过 Clash 的应用</string>
     <string name="app_domestic_defaults">将常见国内应用设为不经过 Clash</string>
+    <string name="app_domestic_online_action">在线更新并应用国内应用名单</string>
+    <string name="app_domestic_online_result">已读取 GitHub 名单，%1$d 个应用默认不经过 Clash；点击保存后生效</string>
+    <string name="app_domestic_offline_result">在线更新失败，已采用内置名单（%1$d 个应用）；点击保存后生效</string>
 </resources>

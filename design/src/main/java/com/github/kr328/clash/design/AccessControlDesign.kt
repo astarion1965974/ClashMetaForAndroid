@@ -63,6 +63,10 @@ class AccessControlDesign(
 ) : Design<AccessControlDesign.Request>(context) {
     enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, ApplyDomesticDefaults, Import, Export, Save }
     private val original = selected.toSet()
+    // Activity persists a mutable set; Compose cannot observe its in-place changes.
+    // Keep an immutable, snapshot-backed copy for every row and dialog. The
+    // backing selected set remains the save/reconnect source of truth.
+    private var routingSelection by mutableStateOf(selected.toSet())
     private val originalMode = initialMode
     private val menu by lazy { AccessControlMenu(context, uiStore, requests) }
 
@@ -72,10 +76,11 @@ class AccessControlDesign(
         private set
     private var filteredApps by mutableStateOf<List<AppInfo>>(emptyList())
     val apps get() = filteredApps
-    val dirty get() = selected != original || mode != originalMode
+    val dirty get() = routingSelection != original || mode != originalMode
 
     private var loaded by mutableStateOf(false)
     private var savingState by mutableStateOf(false)
+    private var presetLoading by mutableStateOf(false)
     private var isRunning by mutableStateOf(running)
     private var keyword by mutableStateOf("")
     private var selectedOnly by mutableStateOf(false)
@@ -86,7 +91,7 @@ class AccessControlDesign(
     override val root: View = ComposeView(context).apply {
         setContent {
             version
-            val editable = !savingState
+            val editable = !savingState && !presetLoading
             ColorOsLazyFormPage(
                 title = stringResource(R.string.live_app_routing),
                 saveLabel = stringResource(when {
@@ -94,17 +99,17 @@ class AccessControlDesign(
                     isRunning -> R.string.route_save_reconnect
                     else -> R.string.route_save
                 }),
-                canSave = dirty && loaded && !savingState,
+                canSave = dirty && loaded && !savingState && !presetLoading,
                 saveInToolbar = true,
                 onBack = { context.colorOsNavigateBack() },
-                onSave = { if (dirty && loaded && !savingState) requests.trySend(Request.Save) },
+                onSave = { if (dirty && loaded && !savingState && !presetLoading) requests.trySend(Request.Save) },
             ) {
                 item(key = "app-filter-controls") {
                     AccessControls(
                         keyword = keyword,
                         bypassOnly = selectedOnly,
                         system = showSystem,
-                        enabled = !savingState,
+                        enabled = !savingState && !presetLoading,
                         onKeyword = { keyword = it; refresh() },
                         onBypassOnly = { selectedOnly = it; refresh() },
                         onSystem = {
@@ -117,8 +122,8 @@ class AccessControlDesign(
                 item(key = "app-list-actions") {
                     AppRoutingListHeader(
                         count = count,
-                        options = menu.options(!savingState),
-                        enabled = !savingState,
+                        options = menu.options(!savingState && !presetLoading),
+                        enabled = !savingState && !presetLoading,
                     )
                 }
                 if (filteredApps.isEmpty()) {
@@ -134,7 +139,12 @@ class AccessControlDesign(
                     }
                 } else {
                     itemsIndexed(filteredApps, key = { _, app -> app.packageName }) { index, app ->
-                        val through = AppAccessPolicy.usesClash(mode, app.packageName in selected)
+                        // Read observable state INSIDE this keyed LazyColumn item.
+                        // A plain MutableSet membership check would leave the
+                        // item skipped even though the toolbar had recomposed.
+                        val through = AppAccessPolicy.usesClash(
+                            mode, app.packageName in routingSelection,
+                        )
                         val route = stringResource(
                             if (through) R.string.app_via_clash else R.string.app_bypass,
                         )
@@ -149,6 +159,7 @@ class AccessControlDesign(
                                 Text(
                                     text = route, kind = CouiTextKind.PreferenceValue,
                                     color = CouiTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.testTag("app-routing-route-${app.packageName}"),
                                 )
                             },
                             grouped = true,
@@ -164,6 +175,7 @@ class AccessControlDesign(
     fun patchApps(apps: List<AppInfo>) { allApps = apps; loaded = true; refresh() }
     fun rebindAll() = refresh()
     fun setSaving(value: Boolean) { savingState = value; refresh() }
+    fun updatePresetLoading(value: Boolean) { presetLoading = value }
     fun updateRunning(value: Boolean) { isRunning = value }
 
     /** This option changes only one app. The legacy VPN mode is an internal storage detail. */
@@ -205,17 +217,27 @@ class AccessControlDesign(
         refresh()
     }
 
-    /** Explicit opt-in for existing users: change only curated domestic package IDs.
-     * Do not override any other app's effective route or silently migrate old modes.
+    /**
+     * Apply offline preset or an explicitly fetched provider snapshot.
+     * All updates are batch operations: a 3,000+ package rule source must
+     * NOT trigger thousands of Compose recompositions or O(n²) copies.
+     * Existing user-selected non-domestic routes are preserved.
      */
-    fun applyDomesticDefaults() {
+    fun applyDomesticDefaults(packages: Set<String> = DomesticAppDefaults.bypassPackages) {
         if (savingState) return
-        DomesticAppDefaults.bypassPackages.forEach { pkg ->
-            val next = AppAccessPolicy.withRouting(mode, selected, pkg, throughClash = false)
-            mode = next.mode
-            selected.clear()
-            selected.addAll(next.selected)
+        val safe = packages - context.packageName
+        when (mode) {
+            AccessControlMode.AcceptAll -> {
+                // Previously stored stale selected packages were inactive in
+                // AcceptAll; never re-enable them as bypass exceptions.
+                selected.clear()
+                selected.addAll(safe)
+                mode = AccessControlMode.DenySelected
+            }
+            AccessControlMode.AcceptSelected -> selected.removeAll(safe)
+            AccessControlMode.DenySelected -> selected.addAll(safe)
         }
+        restoreOriginalAllWhenReverted()
         refresh()
     }
 
@@ -247,7 +269,7 @@ class AccessControlDesign(
                             trailing = {
                                 RadioButton(
                                     selected = AppAccessPolicy.usesClash(
-                                        mode, app.packageName in selected,
+                                        mode, app.packageName in routingSelection,
                                     ) == through,
                                 )
                             },
@@ -260,15 +282,19 @@ class AccessControlDesign(
     }
 
     private fun refresh() {
+        // Publish a NEW immutable Set after every individual or batch change.
+        // This invalidates only rows whose route label depends on the snapshot,
+        // without forcing a full LazyColumn rebuild or losing scroll position.
+        routingSelection = selected.toSet()
         val query = keyword.trim()
         filteredApps = allApps.filter {
             (showSystem || !it.systemApp ||
-                (selectedOnly && !AppAccessPolicy.usesClash(mode, it.packageName in selected))) &&
-                (!selectedOnly || !AppAccessPolicy.usesClash(mode, it.packageName in selected)) &&
+                (selectedOnly && !AppAccessPolicy.usesClash(mode, it.packageName in routingSelection))) &&
+                (!selectedOnly || !AppAccessPolicy.usesClash(mode, it.packageName in routingSelection)) &&
                 (it.label.contains(query, true) || it.packageName.contains(query, true))
         }
         val bypassCount = allApps.count {
-            !AppAccessPolicy.usesClash(mode, it.packageName in selected)
+            !AppAccessPolicy.usesClash(mode, it.packageName in routingSelection)
         }
         count = context.getString(R.string.app_count, bypassCount, filteredApps.size)
         version++

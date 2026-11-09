@@ -14,11 +14,17 @@ import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.toAppInfo
 import com.github.kr328.clash.service.model.AppAccessPolicy
 import com.github.kr328.clash.service.model.AccessControlMode
+import com.github.kr328.clash.service.model.DomesticAppDefaults
+import com.github.kr328.clash.service.model.DomesticAppRuleSource
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.restartForRouting
 import com.github.kr328.clash.design.dialog.requestCouiConfirm
 import kotlinx.coroutines.*
 import kotlinx.coroutines.selects.select
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 
 class AccessControlActivity : BaseActivity<AccessControlDesign>() {
     private var saved = false
@@ -57,7 +63,29 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.SelectAll -> design.select(AppAccessPolicy.Selection.All)
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
-                        AccessControlDesign.Request.ApplyDomesticDefaults -> design.applyDomesticDefaults()
+                        AccessControlDesign.Request.ApplyDomesticDefaults -> {
+                            design.updatePresetLoading(true)
+                            try {
+                                val remote = try {
+                                    loadOnlineDomesticPackages()
+                                } catch (e: Exception) {
+                                    if (e is CancellationException) throw e
+                                    null
+                                }
+                                val packages = remote ?: DomesticAppDefaults.bypassPackages
+                                design.applyDomesticDefaults(packages)
+                                design.showToast(
+                                    getString(
+                                        if (remote == null) R.string.app_domestic_offline_result
+                                        else R.string.app_domestic_online_result,
+                                        packages.size,
+                                    ),
+                                    ToastDuration.Long,
+                                )
+                            } finally {
+                                design.updatePresetLoading(false)
+                            }
+                        }
                         AccessControlDesign.Request.Import -> {
                             val clip = getSystemService<ClipboardManager>()?.primaryClip
                             if (clip != null && clip.itemCount > 0) {
@@ -101,6 +129,41 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Optional user-initiated upstream sync. Never block VPN start or rewrite
+     * a saved policy automatically. Limit response bytes, network time and
+     * accepted rule syntax before touching the user's unsaved selections.
+     */
+    private suspend fun loadOnlineDomesticPackages(): Set<String> = withContext(Dispatchers.IO) {
+        val connection = (URL(DomesticAppRuleSource.URL).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10_000
+            readTimeout = 10_000
+            instanceFollowRedirects = false
+            setRequestProperty("Accept", "text/plain")
+            setRequestProperty("User-Agent", "ClashMetaLive-DomesticRules/1.0")
+        }
+        try {
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                throw IOException("Domestic app source returned HTTP ${connection.responseCode}")
+            }
+            val bytes = ByteArrayOutputStream()
+            connection.inputStream.use { input ->
+                val buffer = ByteArray(8_192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    if (bytes.size() + count > DomesticAppRuleSource.MAX_BYTES) {
+                        throw IOException("Domestic app rule response is too large")
+                    }
+                    bytes.write(buffer, 0, count)
+                }
+            }
+            DomesticAppRuleSource.parse(bytes.toString(Charsets.UTF_8.name()))
+        } finally {
+            connection.disconnect()
         }
     }
 
