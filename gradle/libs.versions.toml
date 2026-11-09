@@ -2,7 +2,7 @@
 agp = "9.4.1"
 kotlin = "2.4.20"
 ksp = "2.3.12"
-coui = "0.0.1-alpha7"
+coui = "0.0.1-alpha8"
 golang = "1.0.4"
 coroutine = "1.10.1"
 coreKtx = "1.8.0"
@@ -22,6 +22,7 @@ zxing = "3.5.3"
 
 [libraries]
 coui = { module = "io.github.itoseo:coui", version.ref = "coui" }
+coui-icons = { module = "io.github.itoseo:coui-icons", version.ref = "coui" }
 build-android = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 build-kotlin-common = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 build-kotlin-compose = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
