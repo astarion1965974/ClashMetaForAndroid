@@ -2,6 +2,9 @@ package com.github.kr328.clash.design.preference
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -15,9 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -55,6 +61,8 @@ internal fun NativeCouiAction(
     enabled: Boolean = true,
     @DrawableRes icon: Int? = null,
     navigation: Boolean = false,
+    trailingAction: (() -> Unit)? = null,
+    trailingDescription: String? = null,
     onClick: () -> Unit,
 ) {
     val colors = CouiPageDefaults.themeColors()
@@ -68,6 +76,23 @@ internal fun NativeCouiAction(
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         } },
         trailing = {
+            if (trailingAction != null) {
+                Box(
+                    Modifier.size(40.dp).clip(CircleShape)
+                        .clickable(role = Role.Button, onClick = trailingAction)
+                        .then(if (trailingDescription != null) Modifier.semantics {
+                            contentDescription = trailingDescription
+                        } else Modifier),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_baseline_replay),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        colorFilter = ColorFilter.tint(if (enabled) colors.summary else colors.disabled),
+                    )
+                }
+            }
             if (navigation) NativePreferenceChevron(enabled)
         },
     ) {
