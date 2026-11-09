@@ -64,6 +64,7 @@ import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.layout.CouiPageDefaults
@@ -120,8 +121,9 @@ class ProxyDesign(
                 key(name) { rememberLazyGridState() }
             }
             CouiTheme(darkTheme = dark) {
-                // One pinned opaque surface: exactly the native compact title color.
+                // One pinned opaque header; only native chip surfaces are glass.
                 val chromeSurface = CouiPageDefaults.themeColors().background
+                val tabsBackdrop = rememberCouiBackdrop()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -155,7 +157,7 @@ class ProxyDesign(
                         if (groupNames.isNotEmpty()) {
                             Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
                                 ProxyTabs(groupNames, selectedPage.coerceIn(groupNames.indices),
-                                    chromeSurface) { index ->
+                                    tabsBackdrop, chromeSurface) { index ->
                                     selectedPage = index
                                     uiStore.proxyLastGroup = groupNames[index]
                                 }
