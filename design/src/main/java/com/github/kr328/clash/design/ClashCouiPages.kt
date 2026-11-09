@@ -1,19 +1,9 @@
 package com.github.kr328.clash.design
 
-import android.os.Build
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,11 +22,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -54,15 +44,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -78,8 +65,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.github.kr328.clash.design.MainDesign.Request as HomeRequest
 import com.github.kr328.clash.design.SettingsDesign.Request as SettingsRequest
 import com.github.kr328.clash.design.util.resolveThemedBoolean
@@ -121,9 +106,12 @@ internal fun ClashHome(
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
 ) {
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scroll = rememberScrollState()
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { scroll.maxValue > 0 })
     ClashPage(
         scrollBehavior = scrollBehavior,
+        scrollState = scroll,
         topBar = {
             ColorOsLargeTopBar(
                 title = stringResource(R.string.application_name),
@@ -192,9 +180,12 @@ internal fun ClashSettings(
     onBack: () -> Unit,
     onRequest: (SettingsRequest) -> Unit,
 ) {
-    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scroll = rememberScrollState()
+    val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { scroll.maxValue > 0 })
     ClashPage(
         scrollBehavior = scrollBehavior,
+        scrollState = scroll,
         bottomBar = {
             PrimaryBottomBar(selected = 2, modifier = resourceName("settings_navigation")) { index ->
                 when (index) {
@@ -309,9 +300,12 @@ internal fun ClashPrimaryTabs(
     val profilesScroll = rememberLazyListState()
     val settingsScroll = rememberScrollState()
     // Keep the three large-title states independent while changing tabs.
-    val homeTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val profilesTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val settingsTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val homeTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { homeScroll.maxValue > 0 })
+    val profilesTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { profilesScroll.canScrollForward || profilesScroll.canScrollBackward })
+    val settingsTopBar = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { settingsScroll.maxValue > 0 })
     val activeTopBar = when (selected) {
         1 -> profilesTopBar
         2 -> settingsTopBar
@@ -380,6 +374,7 @@ internal fun ClashPrimaryTabs(
 private fun ClashPage(
     topBar: @Composable () -> Unit,
     scrollBehavior: CouiTopAppBarScrollBehavior? = null,
+    scrollState: ScrollState,
     bottomBar: @Composable () -> Unit = {},
     contentArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit,
@@ -387,7 +382,6 @@ private fun ClashPage(
     val context = LocalContext.current
     val density = LocalDensity.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-    val pageScroll = rememberScrollState()
     CouiTheme(darkTheme = dark) {
         Scaffold(
             modifier = Modifier.semantics { testTagsAsResourceId = true }
@@ -402,7 +396,7 @@ private fun ClashPage(
                     // Inset padding belongs INSIDE the scrolling content so
                     // the translucent toolbar and navigation sample real rows.
                     // Their separate Scaffold slots remain above the content.
-                    .couiVerticalScroll(pageScroll)
+                    .couiVerticalScroll(scrollState)
                     .padding(contentPadding)
                     .consumeWindowInsets(padding)
                     .padding(bottom = 16.dp),
