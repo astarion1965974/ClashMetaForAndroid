@@ -126,7 +126,7 @@ internal fun ClashHome(
                 title = stringResource(R.string.application_name),
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                    ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
                         onRequest(HomeRequest.OpenSettings)
                     }
                 },
@@ -206,7 +206,7 @@ internal fun ClashSettings(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     ToolbarIcon(
-                        icon = CouiIcons.Back,
+                        icon = CouiIcons.Filled.Back,
                         label = stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                         onClick = onBack,
                     )
@@ -313,7 +313,7 @@ internal fun ClashPrimaryTabs(
                     scrollBehavior = activeTopBar,
                     actions = {
                         when (selected) {
-                            0 -> ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                            0 -> ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
                                 onSelected(2)
                             }
                             1 -> profiles.PrimaryTabActions()
@@ -434,7 +434,7 @@ internal fun PrimaryBottomBar(
     val items = listOf(
         CouiNavigationItem(stringResource(R.string.coui_home_tab), home, homeSelected),
         CouiNavigationItem(stringResource(R.string.profiles), profiles, profilesSelected),
-        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Settings, settingsSelected),
+        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Filled.Setting, settingsSelected),
     )
     var selectedIndex by remember(selected) { mutableIntStateOf(selected) }
     val lifecycle = LocalView.current.findViewTreeLifecycleOwner()?.lifecycle
@@ -647,7 +647,7 @@ internal fun ColorOsSubPage(
                     title = title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        ToolbarIcon(CouiIcons.Back,
+                        ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack)
                     },
@@ -688,7 +688,7 @@ internal fun ColorOsLazySubPage(
                     title = title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        ToolbarIcon(CouiIcons.Back,
+                        ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack)
                     },
