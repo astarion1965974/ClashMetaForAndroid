@@ -46,7 +46,7 @@ internal fun ProxyTabs(
 ) {
     if (titles.isEmpty()) return
 
-     val renderers = remember(titles.size) {
+    val renderers = remember(titles.size) {
         runCatching { List(titles.size) { CouiFloatingRenderer.standalone() } }.getOrNull()
     }
     Box(
