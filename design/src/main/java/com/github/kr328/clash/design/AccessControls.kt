@@ -45,6 +45,7 @@ import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.layout.Item
 import com.itos.coui.layout.Group
 import com.itos.coui.layout.Divider
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.icons.CouiIcons
 import com.itos.coui.search.SearchBar
 import com.itos.coui.search.rememberCouiSearchBarState
@@ -119,7 +120,9 @@ internal fun AccessControls(
 private fun StableSearchField(keyword: String, enabled: Boolean, onKeyword: (String) -> Unit) {
     val colors = CouiTheme.colorScheme
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)
+        Modifier.fillMaxWidth()
+            .padding(horizontal = CouiPageDefaults.horizontalMargin, vertical = 8.dp)
+            .testTag("app-routing-search-container")
             .clip(RoundedCornerShape(14.dp)).background(colors.container)
             .heightIn(min = 52.dp).padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
