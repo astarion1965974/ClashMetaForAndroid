@@ -114,6 +114,23 @@ class LiveUiTest {
     private fun nodeWithResourceName(context: Context, name: String) =
         compose.onNodeWithTag("${context.packageName}:id/$name")
 
+    @Test fun proxyHeaderRemainsSolidAndGroupSelectorIsAccessible() {
+        for (dark in listOf(false, true)) {
+            val ctx = context(dark)
+            val groups = listOf("自动选择", "节点选择", "香港地区")
+            val design = ProxyDesign(ctx, null, groups, UiStore(ctx))
+            ctx.setContentView(design.root)
+            compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-tab-0").assertIsSelected()
+            compose.onNodeWithTag("proxy-tab-1").performClick().assertIsSelected()
+            compose.onNodeWithTag("proxy-tab-0").assertExists()
+            savePreview(compose.onRoot().captureToImage().asAndroidBitmap(),
+                if (dark) "proxy-fixed-header-dark" else "proxy-fixed-header-light")
+            ctx.setContentView(View(ctx))
+        }
+    }
+
     @Test fun dashboardShowsQuotaAndRealDnsResults() {
         val ctx = context(false)
         val design = MainDesign(ctx)
