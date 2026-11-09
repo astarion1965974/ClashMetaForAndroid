@@ -64,6 +64,8 @@ import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
+import com.itos.coui.backdrop.couiBackdrop
+import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.layout.CouiPageDefaults
@@ -122,13 +124,23 @@ class ProxyDesign(
             CouiTheme(darkTheme = dark) {
                 // One pinned opaque surface: exactly the native compact title color.
                 val chromeSurface = CouiPageDefaults.themeColors().background
+                val headerBackdrop = rememberCouiBackdrop(diagnosticName = "proxy-pinned-solid-header")
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        Column(Modifier.fillMaxWidth().background(chromeSurface).testTag("proxy-fixed-header")) {
+                        Box(Modifier.fillMaxWidth().background(chromeSurface).testTag("proxy-fixed-header")) {
+                            // A full-header, opaque sibling recorder prevents the
+                            // native TopAppBar gradient from sampling scrolling nodes.
+                            // It is also the only source for the chips' native glass.
+                            Box(Modifier.matchParentSize()
+                                .couiBackdrop(headerBackdrop)
+                                .background(chromeSurface)
+                                .testTag("proxy-header-solid-source"))
+                            Column(Modifier.fillMaxWidth()) {
                         ColorOsCompactTopBar(
                             title = stringResource(R.string.proxy),
                             backgroundColor = chromeSurface,
+                            backdrop = headerBackdrop,
                             navigationIcon = {
                                 ToolbarIcon(
                                     com.itos.coui.icons.CouiIcons.Filled.Back,
@@ -155,12 +167,13 @@ class ProxyDesign(
                         if (groupNames.isNotEmpty()) {
                             Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
                                 ProxyTabs(groupNames, selectedPage.coerceIn(groupNames.indices),
-                                    chromeSurface) { index ->
+                                    chromeSurface, headerBackdrop) { index ->
                                     selectedPage = index
                                     uiStore.proxyLastGroup = groupNames[index]
                                 }
                             }
                         }
+                            }
                         }
                     },
                 ) { padding ->
