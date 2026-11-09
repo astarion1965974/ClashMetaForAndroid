@@ -23,6 +23,9 @@ import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
+import com.github.kr328.clash.design.preference.NativeCouiSelect
+import com.github.kr328.clash.design.preference.NativeCouiAction
+import com.github.kr328.clash.design.preference.NativeCouiNullablePort
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.Profile
 import com.itos.coui.theme.CouiTheme
@@ -151,6 +154,57 @@ class CouiPreferenceTest {
         compose.onNodeWithContentDescription(activity.getString(R.string.more)).performClick()
         assertEquals(profile, menu)
         assertEquals(null, activated)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun nativeSettingsAccessoriesMatchAlpha8Demo() {
+        val activity = activity()
+        class Choice { var value = "mixed" }
+        val model = Choice()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    com.itos.coui.layout.Group {
+                        NativeCouiSelect(
+                            title = "TUN stack",
+                            value = model::value,
+                            values = listOf("system", "mixed"),
+                            labels = listOf("System", "Mixed"),
+                        )
+                        NativeCouiAction(title = "Mobile routing", navigation = true, onClick = {})
+                    }
+                }
+            }
+        })
+        compose.onNodeWithText("Mixed", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("coui-setting-chevron", useUnmergedTree = true)
+            .assertIsDisplayed()
+        val title = compose.onNodeWithText("TUN stack", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val value = compose.onNodeWithText("Mixed", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(value.left > title.left)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun nativeInputResetKeepsUnsetValueDistinctFromEmpty() {
+        val activity = activity()
+        class Model { var port: Int? = 7890 }
+        val model = Model()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    NativeCouiNullablePort(
+                        title = "Port",
+                        property = model::port,
+                        placeholder = "Do not modify",
+                        emptyLabel = "Disabled",
+                    )
+                }
+            }
+        })
+        compose.onNodeWithTag("coui-setting-reset", useUnmergedTree = true).performClick()
+        assertEquals(null, model.port)
         activity.setContentView(View(activity))
     }
 
