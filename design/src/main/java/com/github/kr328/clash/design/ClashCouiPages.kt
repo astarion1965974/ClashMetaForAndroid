@@ -2,6 +2,17 @@ package com.github.kr328.clash.design
 
 import android.util.Log
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.using
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.background
@@ -31,6 +42,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -336,24 +348,54 @@ internal fun ClashPrimaryTabs(
             val homePadding = homeTopBar.state.contentPadding(padding, density)
             val profilesPadding = profilesTopBar.state.contentPadding(padding, density)
             val settingsPadding = settingsTopBar.state.contentPadding(padding, density)
-            // Follow DemoApp: keep scroll/title state, switch only the active body.
-            // The native COUI NavigationBar owns its own transition.
-            when (selected) {
-                0 -> Column(
-                    Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
-                        .padding(homePadding).consumeWindowInsets(padding)
-                        .padding(bottom = CouiPageDefaults.groupSpacing),
+            // COUI keeps the toolbar and glass navigation stable. Animate only the
+            // owned tab body, with a rounded page surface during movement rather than
+            // cross-fading a full-screen rectangular texture.
+            val pageTransition = updateTransition(targetState=selected, label="coloros-primary-page")
+            val inMotion = pageTransition.currentState != pageTransition.targetState
+            pageTransition.AnimatedContent(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopStart,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    (slideInHorizontally(
+                        animationSpec = tween(durationMillis = 270),
+                        initialOffsetX = { width -> if (forward) width / 4 else -width / 4 },
+                    ) + fadeIn(animationSpec = tween(durationMillis = 190)))
+                        .togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 270),
+                                targetOffsetX = { width -> if (forward) -width / 5 else width / 5 },
+                            ) + fadeOut(animationSpec = tween(durationMillis = 150))
+                        ).using(SizeTransform(clip = false))
+                },
+            ) { page ->
+                Box(
+                    Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            clip = inMotion
+                            shape = RoundedCornerShape(26.dp)
+                        }
+                        .background(CouiPageDefaults.themeColors().background),
                 ) {
-                    HomeTabContent(running, paused, profileName, quota, dns,
-                        dnsLoading, mode, hasProviders, onHomeRequest)
-                }
-                1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
-                2 -> Column(
-                    Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
-                        .padding(settingsPadding).consumeWindowInsets(padding)
-                        .padding(bottom = CouiPageDefaults.groupSpacing),
-                ) {
-                    SettingsTabContent(onSettingsRequest)
+                    when (page) {
+                        0 -> Column(
+                            Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
+                                .padding(homePadding).consumeWindowInsets(padding)
+                                .padding(bottom = CouiPageDefaults.groupSpacing),
+                        ) {
+                            HomeTabContent(running, paused, profileName, quota, dns,
+                                dnsLoading, mode, hasProviders, onHomeRequest)
+                        }
+                        1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
+                        2 -> Column(
+                            Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
+                                .padding(settingsPadding).consumeWindowInsets(padding)
+                                .padding(bottom = CouiPageDefaults.groupSpacing),
+                        ) {
+                            SettingsTabContent(onSettingsRequest)
+                        }
+                    }
                 }
             }
         }
