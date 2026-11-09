@@ -59,7 +59,7 @@ jobs:
         working-directory: core/src/main/golang
         run: |
           overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
-          GOFLAGS="-overlay=$overlay" go test ./native/config -run TestDNSDiagnostic -count=1
+          GOFLAGS="-overlay=$overlay" go test ./native/diagnostic -run TestDNSDiagnostic -count=1
       - name: Compile and run UI, service and app JVM tests
         run: |
           ./gradlew --no-daemon --console=plain --max-workers=2 \

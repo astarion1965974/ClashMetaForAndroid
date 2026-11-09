@@ -57,7 +57,7 @@ jobs:
         working-directory: core/src/main/golang
         run: |
           overlay=$(python3 "$GITHUB_WORKSPACE/.github/scripts/mobile_core_overlay.py")
-          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile ./native/config -count=1
+          GOFLAGS="-overlay=$overlay" go test ./native/routing ./native/mobile ./native/diagnostic -count=1
       # Keep unit-test failures separate from shrinking/signing failures.
       - name: Run design, service and app JVM tests
         run: |
