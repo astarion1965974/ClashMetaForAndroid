@@ -137,42 +137,42 @@ class ProxyDesign(
                                 .background(chromeSurface)
                                 .testTag("proxy-header-solid-source"))
                             Column(Modifier.fillMaxWidth()) {
-                        ColorOsCompactTopBar(
-                            title = stringResource(R.string.proxy),
-                            backgroundColor = chromeSurface,
-                            backdrop = headerBackdrop,
-                            navigationIcon = {
-                                ToolbarIcon(
-                                    com.itos.coui.icons.CouiIcons.Filled.Back,
-                                    stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
-                                ) { context.colorOsNavigateBack() }
-                            },
-                            actions = {
-                                if (groupNames.isNotEmpty()) {
-                                    val testing = groups.getOrNull(selectedPage)?.testing == true
-                                    if (!testing) ToolbarIcon(
-                                        ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
-                                        stringResource(R.string.delay_test),
-                                    ) { requestUrlTesting() }
-                                }
-                                CouiAnchoredMenu(menu.options()) { open ->
+                            ColorOsCompactTopBar(
+                                title = stringResource(R.string.proxy),
+                                backgroundColor = chromeSurface,
+                                backdrop = headerBackdrop,
+                                navigationIcon = {
                                     ToolbarIcon(
-                                        ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
-                                        stringResource(R.string.more),
-                                        open,
-                                    )
-                                }
-                            },
-                        )
-                        if (groupNames.isNotEmpty()) {
-                            Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
-                                ProxyTabs(groupNames, selectedPage.coerceIn(groupNames.indices),
-                                    chromeSurface, headerBackdrop) { index ->
-                                    selectedPage = index
-                                    uiStore.proxyLastGroup = groupNames[index]
+                                        com.itos.coui.icons.CouiIcons.Filled.Back,
+                                        stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                                    ) { context.colorOsNavigateBack() }
+                                },
+                                actions = {
+                                    if (groupNames.isNotEmpty()) {
+                                        val testing = groups.getOrNull(selectedPage)?.testing == true
+                                        if (!testing) ToolbarIcon(
+                                            ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
+                                            stringResource(R.string.delay_test),
+                                        ) { requestUrlTesting() }
+                                    }
+                                    CouiAnchoredMenu(menu.options()) { open ->
+                                        ToolbarIcon(
+                                            ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
+                                            stringResource(R.string.more),
+                                            open,
+                                        )
+                                    }
+                                },
+                            )
+                            if (groupNames.isNotEmpty()) {
+                                Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
+                                    ProxyTabs(groupNames, selectedPage.coerceIn(groupNames.indices),
+                                        chromeSurface, headerBackdrop) { index ->
+                                        selectedPage = index
+                                        uiStore.proxyLastGroup = groupNames[index]
+                                    }
                                 }
                             }
-                        }
                             }
                         }
                     },
