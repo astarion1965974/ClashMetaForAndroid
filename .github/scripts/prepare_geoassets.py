@@ -134,12 +134,10 @@ def download_from_upstream(directory: Path) -> None:
                 request = urllib.request.Request(url, headers={"User-Agent": "ClashMetaLive-GeodataCache/1"})
                 with urllib.request.urlopen(request, timeout=90) as response, staged.open("wb") as target:
                     shutil.copyfileobj(response, target, 1024 * 1024)
-                if not sound_asset(staged):
-                    # Validate by logical asset name rather than .download suffix.
-                    if staged.stat().st_size <= 1024 or (
-                        name == "BundleMRS.7z" and staged.open("rb").read(6) != bytes.fromhex("377abcaf271c")
-                    ):
-                        raise ValueError(f"{name}: upstream payload is invalid")
+                with staged.open("rb") as source:
+                    valid_signature = name != "BundleMRS.7z" or source.read(6) == bytes.fromhex("377abcaf271c")
+                if staged.stat().st_size <= 1024 or not valid_signature:
+                    raise ValueError(f"{name}: upstream payload is invalid")
                 os.replace(staged, directory / name)
                 print(f"Fetched {name} from upstream (attempt {attempt})")
                 success = True
