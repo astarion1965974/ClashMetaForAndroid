@@ -64,7 +64,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
                         AccessControlDesign.Request.ApplyDomesticDefaults -> {
-                            design.setPresetLoading(true)
+                            design.updatePresetLoading(true)
                             try {
                                 val remote = try {
                                     loadOnlineDomesticPackages()
@@ -83,7 +83,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                                     ToastDuration.Long,
                                 )
                             } finally {
-                                design.setPresetLoading(false)
+                                design.updatePresetLoading(false)
                             }
                         }
                         AccessControlDesign.Request.Import -> {
