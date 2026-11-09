@@ -138,8 +138,8 @@ private val overseasSites = listOf(
     DnsWebsite("youtube.com", R.string.coui_dns_site_youtube, R.drawable.ic_dns_site_youtube, tint=Color(0xffFF0033)),
 )
 private val aiSites = listOf(
-    DnsWebsite("chatgpt.com", R.string.coui_dns_site_chatgpt, symbol="✳", tint=Color(0xff10A37F)),
-    DnsWebsite("grok.com", R.string.coui_dns_site_grok, symbol="G", tint=Color(0xff707989)),
+    DnsWebsite("chatgpt.com", R.string.coui_dns_site_chatgpt, R.drawable.ic_dns_site_chatgpt, tint=Color(0xff10A37F)),
+    DnsWebsite("grok.com", R.string.coui_dns_site_grok, R.drawable.ic_dns_site_grok, tint=Color(0xff707989)),
     DnsWebsite("claude.ai", R.string.coui_dns_site_claude, R.drawable.ic_dns_site_claude, tint=Color(0xffD97757)),
 )
 
