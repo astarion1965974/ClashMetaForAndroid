@@ -42,6 +42,7 @@ import com.itos.coui.theme.CouiTheme
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
+import com.github.kr328.clash.service.model.DomesticAppDefaults
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
@@ -60,7 +61,7 @@ class AccessControlDesign(
     initialMode: AccessControlMode,
     running: Boolean,
 ) : Design<AccessControlDesign.Request>(context) {
-    enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, Import, Export, Save }
+    enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, ApplyDomesticDefaults, Import, Export, Save }
     private val original = selected.toSet()
     private val originalMode = initialMode
     private val menu by lazy { AccessControlMenu(context, uiStore, requests) }
@@ -201,6 +202,20 @@ class AccessControlDesign(
             selected.addAll(next.selected)
         }
         restoreOriginalAllWhenReverted()
+        refresh()
+    }
+
+    /** Explicit opt-in for existing users: change only curated domestic package IDs.
+     * Do not override any other app's effective route or silently migrate old modes.
+     */
+    fun applyDomesticDefaults() {
+        if (savingState) return
+        DomesticAppDefaults.bypassPackages.forEach { pkg ->
+            val next = AppAccessPolicy.withRouting(mode, selected, pkg, throughClash = false)
+            mode = next.mode
+            selected.clear()
+            selected.addAll(next.selected)
+        }
         refresh()
     }
 
