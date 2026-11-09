@@ -151,30 +151,30 @@ class ProxyDesign(
                                     // gradient; its buttons still use native COUI glass.
                                     ProvideCouiBackdrop(headerBackdrop) {
                                         ColorOsCompactTopBar(
-                                        title = stringResource(R.string.proxy),
-                                        backgroundColor = Color.Transparent,
-                                        navigationIcon = {
-                                            ToolbarIcon(
-                                                com.itos.coui.icons.CouiIcons.Filled.Back,
-                                                stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
-                                            ) { context.colorOsNavigateBack() }
-                                        },
-                                        actions = {
-                                            if (groupNames.isNotEmpty()) {
-                                                val testing = groups.getOrNull(selectedPage)?.testing == true
-                                                if (!testing) ToolbarIcon(
-                                                    ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
-                                                    stringResource(R.string.delay_test),
-                                                ) { requestUrlTesting() }
-                                            }
-                                            CouiAnchoredMenu(menu.options()) { open ->
+                                            title = stringResource(R.string.proxy),
+                                            backgroundColor = Color.Transparent,
+                                            navigationIcon = {
                                                 ToolbarIcon(
-                                                    ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
-                                                    stringResource(R.string.more),
-                                                    open,
-                                                )
-                                            }
-                                        },
+                                                    com.itos.coui.icons.CouiIcons.Filled.Back,
+                                                    stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                                                ) { context.colorOsNavigateBack() }
+                                            },
+                                            actions = {
+                                                if (groupNames.isNotEmpty()) {
+                                                    val testing = groups.getOrNull(selectedPage)?.testing == true
+                                                    if (!testing) ToolbarIcon(
+                                                        ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
+                                                        stringResource(R.string.delay_test),
+                                                    ) { requestUrlTesting() }
+                                                }
+                                                CouiAnchoredMenu(menu.options()) { open ->
+                                                    ToolbarIcon(
+                                                        ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
+                                                        stringResource(R.string.more),
+                                                        open,
+                                                    )
+                                                }
+                                            },
                                         )
                                     }
                                 }
