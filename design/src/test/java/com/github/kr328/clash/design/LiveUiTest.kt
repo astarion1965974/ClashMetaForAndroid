@@ -451,8 +451,10 @@ class LiveUiTest {
         compose.onRoot().performTouchInput {
             swipeUp(startY = height * 0.74f, endY = height * 0.30f)
         }
-        val metric = compose.onAllNodesWithText("—")[1].getUnclippedBoundsInRoot()
+        val dnsTitle = compose.onNodeWithText(ctx.getString(R.string.coui_dns_title))
+            .performScrollTo().getUnclippedBoundsInRoot()
         val bottomBar = nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot()
-        assertTrue("The overview should scroll above the floating navigation", metric.bottom <= bottomBar.top)
+        assertTrue("The DNS diagnostic should scroll above the floating navigation",
+            dnsTitle.bottom <= bottomBar.top)
     }
 }
