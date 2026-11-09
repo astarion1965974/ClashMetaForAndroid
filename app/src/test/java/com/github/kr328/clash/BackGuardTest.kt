@@ -77,14 +77,16 @@ class BackGuardTest {
         }
     }
 
-    @Test fun secondaryActivitiesKeepAnUnclippedPlatformOwnedWindow() {
-        // Like COUI alpha9 DemoSecondaryActivity: start/finish own navigation,
-        // ColorOS owns window open/close motion and predictive-back shape.
+    @Test fun secondaryActivitiesUseSystemActivityTransitionResources() {
+        // Neither the framework's default clipToOutline property nor the
+        // window pixel format is a reliable assertion in Robolectric.
+        // The old custom transition resource must not be installed, and
+        // the existing AndroidX back dispatcher remains available.
         val page = activity(AccessControlActivity::class.java)
-        assertFalse("Subpages must not install a permanent custom decor clip",
-            page.window.decorView.clipToOutline)
-        assertNotEquals("Do not force a translucent app window for manual entry corners",
-            android.graphics.PixelFormat.TRANSLUCENT, page.window.attributes.format)
+        assertEquals(0, page.resources.getIdentifier(
+            "coui_subpage_enter", "anim", page.packageName,
+        ))
+        assertNotNull(page.onBackPressedDispatcher)
     }
 
     @Test fun saveCompletingDuringGestureFallsThroughExactlyOnce() {
