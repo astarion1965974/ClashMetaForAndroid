@@ -124,10 +124,18 @@ class LiveUiTest {
             ctx.setContentView(design.root)
             compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
             compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-chip-solid-host").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-header-solid-source").assertIsDisplayed()
+            val header = compose.onNodeWithTag("proxy-fixed-header").getUnclippedBoundsInRoot()
+            val tabs = compose.onNodeWithTag("proxy-group-tabs").getUnclippedBoundsInRoot()
+            assertTrue("ChipTabRow should be fully contained in the pinned toolbar",
+                tabs.top >= header.top && tabs.bottom <= header.bottom)
+            // Native alpha8 chips own selectable Tab semantics. The JVM-only
+            // renderer fallback provides the same semantics without custom tags.
             // UiStore may persist a different initial group across test cases.
-            compose.onNodeWithTag("proxy-tab-0").performClick().assertIsSelected()
-            compose.onNodeWithTag("proxy-tab-1").performClick().assertIsSelected()
-            compose.onNodeWithTag("proxy-tab-0").assertExists()
+            compose.onNodeWithText(groups[0]).performClick().assertIsSelected()
+            compose.onNodeWithText(groups[1]).performClick().assertIsSelected()
+            compose.onNodeWithText(groups[0]).assertExists()
             savePreview(compose.onRoot().captureToImage().asAndroidBitmap(),
                 if (dark) "proxy-fixed-header-dark" else "proxy-fixed-header-light")
             ctx.setContentView(View(ctx))
