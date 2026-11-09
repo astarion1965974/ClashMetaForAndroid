@@ -1,5 +1,6 @@
 package com.github.kr328.clash.util
 
+import android.app.Application
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -7,7 +8,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], application = Application::class)
 class NetworkPrivacyDiagnosticsTest {
     @Test fun parsesOfficialIppureRiskScoreWithoutInventingPurity() {
         val sample = """{"ip":"203.0.113.8","fraudScore":75,
