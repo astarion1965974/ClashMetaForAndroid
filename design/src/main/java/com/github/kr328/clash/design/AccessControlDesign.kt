@@ -175,7 +175,7 @@ class AccessControlDesign(
     fun patchApps(apps: List<AppInfo>) { allApps = apps; loaded = true; refresh() }
     fun rebindAll() = refresh()
     fun setSaving(value: Boolean) { savingState = value; refresh() }
-    fun setPresetLoading(value: Boolean) { presetLoading = value }
+    fun updatePresetLoading(value: Boolean) { presetLoading = value }
     fun updateRunning(value: Boolean) { isRunning = value }
 
     /** This option changes only one app. The legacy VPN mode is an internal storage detail. */
