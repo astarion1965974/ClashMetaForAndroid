@@ -42,7 +42,6 @@ import com.itos.coui.theme.CouiTheme
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
-import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
@@ -81,13 +80,11 @@ class AccessControlDesign(
     private var showSystem by mutableStateOf(uiStore.accessControlSystemApp)
     private var version by mutableStateOf(0)
     private var count by mutableStateOf("")
-    private var modeHint by mutableStateOf("")
-    private var modeLabel by mutableStateOf("")
 
     override val root: View = ComposeView(context).apply {
         setContent {
             version
-            val editable = !savingState && mode != AccessControlMode.AcceptAll
+            val editable = !savingState
             ColorOsLazyFormPage(
                 title = stringResource(R.string.live_app_routing),
                 saveLabel = stringResource(when {
@@ -102,10 +99,12 @@ class AccessControlDesign(
             ) {
                 item(key = "app-filter-controls") {
                     AccessControls(
-                        modeLabel, modeHint, keyword, selectedOnly, showSystem, !savingState,
-                        onMode = ::chooseMode,
+                        keyword = keyword,
+                        bypassOnly = selectedOnly,
+                        system = showSystem,
+                        enabled = !savingState,
                         onKeyword = { keyword = it; refresh() },
-                        onSelectedOnly = { selectedOnly = it; refresh() },
+                        onBypassOnly = { selectedOnly = it; refresh() },
                         onSystem = {
                             showSystem = it
                             uiStore.accessControlSystemApp = it
@@ -116,7 +115,7 @@ class AccessControlDesign(
                 item(key = "app-list-actions") {
                     AppRoutingListHeader(
                         count = count,
-                        options = menu.options(mode != AccessControlMode.AcceptAll),
+                        options = menu.options(!savingState),
                         enabled = !savingState,
                     )
                 }
@@ -133,24 +132,23 @@ class AccessControlDesign(
                     }
                 } else {
                     itemsIndexed(filteredApps, key = { _, app -> app.packageName }) { index, app ->
-                        val checked = app.packageName in selected
-                        val route = context.getString(
-                            if (AppAccessPolicy.usesClash(mode, checked)) R.string.app_via_clash
-                            else R.string.app_bypass,
+                        val through = AppAccessPolicy.usesClash(mode, app.packageName in selected)
+                        val route = stringResource(
+                            if (through) R.string.app_via_clash else R.string.app_bypass,
                         )
                         CouiPreferenceRow(
                             title = app.label,
-                            summary = "${app.packageName}\n$route",
+                            summary = app.packageName,
                             icon = app.icon,
                             iconSize = 40.dp,
                             enabled = editable,
-                            onClick = {
-                                if (editable) {
-                                    if (!selected.remove(app.packageName)) selected.add(app.packageName)
-                                    refresh()
-                                }
+                            onClick = { if (editable) chooseAppRoute(app) },
+                            trailing = {
+                                Text(
+                                    text = route, kind = CouiTextKind.PreferenceValue,
+                                    color = CouiTheme.colorScheme.onSurfaceVariant,
+                                )
                             },
-                            trailing = { Checkbox(checked = checked, enabled = editable) },
                             grouped = true,
                             firstInGroup = index == 0,
                             lastInGroup = index == filteredApps.lastIndex,
@@ -165,56 +163,100 @@ class AccessControlDesign(
     fun rebindAll() = refresh()
     fun setSaving(value: Boolean) { savingState = value; refresh() }
     fun updateRunning(value: Boolean) { isRunning = value }
-    fun select(action: AppAccessPolicy.Selection) {
-        if (mode == AccessControlMode.AcceptAll || savingState) return
-        val result = AppAccessPolicy.select(
-            selected, apps.map { it.packageName }.toSet(), action,
-        )
+
+    /** This option changes only one app. The legacy VPN mode is an internal storage detail. */
+    fun setAppRouting(packageName: String, throughClash: Boolean) {
+        if (savingState) return
+        val next = AppAccessPolicy.withRouting(mode, selected, packageName, throughClash)
+        mode = next.mode
         selected.clear()
-        selected.addAll(result)
+        selected.addAll(next.selected)
+        restoreOriginalAllWhenReverted()
         refresh()
+    }
+
+    private fun restoreOriginalAllWhenReverted() {
+        if (originalMode == AccessControlMode.AcceptAll &&
+            mode == AccessControlMode.DenySelected && selected.isEmpty()) {
+            mode = originalMode
+            selected.addAll(original)
+        }
+    }
+
+    /** Bulk operations apply to effective routes, not legacy set membership. */
+    fun select(action: AppAccessPolicy.Selection) {
+        if (savingState) return
+        val visible = apps.map { it.packageName }.toList()
+        visible.forEach { pkg ->
+            val wasThrough = AppAccessPolicy.usesClash(mode, pkg in selected)
+            val through = when (action) {
+                AppAccessPolicy.Selection.All -> true
+                AppAccessPolicy.Selection.None -> false
+                AppAccessPolicy.Selection.Invert -> !wasThrough
+            }
+            val next = AppAccessPolicy.withRouting(mode, selected, pkg, through)
+            mode = next.mode
+            selected.clear()
+            selected.addAll(next.selected)
+        }
+        restoreOriginalAllWhenReverted()
+        refresh()
+    }
+
+    /** Clipboard import is an explicit bypass list, independent of legacy mode. */
+    fun replaceBypassApps(packages: Set<String>) {
+        if (savingState) return
+        mode = AccessControlMode.DenySelected
+        selected.clear()
+        selected.addAll(packages)
+        restoreOriginalAllWhenReverted()
+        refresh()
+    }
+
+    private fun chooseAppRoute(app: AppInfo) {
+        if (savingState) return
+        context.showCouiContent { dismiss ->
+            Dialog(
+                onDismissRequest = dismiss,
+                title = app.label.toString(),
+                confirmAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+            ) {
+                listOf(true to R.string.app_via_clash, false to R.string.app_bypass)
+                    .forEach { (through, label) ->
+                        Item(
+                            onClick = {
+                                setAppRouting(app.packageName, through)
+                                dismiss()
+                            },
+                            trailing = {
+                                RadioButton(
+                                    selected = AppAccessPolicy.usesClash(
+                                        mode, app.packageName in selected,
+                                    ) == through,
+                                )
+                            },
+                        ) {
+                            Text(text = context.getString(label), kind = CouiTextKind.PreferenceTitle)
+                        }
+                    }
+            }
+        }
     }
 
     private fun refresh() {
         val query = keyword.trim()
-        val selectedSet = selected.toSet()
         filteredApps = allApps.filter {
-            (showSystem || !it.systemApp || (selectedOnly && it.packageName in selectedSet)) &&
-                (!selectedOnly || it.packageName in selectedSet) &&
+            (showSystem || !it.systemApp ||
+                (selectedOnly && !AppAccessPolicy.usesClash(mode, it.packageName in selected))) &&
+                (!selectedOnly || !AppAccessPolicy.usesClash(mode, it.packageName in selected)) &&
                 (it.label.contains(query, true) || it.packageName.contains(query, true))
         }
-        count = context.getString(R.string.app_count, selected.size, filteredApps.size)
-        modeHint = context.getString(when (mode) {
-            AccessControlMode.AcceptAll -> R.string.app_hint_all
-            AccessControlMode.AcceptSelected -> R.string.app_hint_allow
-            AccessControlMode.DenySelected -> R.string.app_hint_bypass
-        })
-        modeLabel = context.getString(when (mode) {
-            AccessControlMode.AcceptAll -> R.string.app_mode_all
-            AccessControlMode.AcceptSelected -> R.string.app_mode_allow
-            AccessControlMode.DenySelected -> R.string.app_mode_bypass
-        })
+        val bypassCount = allApps.count {
+            !AppAccessPolicy.usesClash(mode, it.packageName in selected)
+        }
+        count = context.getString(R.string.app_count, bypassCount, filteredApps.size)
         version++
         onBackStateChanged()
-    }
-
-    private fun chooseMode() {
-        if (savingState) return
-        val labels = listOf(R.string.app_mode_all, R.string.app_mode_allow, R.string.app_mode_bypass)
-        context.showCouiContent { dismiss ->
-            Dialog(
-                onDismissRequest = dismiss,
-                title = context.getString(R.string.access_control_mode),
-                confirmAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
-            ) {
-                labels.forEachIndexed { index, label ->
-                    Item(
-                        onClick = { mode = AccessControlMode.values()[index]; dismiss(); refresh() },
-                        trailing = { RadioButton(selected = mode.ordinal == index) },
-                    ) { Text(text = context.getString(label), kind = CouiTextKind.PreferenceTitle) }
-                }
-            }
-        }
     }
 
     init { refresh() }

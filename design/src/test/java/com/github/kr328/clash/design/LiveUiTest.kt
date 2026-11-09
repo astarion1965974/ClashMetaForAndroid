@@ -279,7 +279,7 @@ class LiveUiTest {
         assertEquals(SettingsDesign.Request.OpenAbout, design.requests.tryReceive().getOrNull())
     }
 
-    @Test fun appRoutingPreservesSelectionAndSaveState() {
+    @Test fun appRoutingPreservesLegacyPolicyAndExplicitSaveState() {
         val ctx = context(true)
         ctx.title = ctx.getString(R.string.live_app_routing)
         val selected = mutableSetOf("org.example.chat")
@@ -291,38 +291,62 @@ class LiveUiTest {
         ))
         render(design.root, "apps-dark")
         assertFalse(design.dirty)
-        assertTrue(selected.contains("org.example.chat"))
         compose.onNodeWithTag("app-routing-save").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
+        compose.onNodeWithTag("app-routing-search-and-filters").assertIsDisplayed()
         compose.onNodeWithTag("app-routing-bulk-action").assertIsDisplayed()
-        compose.onNodeWithText("浏览器").performClick()
+        compose.onNodeWithText(ctx.getString(R.string.access_control_mode)).assertDoesNotExist()
+        assertTrue(selected.contains("org.example.chat"))
+        // The public policy setter is used by each of the two native Dialog choices.
+        design.setAppRouting("org.example.browser", throughClash = true)
         assertTrue(selected.contains("org.example.browser"))
+        assertEquals(AccessControlMode.AcceptSelected, design.mode)
         assertTrue(design.dirty)
         compose.onNodeWithTag("app-routing-save").assertIsEnabled().performClick()
         assertEquals(AccessControlDesign.Request.Save, design.requests.tryReceive().getOrNull())
-        // Reverting the selection must return the native save button to grey/disabled.
-        compose.onNodeWithText("浏览器").performClick()
+        design.setAppRouting("org.example.browser", throughClash = false)
         assertFalse(design.dirty)
         compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
     }
 
-    @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {
+    @Test fun appRoutingAcceptAllBypassPreservesOtherAppsAndCanRevert() {
+        val ctx = context(false)
+        val selected = mutableSetOf("old-ignored-rule")
+        val design = AccessControlDesign(ctx, UiStore(ctx), selected, AccessControlMode.AcceptAll, true)
+        design.patchApps(listOf(
+            AppInfo("org.example.chat", "聊天应用", android.graphics.drawable.ColorDrawable(0xff5e6ad2.toInt()), 0, 0),
+            AppInfo("org.example.browser", "浏览器", android.graphics.drawable.ColorDrawable(0xff268c66.toInt()), 0, 0)
+        ))
+        render(design.root, "apps-acceptall-light")
+        compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
+        design.setAppRouting("org.example.browser", throughClash = false)
+        assertEquals(AccessControlMode.DenySelected, design.mode)
+        assertEquals(setOf("org.example.browser"), selected)
+        compose.onNodeWithTag("app-routing-save").assertIsEnabled()
+        design.setAppRouting("org.example.browser", throughClash = true)
+        assertEquals(AccessControlMode.AcceptAll, design.mode)
+        assertEquals(setOf("old-ignored-rule"), selected)
+        assertFalse(design.dirty)
+        compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
+    }
+
+    @Test fun ruleSettingsUseTheSameNativeToolbarSaveInBothThemes() {
         for (dark in listOf(false, true)) {
             val ctx = context(dark)
             ctx.title = ctx.getString(R.string.live_rules)
-            val design = ManagedRoutingDesign(ctx, ManagedRoutingSettings(), listOf("自动选择", "香港节点"), false)
+            val settings = ManagedRoutingSettings()
+            val design = ManagedRoutingDesign(ctx, settings, listOf("自动选择", "香港节点"), false)
             render(design.root, if (dark) "rules-dark" else "rules-light")
             assertFalse(design.dirty)
-            compose.waitForIdle()
-            // The COUI text may appear in merged and unmerged semantics, or in
-            // multiple attached Robolectric Activity roots. Assert that the
-            // current screen exposes a save label without requiring uniqueness.
-            assertTrue(
-                "Native COUI Save action should remain reachable",
-                compose.onAllNodesWithText(
-                    ctx.getString(R.string.route_save), useUnmergedTree = true,
-                ).fetchSemanticsNodes().isNotEmpty(),
-            )
+            compose.onNodeWithTag("app-routing-save").assertIsDisplayed().assertIsNotEnabled()
+            compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
+            settings.enabled = !settings.enabled
+            design.setSaving(false) // update the native compose surface after a model change
+            assertTrue(design.dirty)
+            compose.onNodeWithTag("app-routing-save").assertIsEnabled().performClick()
+            assertEquals(ManagedRoutingDesign.Request.Save, design.requests.tryReceive().getOrNull())
+            design.setSaving(true)
+            compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
             ctx.setContentView(View(ctx))
             compose.waitForIdle()
         }
@@ -336,7 +360,7 @@ class LiveUiTest {
         // No obsolete fixed bottom save bar may overlap the small landscape viewport.
         compose.onNodeWithTag("app-routing-save").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
-        compose.onNodeWithText(ctx.getString(R.string.app_mode_bypass)).assertIsDisplayed()
+        compose.onNodeWithText(ctx.getString(R.string.app_selected_only)).assertIsDisplayed()
     }
 
     @Test fun primaryTabsKeepOneCOUINavigationAndSwitchWithinHost() {

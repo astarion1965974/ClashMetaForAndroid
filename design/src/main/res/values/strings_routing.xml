@@ -9,16 +9,16 @@
     <string name="app_hint_allow">勾选的应用交给 Clash，未勾选的应用走系统网络。</string>
     <string name="app_hint_bypass">勾选的应用走系统网络，其余应用交给 Clash。</string>
     <string name="app_search">搜索应用名称或包名</string>
-    <string name="app_selected_only">只看已选</string>
+    <string name="app_selected_only">只看不经过 Clash</string>
     <string name="app_system">显示系统应用</string>
-    <string name="app_count">已选 %1$d 个 · 当前显示 %2$d 个</string>
+    <string name="app_count">不经过 Clash %1$d 个 · 显示 %2$d 个</string>
     <string name="app_empty">没有匹配的应用，试试清空搜索或调整筛选</string>
     <string name="app_loading">正在读取已安装的应用…</string>
-    <string name="app_via_clash">经 Clash 规则处理</string>
-    <string name="app_bypass">绕过本机 Clash</string>
-    <string name="app_bulk_all">选择当前结果</string>
-    <string name="app_bulk_none">取消选择当前结果</string>
-    <string name="app_bulk_invert">反选当前结果</string>
+    <string name="app_via_clash">经过 Clash</string>
+    <string name="app_bypass">不经过 Clash</string>
+    <string name="app_bulk_all">当前结果全部经过 Clash</string>
+    <string name="app_bulk_none">当前结果全部不经过 Clash</string>
+    <string name="app_bulk_invert">反转当前结果的分流方式</string>
     <string name="route_save">保存</string>
     <string name="route_save_reconnect">保存并重连</string>
     <string name="route_saving">正在保存…</string>
@@ -68,4 +68,6 @@
     <string name="managed_exception_count">%1$d 个域名</string>
     <string name="managed_status_unloaded">当前尚未加载托管规则；保存并启动后生效。</string>
     <string name="managed_status_loaded">当前加载 %1$d 个规则集 · 缓存时间：%2$s</string>
+    <string name="app_import_bypass">导入不经过 Clash 的应用</string>
+    <string name="app_export_bypass">导出不经过 Clash 的应用</string>
 </resources>

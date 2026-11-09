@@ -1,5 +1,7 @@
 package com.github.kr328.clash.design
 
+import android.graphics.BlendMode
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,9 +45,6 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.itos.coui.icons.CouiIcons
 import com.itos.coui.effect.CouiFloatingRenderer
-import com.itos.coui.effect.LocalCouiContourGlowEnabled
-import com.itos.coui.floatingactionbutton.CouiFabColor
-import com.itos.coui.floatingactionbutton.CouiFabDefaults
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.shape.CouiCapsuleShape
@@ -109,9 +108,10 @@ internal fun ColorOsSaveAction(
     }
 }
 
-/** Native ColorOS 17 top-right save control for application routing only.
- * Uses alpha9's actual floating toolbar surface, rather than a tinted custom circle.
- * Its material is grey and disabled until the form is dirty and loaded, then blue.
+/** A single native COUI alpha9 40dp top-right Save/Save & Reconnect control.
+ * No changed fields: neutral translucent toolbar glass, disabled; changed fields:
+ * light-blue solid glass and navy icon. Use toolbar shadow/spotlight geometry,
+ * NOT the FAB's oversized blue shadow (which caused the previous halo artifact).
  */
 @Composable
 internal fun ColorOsToolbarSaveAction(
@@ -122,10 +122,8 @@ internal fun ColorOsToolbarSaveAction(
     val dark = CouiTheme.isDark
     val colors = CouiTheme.colorScheme
     val density = LocalDensity.current.density
-    val contour = LocalCouiContourGlowEnabled.current
-    val blue = CouiFabDefaults.containerColor(CouiFabColor.InfraredRemote, dark)
-    val disabledGrey = if (dark) Color(0xFF454950) else Color(0xFFDADDE2)
-    val fill = if (enabled) blue else disabledGrey
+    val blue = if (dark) Color(0xFF9BD5FF) else Color(0xFFC3E6FF)
+    val foreground = if (dark) Color(0xFF153E65) else Color(0xFF185A91)
     val renderer = remember { runCatching { CouiFloatingRenderer.standalone() }.getOrNull() }
     val icon = ImageVector.vectorResource(R.drawable.ic_baseline_save)
     if (renderer != null) {
@@ -135,9 +133,28 @@ internal fun ColorOsToolbarSaveAction(
             enabled = enabled,
             renderer = renderer,
             style = CouiTopAppBarButtonDefaults.style(dark).copy(
-                contentColor = if (enabled) Color.White else colors.onSurfaceVariant,
-                material = { CouiFabDefaults.material(fill, dark) },
-                shadow = { CouiFabDefaults.shadow(fill, density, contour) },
+                contentColor = if (enabled) foreground else colors.onSurfaceVariant,
+                material = { capsule ->
+                    if (enabled) {
+                        CouiTopAppBarButtonDefaults.systemMaterial(dark, capsule).copy(
+                            firstColor = blue,
+                            firstBlendMode = BlendMode.SRC_OVER,
+                            secondColor = Color(0x15FFFFFF),
+                            secondBlendMode = BlendMode.OVERLAY,
+                            blurRadius = 0f,
+                            edgeAlpha = 0.16f,
+                            innerGlowAlpha = 0.08f,
+                        )
+                    } else {
+                        CouiTopAppBarButtonDefaults.material(dark, capsule)
+                    }
+                },
+                shadow = { capsule ->
+                    CouiTopAppBarButtonDefaults.shadow(
+                        dark, capsule, density, contour = false,
+                        alphaScale = if (enabled) 0.42f else 0.28f,
+                    )
+                },
             ),
         ) {
             Image(
@@ -148,9 +165,10 @@ internal fun ColorOsToolbarSaveAction(
             )
         }
     } else {
-        // Off-device Robolectric fallback only; ColorOS 17 uses TopAppBarButton.
+        // Deterministic headless preview only; ColorOS 17 renders native light.
         Box(
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(fill)
+            modifier = Modifier.size(40.dp).clip(CircleShape)
+                .background(if (enabled) blue else Color.Transparent)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .testTag("app-routing-save"),
             contentAlignment = Alignment.Center,
@@ -158,7 +176,7 @@ internal fun ColorOsToolbarSaveAction(
             Image(
                 imageVector = icon, contentDescription = label,
                 modifier = Modifier.size(24.dp),
-                colorFilter = ColorFilter.tint(if (enabled) Color.White else colors.onSurfaceVariant),
+                colorFilter = ColorFilter.tint(if (enabled) foreground else colors.onSurfaceVariant),
             )
         }
     }
@@ -172,6 +190,7 @@ internal fun ColorOsFormPage(
     canSave: Boolean,
     onBack: () -> Unit,
     onSave: () -> Unit,
+    saveInToolbar: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val context = LocalContext.current
@@ -190,10 +209,17 @@ internal fun ColorOsFormPage(
                             onBack,
                         )
                     },
+                    actions = {
+                        if (saveInToolbar) {
+                            ColorOsToolbarSaveAction(
+                                label = saveLabel, enabled = canSave, onClick = onSave,
+                            )
+                        }
+                    },
                 )
             },
             bottomBar = {
-                ColorOsSaveAction(label = saveLabel, enabled = canSave, onClick = onSave)
+                if (!saveInToolbar) ColorOsSaveAction(label = saveLabel, enabled = canSave, onClick = onSave)
             },
         ) { padding ->
             val scrollPadding = padding
