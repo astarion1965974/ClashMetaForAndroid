@@ -295,6 +295,12 @@ class LiveUiTest {
         compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
         compose.onNodeWithTag("app-routing-search-and-filters").assertIsDisplayed()
         compose.onNodeWithTag("app-routing-bulk-action").assertIsDisplayed()
+        // Search capsule and app-count label must share one 16dp leading edge;
+        // no duplicated 32dp Group-title inset or custom 12dp search inset.
+        val search = compose.onNodeWithTag("app-routing-search-container").getUnclippedBoundsInRoot()
+        val count = compose.onNodeWithTag("app-routing-count-label").getUnclippedBoundsInRoot()
+        assertEquals("App-count label must align with search and card outer margins",
+            search.left, count.left, 1f)
         compose.onNodeWithText(ctx.getString(R.string.access_control_mode)).assertDoesNotExist()
         assertTrue(selected.contains("org.example.chat"))
         // The public policy setter is used by each of the two native Dialog choices.
@@ -328,6 +334,28 @@ class LiveUiTest {
         assertEquals(setOf("old-ignored-rule"), selected)
         assertFalse(design.dirty)
         compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
+    }
+
+    @Test fun existingPolicyDomesticPresetOnlyChangesKnownApps() {
+        val ctx = context(false)
+        val selected = mutableSetOf("com.openai.chatgpt", "com.tencent.mm")
+        val design = AccessControlDesign(
+            ctx, UiStore(ctx), selected, AccessControlMode.AcceptSelected, true,
+        )
+        design.patchApps(listOf(
+            AppInfo("com.openai.chatgpt", "ChatGPT",
+                android.graphics.drawable.ColorDrawable(0xff5e6ad2.toInt()), 0, 0),
+            AppInfo("com.tencent.mm", "微信",
+                android.graphics.drawable.ColorDrawable(0xff268c66.toInt()), 0, 0),
+        ))
+        render(design.root, "apps-domestic-default")
+        assertFalse(design.dirty)
+        design.applyDomesticDefaults()
+        assertEquals(AccessControlMode.AcceptSelected, design.mode)
+        assertTrue(selected.contains("com.openai.chatgpt"))
+        assertFalse(selected.contains("com.tencent.mm"))
+        assertTrue(design.dirty)
+        compose.onNodeWithTag("app-routing-save").assertIsEnabled()
     }
 
     @Test fun ruleSettingsUseTheSameNativeToolbarSaveInBothThemes() {
