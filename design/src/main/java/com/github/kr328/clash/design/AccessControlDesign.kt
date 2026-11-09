@@ -46,6 +46,7 @@ import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
 import com.itos.coui.layout.Group
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
@@ -269,8 +270,17 @@ class AccessControlDesign(
 private fun AppRoutingListHeader(count: String, options: List<CouiMenuOption>, enabled: Boolean) {
     val colors = CouiTheme.colorScheme
     val source = remember { MutableInteractionSource() }
+    // Align count label, native SearchBar, filters and app cards to the
+    // same 16dp outer column; do not use Group's 32dp title inset here.
     Row(
-        Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+        Modifier.fillMaxWidth()
+            .padding(
+                start = CouiPageDefaults.horizontalMargin,
+                end = CouiPageDefaults.horizontalMargin,
+                top = CouiPageDefaults.groupSpacing,
+                bottom = 8.dp,
+            )
+            .testTag("app-routing-count-header"),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -278,7 +288,7 @@ private fun AppRoutingListHeader(count: String, options: List<CouiMenuOption>, e
             text = count,
             kind = CouiTextKind.GroupTitle,
             color = colors.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("app-routing-count-label"),
         )
         CouiAnchoredMenu(options) { open ->
             Box(
