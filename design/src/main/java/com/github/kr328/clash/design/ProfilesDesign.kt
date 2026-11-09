@@ -90,7 +90,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
                             scrollBehavior = behavior,
                             navigationIcon = {
                                 ToolbarIcon(
-                                    CouiIcons.Back,
+                                    CouiIcons.Filled.Back,
                                     context.getString(androidx.appcompat.R.string.abc_action_bar_up_description),
                                 ) {
                                     context.colorOsNavigateBack()
