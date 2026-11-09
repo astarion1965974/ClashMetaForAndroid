@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
@@ -143,42 +144,45 @@ class ProxyDesign(
                                     .testTag("proxy-header-solid-source"),
                             )
                             Column(Modifier.fillMaxWidth()) {
-                                // TopAppBar otherwise inherits Scaffold's BODY backdrop
-                                // and blurs nodes behind its compact title.
-                                ProvideCouiBackdrop(headerBackdrop) {
-                                    ColorOsCompactTopBar(
-                                        title = stringResource(R.string.proxy),
-                                        backgroundColor = chromeSurface,
-                                        navigationIcon = {
-                                            ToolbarIcon(
-                                                com.itos.coui.icons.CouiIcons.Filled.Back,
-                                                stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
-                                            ) { context.colorOsNavigateBack() }
-                                        },
-                                        actions = {
-                                            if (groupNames.isNotEmpty()) {
-                                                val testing = groups.getOrNull(selectedPage)?.testing == true
-                                                if (!testing) ToolbarIcon(
-                                                    ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
-                                                    stringResource(R.string.delay_test),
-                                                ) { requestUrlTesting() }
-                                            }
-                                            CouiAnchoredMenu(menu.options()) { open ->
+                                // This title and the native ChipTabRow must be vertically
+                                // adjacent without an intermediate spacer or material seam.
+                                Box(Modifier.fillMaxWidth().testTag("proxy-title-bar")) {
+                                    // Transparent removes TopAppBar's independent tint
+                                    // gradient; its buttons still use native COUI glass.
+                                    ProvideCouiBackdrop(headerBackdrop) {
+                                        ColorOsCompactTopBar(
+                                            title = stringResource(R.string.proxy),
+                                            backgroundColor = Color.Transparent,
+                                            navigationIcon = {
                                                 ToolbarIcon(
-                                                    ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
-                                                    stringResource(R.string.more),
-                                                    open,
-                                                )
-                                            }
-                                        },
-                                    )
+                                                    com.itos.coui.icons.CouiIcons.Filled.Back,
+                                                    stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                                                ) { context.colorOsNavigateBack() }
+                                            },
+                                            actions = {
+                                                if (groupNames.isNotEmpty()) {
+                                                    val testing = groups.getOrNull(selectedPage)?.testing == true
+                                                    if (!testing) ToolbarIcon(
+                                                        ImageVector.vectorResource(R.drawable.ic_baseline_flash_on),
+                                                        stringResource(R.string.delay_test),
+                                                    ) { requestUrlTesting() }
+                                                }
+                                                CouiAnchoredMenu(menu.options()) { open ->
+                                                    ToolbarIcon(
+                                                        ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
+                                                        stringResource(R.string.more),
+                                                        open,
+                                                    )
+                                                }
+                                            },
+                                        )
+                                    }
                                 }
                                 if (groupNames.isNotEmpty()) {
                                     Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
                                         ProxyTabs(
                                             titles = groupNames,
                                             selected = selectedPage.coerceIn(groupNames.indices),
-                                            backgroundColor = chromeSurface,
                                             backdrop = headerBackdrop,
                                         ) { index ->
                                             selectedPage = index

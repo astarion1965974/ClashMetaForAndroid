@@ -30,7 +30,7 @@ import com.itos.coui.theme.CouiTheme
 
 /**
  * ColorOS calendar-style pinned group selector: the compact toolbar and this
- * row have the same opaque host color, but the chips retain native COUI alpha8
+ * row share a single opaque host surface, but the chips retain native COUI alpha9
  * glass, selection springs, shadows, horizontal fling and auto-reveal.
  *
  * The shared backdrop is provided by ProxyDesign's full-height opaque sibling
@@ -40,7 +40,6 @@ import com.itos.coui.theme.CouiTheme
 internal fun ProxyTabs(
     titles: List<String>,
     selected: Int,
-    backgroundColor: Color,
     backdrop: CouiBackdrop,
     onSelect: (Int) -> Unit,
 ) {
@@ -49,15 +48,11 @@ internal fun ProxyTabs(
     val renderers = remember(titles.size) {
         runCatching { List(titles.size) { CouiFloatingRenderer.standalone() } }.getOrNull()
     }
-    Box(
-        modifier = Modifier.fillMaxWidth()
-            .background(backgroundColor)
-            .testTag("proxy-chip-solid-host"),
-    ) {
+    Box(Modifier.fillMaxWidth().testTag("proxy-chip-solid-host")) {
         if (renderers != null) {
             ChipTabRow(
                 modifier = Modifier.fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 12.dp)
+                    .padding(top = 0.dp, bottom = 8.dp)
                     .testTag("proxy-native-chip-row"),
                 items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },
                 selectedKey = selected.coerceIn(titles.indices),
@@ -76,8 +71,8 @@ internal fun ProxyTabs(
                     .padding(
                         start = CouiPageDefaults.horizontalMargin,
                         end = CouiPageDefaults.horizontalMargin,
-                        top = 8.dp,
-                        bottom = 12.dp,
+                        top = 0.dp,
+                        bottom = 8.dp,
                     )
                     .testTag("proxy-chip-headless-fallback"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

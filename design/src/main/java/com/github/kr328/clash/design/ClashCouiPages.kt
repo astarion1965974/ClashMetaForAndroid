@@ -128,7 +128,7 @@ internal fun ClashHome(
                 title = stringResource(R.string.coui_home_header),
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
+                    ToolbarIcon(CouiIcons.Filled.SettingDetail, stringResource(R.string.settings)) {
                         onRequest(HomeRequest.OpenSettings)
                     }
                 },
@@ -327,7 +327,7 @@ internal fun ClashPrimaryTabs(
                     scrollBehavior = activeTopBar,
                     actions = {
                         when (selected) {
-                            0 -> ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
+                            0 -> ToolbarIcon(CouiIcons.Filled.SettingDetail, stringResource(R.string.settings)) {
                                 onSelected(2)
                             }
                             1 -> profiles.PrimaryTabActions()
@@ -453,7 +453,7 @@ internal fun PrimaryBottomBar(
     val items = listOf(
         CouiNavigationItem(stringResource(R.string.coui_home_tab), home, homeSelected),
         CouiNavigationItem(stringResource(R.string.profiles), profiles, profilesSelected),
-        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Filled.Setting, settingsSelected),
+        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Filled.SettingDetail, settingsSelected),
     )
     val select: (Int) -> Unit = { index ->
         if (index != selected) onSelection(index)
