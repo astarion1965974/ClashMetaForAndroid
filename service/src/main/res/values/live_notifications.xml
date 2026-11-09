@@ -24,4 +24,7 @@
     <string name="live_enable">Enable Live Updates</string>
     <string name="live_proxy_active">Proxy</string>
     <string name="live_blocked">Blocked</string>
+    <string name="live_selected_group">Selected group: %1$s</string>
+    <string name="live_quota_usage">Subscription used %1$s / %2$s (%3$d%%)</string>
+    <string name="live_quota_missing">Subscription usage unavailable</string>
 </resources>

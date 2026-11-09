@@ -38,7 +38,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val mobile = install(MobileNetworkModule(self))
 
         if (Build.VERSION.SDK_INT >= 36 && store.liveNotification)
-            install(LiveNotificationModule(self, store.dynamicNotification))
+            install(LiveNotificationModule(self))
         else if (store.dynamicNotification)
             install(DynamicNotificationModule(self))
         else
