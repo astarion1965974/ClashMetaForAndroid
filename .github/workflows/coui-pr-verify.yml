@@ -6,6 +6,7 @@ on:
     paths:
       - 'design/**'
       - 'app/**'
+      - 'service/**'
       - 'gradle/**'
       - '.github/workflows/coui-pr-verify.yml'
       - '.github/workflows/mainline-release.yaml'

@@ -13,6 +13,13 @@ class DomesticAppDefaultsTest {
 
     @Test fun defaultPackageIdsAreExactAndDoNotCaptureForeignApps() {
         val ids = DomesticAppDefaults.bypassPackages
+        assertTrue("Expanded source-backed curated list should cover 180+ popular apps", ids.size >= 180)
+        assertTrue(ids.containsAll(listOf(
+            "com.icbc", "com.chinamworld.main", "com.cib.cibmb",
+            "com.luna.music", "com.duowan.kiwi", "com.gotokeep.keep",
+            "com.mt.mtxx.mtxx", "com.rytong.ceair", "cn.gov.tax.its",
+            "com.coolapk.market",
+        )))
         assertTrue(ids.containsAll(listOf(
             "com.tencent.mm", "com.eg.android.AlipayGphone",
             "com.ss.android.ugc.aweme", "com.dianping.v1",
