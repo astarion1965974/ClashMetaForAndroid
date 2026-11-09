@@ -52,65 +52,44 @@ import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
+/**
+ * Per-app routing controls, keeping the original native glass SearchBar and
+ * filtering Group, without a redundant global access-control-mode selector.
+ * The backdrop source records only the non-floating page content.
+ */
 @Composable
 internal fun AccessControls(
-    mode: String, hint: String, keyword: String, selectedOnly: Boolean, system: Boolean,
-    enabled: Boolean, onMode: () -> Unit, onKeyword: (String) -> Unit,
-    onSelectedOnly: (Boolean) -> Unit, onSystem: (Boolean) -> Unit,
+    keyword: String, bypassOnly: Boolean, system: Boolean, enabled: Boolean,
+    onKeyword: (String) -> Unit,
+    onBypassOnly: (Boolean) -> Unit, onSystem: (Boolean) -> Unit,
 ) {
     val backdrop = rememberCouiBackdrop()
     var searchExpanded by remember { mutableStateOf(false) }
     val searchState = rememberCouiSearchBarState(searchExpanded)
     val density = LocalDensity.current
-    var modeHeightPx by remember { mutableIntStateOf(0) }
     var searchHeightPx by remember { mutableIntStateOf(0) }
 
     ProvideCouiBackdrop(backdrop) {
-        Box(Modifier.fillMaxWidth()) {
-            // DemoChromeDetail: record actual neighboring rows separately from the
-            // floating glass control. A flat Spacer is not a meaningful sample source.
+        Box(Modifier.fillMaxWidth().testTag("app-routing-search-and-filters")) {
             Column(
                 Modifier.fillMaxWidth().couiBackdrop(backdrop)
                     .background(CouiTheme.colorScheme.background),
             ) {
-                Group(
-                    title = stringResource(R.string.access_control_mode),
-                    modifier = Modifier.onSizeChanged { modeHeightPx = it.height },
-                ) {
-                    Item(
-                        onClick = onMode, enabled = enabled,
-                        summary = {
-                            Text(
-                                text = hint, kind = CouiTextKind.PreferenceSummary,
-                                color = CouiTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        trailing = {
-                            Image(
-                                imageVector = CouiIcons.Filled.Back,
-                                contentDescription = null,
-                                modifier = Modifier.padding(start = 4.dp).size(12.dp, 24.dp).rotate(180f),
-                                colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurfaceVariant),
-                            )
-                        },
-                    ) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
-                }
                 Spacer(Modifier.fillMaxWidth().height(with(density) { searchHeightPx.toDp() }))
                 Group {
                     FilterToggle(
-                        stringResource(R.string.app_selected_only), selectedOnly, enabled, onSelectedOnly,
+                        stringResource(R.string.app_selected_only),
+                        bypassOnly, enabled, onBypassOnly,
                     )
                     Divider()
                     FilterToggle(
-                        stringResource(R.string.app_system), system, enabled, onSystem,
+                        stringResource(R.string.app_system),
+                        system, enabled, onSystem,
                     )
                 }
             }
-            // The search capsule samples the recorded mode/filter area without
-            // including itself, preventing feedback and preserving COUI material.
             Box(
                 Modifier.align(Alignment.TopCenter)
-                    .padding(top = with(density) { modeHeightPx.toDp() })
                     .onSizeChanged { searchHeightPx = it.height },
             ) {
                 if (!Build.FINGERPRINT.equals("robolectric", ignoreCase = true)) {
