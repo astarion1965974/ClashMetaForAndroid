@@ -2,6 +2,7 @@ package com.github.kr328.clash.service
 
 import android.content.Context
 import android.content.Intent
+import com.github.kr328.clash.common.constants.DnsDiagnosticTargets
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.constants.Permissions
 import com.github.kr328.clash.common.log.Log
@@ -33,7 +34,7 @@ class ClashManager(private val context: Context) : IClashManager,
 
     override fun queryDnsDiagnostic(domain: String): String {
         if (!StatusProvider.serviceRunning || !StatusProvider.profileLoaded) return "{}"
-        if (domain !in setOf("baidu.com", "bilibili.com", "google.com", "youtube.com")) return "{}"
+        if (!DnsDiagnosticTargets.supports(domain)) return "{}"
         return Clash.queryDnsDiagnostic(domain)
     }
 
