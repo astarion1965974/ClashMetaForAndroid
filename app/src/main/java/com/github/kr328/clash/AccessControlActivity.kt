@@ -51,25 +51,31 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                 events.onReceive { design.updateRunning(clashRunning) }
                 design.requests.onReceive {
                     when (it) {
-                        AccessControlDesign.Request.ReloadApps -> design.patchApps(loadApps(selected))
+                        AccessControlDesign.Request.ReloadApps -> design.patchApps(loadApps(selected, design.mode))
                         AccessControlDesign.Request.SelectAll -> design.select(AppAccessPolicy.Selection.All)
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
                         AccessControlDesign.Request.Import -> {
-                            if (design.mode != AccessControlMode.AcceptAll) {
-                                val clip = getSystemService<ClipboardManager>()?.primaryClip
-                                val packages = if (clip != null && clip.itemCount > 0)
-                                    clip.getItemAt(0).coerceToText(this@AccessControlActivity)?.toString().orEmpty()
-                                        .lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
-                                else emptySet()
-                                val imported = design.allApps.map(AppInfo::packageName).toSet().intersect(packages)
-                                if (clip != null) { selected.clear(); selected.addAll(imported) }
-                                design.rebindAll()
-                                design.showToast(getString(R.string.route_imported, imported.size), ToastDuration.Short)
+                            val clip = getSystemService<ClipboardManager>()?.primaryClip
+                            if (clip != null && clip.itemCount > 0) {
+                                val packages = clip.getItemAt(0)
+                                    .coerceToText(this@AccessControlActivity)?.toString().orEmpty()
+                                    .lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
+                                val installed = design.allApps.map(AppInfo::packageName).toSet()
+                                val imported = installed.intersect(packages)
+                                design.replaceBypassApps(imported)
+                                design.showToast(
+                                    getString(R.string.route_imported, imported.size), ToastDuration.Short,
+                                )
                             }
                         }
                         AccessControlDesign.Request.Export -> {
-                            getSystemService<ClipboardManager>()?.setPrimaryClip(ClipData.newPlainText("packages", selected.sorted().joinToString("\n")))
+                            val bypass = design.allApps.asSequence().map(AppInfo::packageName)
+                                .filter { !AppAccessPolicy.usesClash(design.mode, it in selected) }
+                                .sorted().joinToString("\\n")
+                            getSystemService<ClipboardManager>()?.setPrimaryClip(
+                                ClipData.newPlainText("clash_bypass_packages", bypass),
+                            )
                             design.showToast(R.string.route_exported, ToastDuration.Short)
                         }
                         AccessControlDesign.Request.Save -> {
@@ -95,8 +101,10 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
         }
     }
 
-    private suspend fun loadApps(selected: Set<String>): List<AppInfo> = withContext(Dispatchers.IO) {
-        val base = compareByDescending<AppInfo> { it.packageName in selected }
+    private suspend fun loadApps(selected: Set<String>, mode: AccessControlMode): List<AppInfo> = withContext(Dispatchers.IO) {
+        val base = compareByDescending<AppInfo> {
+            !AppAccessPolicy.usesClash(mode, it.packageName in selected)
+        }
         val sort = uiStore.accessControlSort
         val comparator = if (uiStore.accessControlReverse) base.thenDescending(sort) else base.then(sort)
         val pm = packageManager
