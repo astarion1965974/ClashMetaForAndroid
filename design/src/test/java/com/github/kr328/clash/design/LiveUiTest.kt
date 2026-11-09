@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
@@ -174,9 +176,12 @@ class LiveUiTest {
             val design=MobileNetworkDesign(ctx,settings,listOf("东京 1","东京 2"),true)
             render(design.root,if(dark) "mobile-dark" else "mobile-light")
             assertFalse(design.dirty)
+            compose.onNodeWithTag("coui-form-save-action").assertIsNotEnabled()
             design.bind("Home Wi-Fi")
             assertTrue(design.dirty)
             compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
+            compose.onNodeWithTag("coui-form-save-action").assertIsEnabled().performClick()
+            assertEquals(MobileNetworkDesign.Request.Save, design.requests.tryReceive().getOrNull())
             val home=MainDesign(ctx)
             updateHome {
                 home.setClashRunning(true)
