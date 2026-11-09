@@ -14,7 +14,6 @@ import com.github.kr328.clash.design.dialog.showCouiMultiChoice
 import com.github.kr328.clash.design.preference.NativeCouiAction
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.service.store.MobileNetworkSettings
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
@@ -110,7 +109,7 @@ class MobileNetworkDesign(
                             .ifBlank { context.getString(R.string.mobile_empty) },
                         enabled = interactive,
                     ) { pick(false) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_ai),
                         summary = settings.aiNodes.joinToString(" → ")
@@ -125,14 +124,14 @@ class MobileNetworkDesign(
                         value = settings::secureDns, enabled = interactive,
                         onChanged = { changed() },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.mobile_updates),
                         summary = stringResource(R.string.mobile_updates_hint),
                         value = settings::wifiUpdates, enabled = interactive,
                         onChanged = { changed() },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_apps),
                         summary = stringResource(R.string.mobile_apps_hint),
@@ -147,11 +146,11 @@ class MobileNetworkDesign(
                         value = settings::trustedWifiEnabled, enabled = interactive,
                         onChanged = { changed() },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_bind), enabled = interactive,
                     ) { requests.trySend(Request.BindWifi) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_bound),
                         summary = settings.trustedSSIDs.joinToString(", ")
@@ -167,7 +166,7 @@ class MobileNetworkDesign(
                             true
                         }
                     }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_permissions),
                         summary = stringResource(R.string.mobile_permission_hint),

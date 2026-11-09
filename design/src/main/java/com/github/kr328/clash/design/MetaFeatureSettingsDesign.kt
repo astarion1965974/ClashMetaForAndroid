@@ -27,7 +27,6 @@ import com.github.kr328.clash.design.preference.NativeCouiStringList
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
@@ -63,7 +62,7 @@ class MetaFeatureSettingsDesign(
                         title = stringResource(R.string.age_key_type_x25519),
                         summary = stringResource(R.string.age_key_generate_summary),
                     ) { requestAgeKeyHelper(hybrid = false) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.age_key_type_hybrid),
                         summary = stringResource(R.string.age_key_generate_summary),
@@ -76,21 +75,21 @@ class MetaFeatureSettingsDesign(
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.geodata_mode), value = configuration::geodataMode,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.tcp_concurrent), value = configuration::tcpConcurrent,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.find_process_mode), value = configuration::findProcessMode,
                         values = listOf<ConfigurationOverride.FindProcessMode?>(null, ConfigurationOverride.FindProcessMode.Off, ConfigurationOverride.FindProcessMode.Strict, ConfigurationOverride.FindProcessMode.Always),
@@ -105,85 +104,85 @@ class MetaFeatureSettingsDesign(
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.sniff_http_ports), property = configuration.sniffer.sniff.http::ports,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.sniff_http_override_destination), value = configuration.sniffer.sniff.http::overrideDestination,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.sniff_tls_ports), property = configuration.sniffer.sniff.tls::ports,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.sniff_tls_override_destination), value = configuration.sniffer.sniff.tls::overrideDestination,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.sniff_quic_ports), property = configuration.sniffer.sniff.quic::ports,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.sniff_quic_override_destination), value = configuration.sniffer.sniff.quic::overrideDestination,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.force_dns_mapping), value = configuration.sniffer::forceDnsMapping,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.parse_pure_ip), value = configuration.sniffer::parsePureIp,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.override_destination), value = configuration.sniffer::overrideDestination,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.force_domain), property = configuration.sniffer::forceDomain,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.skip_domain), property = configuration.sniffer::skipDomain,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.skip_src_address), property = configuration.sniffer::skipSrcAddress,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = snifferEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.skip_dst_address), property = configuration.sniffer::skipDstAddress,
                         placeholder = stringResource(R.string.dont_modify),
@@ -195,17 +194,17 @@ class MetaFeatureSettingsDesign(
                         title = stringResource(R.string.import_geoip_file),
                         summary = stringResource(R.string.press_to_import),
                     ) { requests.trySend(Request.ImportGeoIp) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.import_geosite_file),
                         summary = stringResource(R.string.press_to_import),
                     ) { requests.trySend(Request.ImportGeoSite) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.import_country_file),
                         summary = stringResource(R.string.press_to_import),
                     ) { requests.trySend(Request.ImportCountry) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.import_asn_file),
                         summary = stringResource(R.string.press_to_import),

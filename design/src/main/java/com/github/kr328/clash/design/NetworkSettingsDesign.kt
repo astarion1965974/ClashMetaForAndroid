@@ -14,7 +14,6 @@ import com.github.kr328.clash.design.preference.NativeCouiSelect
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 
 /** Full COUI network settings, including VPN-dependent controls and routing links. */
@@ -53,31 +52,31 @@ class NetworkSettingsDesign(
                         summary = stringResource(R.string.bypass_private_network_summary),
                         value = srvStore::bypassPrivateNetwork, enabled = editable,
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.dns_hijacking),
                         summary = stringResource(R.string.dns_hijacking_summary),
                         value = srvStore::dnsHijacking, enabled = editable,
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.allow_bypass),
                         summary = stringResource(R.string.allow_bypass_summary),
                         value = srvStore::allowBypass, enabled = editable,
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.allow_ipv6),
                         summary = stringResource(R.string.allow_ipv6_summary),
                         value = srvStore::allowIpv6, enabled = editable,
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.system_proxy),
                         summary = stringResource(R.string.system_proxy_summary),
                         value = srvStore::systemProxy, enabled = editable,
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.tun_stack_mode),
                         value = srvStore::tunStackMode,
@@ -97,13 +96,13 @@ class NetworkSettingsDesign(
                         navigation = true,
                         summary = stringResource(R.string.mobile_ready),
                     ) { requests.trySend(Request.StartMobileNetwork) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.app_routing),
                         navigation = true,
                         summary = stringResource(R.string.app_routing_summary),
                     ) { requests.trySend(Request.StartAccessControlList) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.managed_routing),
                         navigation = true,

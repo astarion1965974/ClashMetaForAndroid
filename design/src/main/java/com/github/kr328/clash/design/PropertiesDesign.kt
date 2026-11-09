@@ -22,7 +22,6 @@ import com.github.kr328.clash.design.preference.CouiRichText
 import com.github.kr328.clash.design.preference.NativeCouiAction
 import com.github.kr328.clash.design.util.*
 import com.github.kr328.clash.service.model.Profile
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,7 +73,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
                             icon = R.drawable.ic_outline_label,
                             enabled = !progressing,
                         ) { inputName() }
-                        Divider()
+                        SettingDivider()
                         NativeCouiAction(
                             title = stringResource(R.string.url),
                             summary = active.source.ifBlank { stringResource(R.string.accept_http_content) },
@@ -82,14 +81,14 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
                             enabled = !progressing &&
                                 active.type != Profile.Type.File && active.type != Profile.Type.External,
                         ) { inputUrl() }
-                        Divider()
+                        SettingDivider()
                         NativeCouiAction(
                             title = stringResource(R.string.age_secret_key),
                             summary = active.ageSecretKey ?: stringResource(R.string.age_secret_key_hint),
                             icon = R.drawable.ic_baseline_key,
                             enabled = !progressing,
                         ) { inputAgeSecretKey() }
-                        Divider()
+                        SettingDivider()
                         NativeCouiAction(
                             title = stringResource(R.string.auto_update),
                             summary = if (active.interval == 0L) stringResource(R.string.disabled)

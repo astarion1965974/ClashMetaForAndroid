@@ -21,11 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,7 +105,9 @@ class ProxyDesign(
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
             val density = LocalDensity.current
             val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-            val gridState = rememberLazyGridState()
+            // Independent scroll positions prevent one strategy group's offset leaking into another.
+            val groupScrollStates = remember(groupNames) { groupNames.map { LazyGridState() } }
+            var tabsHeightPx by remember { mutableIntStateOf(0) }
             val tabsBackdrop = rememberCouiBackdrop()
             CouiTheme(darkTheme = dark) {
                 Scaffold(
@@ -143,48 +147,60 @@ class ProxyDesign(
                                 modifier = Modifier.padding(24.dp),
                             )
                         } else {
-                            val current = groups.getOrNull(selectedPage)
+                            val groupIndex = selectedPage.coerceIn(groupNames.indices)
+                            val current = groups.getOrNull(groupIndex)
+                            val gridState = groupScrollStates[groupIndex]
                             Box(Modifier.weight(1f)) {
                                 LazyVerticalGrid(
                                     columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
                                     state = gridState,
                                     modifier = Modifier.fillMaxSize()
-                                        .couiBackdrop(tabsBackdrop)
-                                        .background(CouiTheme.colorScheme.background),
-                                    // Nodes pass behind the glass tabs when scrolling.
-                                    contentPadding = PaddingValues(top = 72.dp, bottom = 24.dp),
+                                        .background(CouiTheme.colorScheme.background)
+                                        .couiBackdrop(tabsBackdrop),
+                                    // Measure the actual tab row, including its vertical margins.
+                                    // Nodes scroll beneath the glass instead of a hard-coded 72dp gap.
+                                    contentPadding = PaddingValues(
+                                        top = with(density) { tabsHeightPx.toDp() },
+                                        bottom = 24.dp,
+                                    ),
                                 ) {
-                                itemsIndexed(
-                                    current?.proxies.orEmpty(),
-                                    key = { _, proxy -> proxy.name },
-                                ) { _, proxy ->
-                                    val description = if (proxy.isGroup) {
-                                        val linked = current?.links?.get(proxy.name)
-                                        if (linked != null) "${proxy.type} (${linked.ifEmpty { "*" }})"
-                                        else proxy.type
-                                    } else proxy.subtitle
-                                    val delayText = proxy.delay.takeIf {
-                                        it in 0..Short.MAX_VALUE
-                                    }?.let { " · ${it} ms" }.orEmpty()
-                                    ProxyNodeCard(
-                                        name = proxy.name,
-                                        title = if (proxy.isGroup) proxy.name else proxy.title,
-                                        summary = description + delayText,
-                                        selected = proxy.name == current?.selectedName,
-                                        enabled = current?.selectable == true,
-                                        onSelect = {
-                                            requests.trySend(Request.Select(selectedPage, proxy.name))
-                                        },
-                                    )
+                                    itemsIndexed(
+                                        current?.proxies.orEmpty(),
+                                        key = { index, proxy -> "${index}:${proxy.name}" },
+                                    ) { _, proxy ->
+                                        val description = if (proxy.isGroup) {
+                                            val linked = current?.links?.get(proxy.name)
+                                            if (linked != null) "${proxy.type} (${linked.ifEmpty { "*" }})"
+                                            else proxy.type
+                                        } else proxy.subtitle
+                                        val delayText = proxy.delay.takeIf {
+                                            it in 0..Short.MAX_VALUE
+                                        }?.let { " · ${it} ms" }.orEmpty()
+                                        ProxyNodeCard(
+                                            name = proxy.name,
+                                            title = if (proxy.isGroup) proxy.name else proxy.title,
+                                            summary = description + delayText,
+                                            selected = proxy.name == current?.selectedName,
+                                            enabled = current?.selectable == true,
+                                            onSelect = {
+                                                requests.trySend(Request.Select(groupIndex, proxy.name))
+                                            },
+                                        )
+                                    }
                                 }
-                                }
-                                ProxyTabs(
-                                    groupNames,
-                                    selectedPage.coerceIn(groupNames.indices),
-                                    tabsBackdrop,
-                                ) { index ->
-                                    selectedPage = index
-                                    uiStore.proxyLastGroup = groupNames[index]
+                                // This overlay is anchored directly below the collapsing top bar;
+                                // it does not participate in LazyGrid scroll or move with its items.
+                                Box(
+                                    Modifier.align(Alignment.TopCenter)
+                                        .onSizeChanged { tabsHeightPx = it.height }
+                                        .testTag("proxy-group-tabs"),
+                                ) {
+                                    ProxyTabs(
+                                        groupNames, groupIndex, tabsBackdrop,
+                                    ) { index ->
+                                        selectedPage = index
+                                        uiStore.proxyLastGroup = groupNames[index]
+                                    }
                                 }
                             }
                         }
