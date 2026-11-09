@@ -56,4 +56,23 @@
     <string name="coui_dns_compare_varies">同组网站存在不同 DNS 候选策略</string>
     <string name="coui_dns_compare_same">境内外使用相同 DNS 上游候选</string>
     <string name="coui_dns_compare_different">境内外使用不同 DNS 上游候选</string>
+
+    <string name="coui_privacy_dashboard_title">IP 纯净度与 DNS 隐私</string>
+    <string name="coui_privacy_check">检测</string>
+    <string name="coui_privacy_checking">检测中…</string>
+    <string name="coui_privacy_risk_label">IPPure IP 风险分</string>
+    <string name="coui_privacy_risk_hint">越低越好，并非纯净度百分比</string>
+    <string name="coui_privacy_dns_label">IPLeak DNS 泄露状态</string>
+    <string name="coui_privacy_not_verified">待核实</string>
+    <string name="coui_privacy_resolver_count">观察到 %1$d 个解析器</string>
+    <string name="coui_privacy_dns_unknown">未确认解析器</string>
+    <string name="coui_privacy_ippure_ip">IPPure 出口 IP：%1$s</string>
+    <string name="coui_privacy_ipleak_ip">IPLeak 出口 IP：%1$s</string>
+    <string name="coui_privacy_ippure_error">IPPure 不可用：%1$s</string>
+    <string name="coui_privacy_ipleak_error">IPLeak 不可用：%1$s</string>
+    <string name="coui_privacy_ip_mismatch">两个站点检测到不同的出口 IP，可能与规则分流有关。</string>
+    <string name="coui_privacy_dns_resolvers">观察到的 DNS 解析器：%1$s</string>
+    <string name="coui_privacy_dns_error">DNS 探测：%1$s</string>
+    <string name="coui_privacy_scope_note">仅在手动检测时测试本应用的网络路径。解析器列表不能单独证明泄露，浏览器和其他应用可能走不同路径。第三方检测会暴露出口 IP。</string>
+    <string name="coui_privacy_open_ipleak">在 IPLeak 检查浏览器 DNS、IPv6 与 WebRTC 泄露</string>
 </resources>
