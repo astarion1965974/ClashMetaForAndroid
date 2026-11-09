@@ -2,9 +2,14 @@ package com.github.kr328.clash.design
 
 import android.content.Context
 import android.view.View
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalView
+import com.itos.coui.dialog.CouiDialogAction
+import com.itos.coui.dialog.Dialog
+import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.dialog.CouiNoticeOptions
-import com.github.kr328.clash.design.dialog.showCouiNotice
+import com.github.kr328.clash.design.dialog.showCouiAlert
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -34,7 +39,27 @@ abstract class Design<R>(val context: Context) :
     ) {
         withContext(Dispatchers.Main) {
             val options = CouiNoticeOptions(context).apply(configure)
-            context.showCouiNotice(message, duration, options)
+            when {
+                duration == ToastDuration.Indefinite && options.onAction == null ->
+                    context.showCouiAlert(context.getString(R.string.application_name), message)
+                options.onAction != null -> context.showCouiContent { dismiss ->
+                    val anchorView = LocalView.current
+                    Dialog(
+                        onDismissRequest = dismiss,
+                        title = context.getString(R.string.error),
+                        message = message.toString(),
+                        confirmAction = CouiDialogAction(
+                            options.actionLabel ?: context.getString(R.string.ok),
+                            { options.onAction?.invoke(anchorView); dismiss() },
+                        ),
+                        dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+                    )
+                }
+                else -> Toast.makeText(
+                    context, message,
+                    if (duration == ToastDuration.Short) Toast.LENGTH_SHORT else Toast.LENGTH_LONG,
+                ).show()
+            }
         }
     }
 

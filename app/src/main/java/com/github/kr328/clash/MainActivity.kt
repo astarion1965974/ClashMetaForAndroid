@@ -38,12 +38,15 @@ import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
 class MainActivity : BaseActivity<MainDesign>() {
+    private var activeProfilesDesign: ProfilesDesign? = null
+
     override suspend fun main() {
         val design = MainDesign(this)
         // Three main tabs now share one window and one native COUI glass bar.
         // Keep the original Design controllers and their request channels so
         // profile, home and settings business actions still behave identically.
         val profilesDesign = ProfilesDesign(this)
+        activeProfilesDesign = profilesDesign
         val settingsDesign = SettingsDesign(this)
         design.installPrimaryTabs(profilesDesign, settingsDesign)
         interceptBack(design, { design.selectedPrimaryTab != 0 }) {
@@ -248,10 +251,17 @@ class MainActivity : BaseActivity<MainDesign>() {
         if (uuid == null) return
         launch {
             val name = withProfile { queryByUUID(uuid)?.name }
-            design?.showToast(
-                getString(DesignR.string.toast_profile_updated_complete, name),
-                ToastDuration.Long,
-            )
+            val batch = activeProfilesDesign?.recordUpdateResult(uuid, null)
+            when {
+                batch == null -> design?.showToast(
+                    getString(DesignR.string.toast_profile_updated_complete, name),
+                    ToastDuration.Short,
+                )
+                batch.complete -> design?.showToast(
+                    getString(DesignR.string.coui_profile_update_summary, batch.succeeded, batch.failed),
+                    ToastDuration.Short,
+                )
+            }
         }
     }
 
@@ -260,13 +270,22 @@ class MainActivity : BaseActivity<MainDesign>() {
         if (uuid == null) return
         launch {
             val name = withProfile { queryByUUID(uuid)?.name }
-            design?.showToast(
-                getString(DesignR.string.toast_profile_updated_failed, name, reason),
-                ToastDuration.Long,
-            ) {
-                setAction(DesignR.string.edit) {
-                    startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+            val batch = activeProfilesDesign?.recordUpdateResult(
+                uuid, reason ?: getString(DesignR.string.coui_profile_update_failed)
+            )
+            when {
+                batch == null -> design?.showToast(
+                    getString(DesignR.string.toast_profile_updated_failed, name, reason),
+                    ToastDuration.Long,
+                ) {
+                    setAction(DesignR.string.edit) {
+                        startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+                    }
                 }
+                batch.complete -> design?.showToast(
+                    getString(DesignR.string.coui_profile_update_summary, batch.succeeded, batch.failed),
+                    ToastDuration.Short,
+                )
             }
         }
     }

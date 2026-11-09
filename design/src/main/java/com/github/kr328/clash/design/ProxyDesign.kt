@@ -1,19 +1,25 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,9 +41,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -51,12 +60,16 @@ import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.component.ProxyMenu
 import com.github.kr328.clash.design.dialog.CouiAnchoredMenu
+import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiAlert
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.itos.coui.backdrop.couiBackdrop
 import com.itos.coui.backdrop.rememberCouiBackdrop
+import com.itos.coui.effect.couiButtonFeedback
+import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Scaffold
 import com.itos.coui.text.CouiTextKind
@@ -110,21 +123,14 @@ class ProxyDesign(
             val groupScrollStates = groupNames.map { name ->
                 key(name) { rememberLazyGridState() }
             }
-            val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                canScroll = {
-                    groupScrollStates.getOrNull(selectedPage)?.let {
-                        it.canScrollForward || it.canScrollBackward
-                    } ?: false
-                })
             var tabsHeightPx by remember { mutableIntStateOf(0) }
             val tabsBackdrop = rememberCouiBackdrop()
             CouiTheme(darkTheme = dark) {
                 Scaffold(
-                    modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                    modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        ColorOsLargeTopBar(
+                        ColorOsCompactTopBar(
                             title = stringResource(R.string.proxy),
-                            scrollBehavior = scrollBehavior,
                             navigationIcon = {
                                 ToolbarIcon(
                                     com.itos.coui.icons.CouiIcons.Filled.Back,
@@ -150,7 +156,7 @@ class ProxyDesign(
                         )
                     },
                 ) { padding ->
-                    val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
+                    val scrollPadding = padding
                     if (groupNames.isEmpty()) {
                         Box(Modifier.fillMaxSize().padding(scrollPadding).consumeWindowInsets(padding)) {
                             Text(
@@ -163,17 +169,27 @@ class ProxyDesign(
                         val groupIndex = selectedPage.coerceIn(groupNames.indices)
                         val current = groups.getOrNull(groupIndex)
                         val gridState = groupScrollStates[groupIndex]
-                        Box(Modifier.fillMaxSize().consumeWindowInsets(padding)) {
+                        BoxWithConstraints(Modifier.fillMaxSize().consumeWindowInsets(padding)) {
+                            // Keep a solid source behind the native COUI ChipTab material, as DemoChipSamples does.
+                            Box(Modifier.matchParentSize().couiBackdrop(tabsBackdrop)
+                                .background(if (dark) Color.Black else Color.White))
+                            val margin = CouiPageDefaults.horizontalMargin
+                            val minCellWidth = if (density.fontScale > 1.15f) 176.dp else 148.dp
+                            val availableWidth = (maxWidth - margin * 2).coerceAtLeast(minCellWidth)
+                            val capacity = ((availableWidth.value + 12f) / (minCellWidth.value + 12f))
+                                .toInt().coerceAtLeast(1)
                             LazyVerticalGrid(
-                                columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
+                                columns = GridCells.Fixed(minOf(proxyLine.coerceIn(1, 3), capacity)),
                                 state = gridState,
                                 modifier = Modifier.fillMaxSize()
-                                    .couiBackdrop(tabsBackdrop)
-                                    .background(CouiTheme.colorScheme.background),
+                                    .background(CouiTheme.colorScheme.background)
+                                    .selectableGroup(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(
-                                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current),
-                                    top = scrollPadding.calculateTopPadding() + with(density) { tabsHeightPx.toDp() },
-                                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current),
+                                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current) + margin,
+                                    top = scrollPadding.calculateTopPadding() + with(density) { tabsHeightPx.toDp() } + 8.dp,
+                                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current) + margin,
                                     bottom = scrollPadding.calculateBottomPadding() + 24.dp,
                                 ),
                             ) {
@@ -260,9 +276,10 @@ class ProxyDesign(
 }
 
 /**
- * COUI proxy grid cell. Unlike a preference row it has no list-only side margins:
- * all columns have the same card height and the selected state is visible on-card.
+ * COUI card-grid selector. The native radio supplies the selection animation;
+ * the whole card retains single-selection semantics and native press feedback.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ProxyNodeCard(
     name: String,
@@ -273,50 +290,62 @@ internal fun ProxyNodeCard(
     onSelect: () -> Unit,
 ) {
     val colors = CouiTheme.colorScheme
+    val context = LocalContext.current
+    val source = remember { MutableInteractionSource() }
     val shape = CouiPageDefaults.shape
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 6.dp)
-            .height(96.dp)
-            .clip(shape)
-            .background(if (selected) colors.accent.copy(alpha = 0.12f) else colors.card)
-            .border(
-                width = if (selected) 2.dp else 0.dp,
-                color = if (selected) colors.accent else Color.Transparent,
-                shape = shape,
-            )
-            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect)
-            .testTag("proxy-node-$name")
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
+    CouiAnchoredMenu(
+        listOf(
+            CouiMenuOption(context.getString(R.string.coui_node_full_name)) {
+                context.showCouiAlert(context.getString(R.string.coui_node_full_name), name)
+            },
+            CouiMenuOption(context.getString(R.string.coui_node_copy_name)) {
+                (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)
+                    ?.setPrimaryClip(ClipData.newPlainText("proxy name", name))
+            },
+        ),
+    ) { open ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(112.dp)
+                .clip(shape)
+                .background(colors.card)
+                .couiButtonFeedback(CouiTheme.isDark, source, enabled, list = true)
+                .combinedClickable(
+                    interactionSource = source,
+                    indication = null,
+                    enabled = true,
+                    role = Role.RadioButton,
+                    onClick = { if (enabled) onSelect() },
+                    onLongClick = open,
+                )
+                .semantics { this.selected = selected }
+                .testTag("proxy-node-$name")
+                .padding(horizontal = CouiPageDefaults.rowPadding, vertical = 14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = title,
                 kind = CouiTextKind.PreferenceTitle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
-            if (selected) {
-                Image(
-                    painter = painterResource(R.drawable.ic_outline_check_circle),
-                    contentDescription = null,
-                    modifier = Modifier.padding(start = 6.dp).size(20.dp),
-                    colorFilter = ColorFilter.tint(colors.accent),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = summary,
+                    kind = CouiTextKind.PreferenceSummary,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
+                RadioButton(selected = selected, enabled = enabled)
             }
         }
-        Text(
-            text = summary,
-            kind = CouiTextKind.PreferenceSummary,
-            color = colors.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
