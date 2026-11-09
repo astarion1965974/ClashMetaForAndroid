@@ -19,8 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.itos.coui.backdrop.couiBackdrop
-import com.itos.coui.backdrop.rememberCouiBackdrop
+import com.itos.coui.backdrop.CouiBackdrop
 import com.itos.coui.chip.ChipTabRow
 import com.itos.coui.chip.CouiChipTabItem
 import com.itos.coui.effect.CouiFloatingRenderer
@@ -34,20 +33,20 @@ import com.itos.coui.theme.CouiTheme
  * row have the same opaque host color, but the chips retain native COUI alpha8
  * glass, selection springs, shadows, horizontal fling and auto-reveal.
  *
- * The backdrop records ONLY an opaque sibling surface. Never attach the source
- * to the node grid or to this ChipTabRow (which would sample the chips itself).
+ * The shared backdrop is provided by ProxyDesign's full-height opaque sibling
+ * behind BOTH the toolbar and tabs. It never records the grid or chips themselves.
  */
 @Composable
 internal fun ProxyTabs(
     titles: List<String>,
     selected: Int,
     backgroundColor: Color,
+    backdrop: CouiBackdrop,
     onSelect: (Int) -> Unit,
 ) {
     if (titles.isEmpty()) return
 
-    val backdrop = rememberCouiBackdrop(diagnosticName = "proxy-pinned-chip-solid-source")
-    val renderers = remember(titles.size) {
+     val renderers = remember(titles.size) {
         runCatching { List(titles.size) { CouiFloatingRenderer.standalone() } }.getOrNull()
     }
     Box(
@@ -55,15 +54,6 @@ internal fun ProxyTabs(
             .background(backgroundColor)
             .testTag("proxy-chip-solid-host"),
     ) {
-        // Match DemoChipSamples: the recorder comes before the background draw
-        // modifier so its layer contains a fully opaque color, no scrolling cards.
-        Box(
-            Modifier.matchParentSize()
-                .couiBackdrop(backdrop)
-                .background(backgroundColor)
-                .testTag("proxy-chip-solid-source"),
-        )
-
         if (renderers != null) {
             ChipTabRow(
                 modifier = Modifier.fillMaxWidth()
