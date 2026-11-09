@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="coui_editor_reset_override">Reset to not modified</string>
+    <string name="coui_editor_clear_input">Clear input</string>
+    <string name="coui_editor_invalid_value">Invalid value. Check the input format.</string>
+</resources>
