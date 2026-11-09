@@ -77,6 +77,18 @@ class BackGuardTest {
         }
     }
 
+    @Test fun secondaryActivitiesUseSystemActivityTransitionResources() {
+        // Neither the framework's default clipToOutline property nor the
+        // window pixel format is a reliable assertion in Robolectric.
+        // The old custom transition resource must not be installed, and
+        // the existing AndroidX back dispatcher remains available.
+        val page = activity(AccessControlActivity::class.java)
+        assertEquals(0, page.resources.getIdentifier(
+            "coui_subpage_enter", "anim", page.packageName,
+        ))
+        assertNotNull(page.onBackPressedDispatcher)
+    }
+
     @Test fun saveCompletingDuringGestureFallsThroughExactlyOnce() {
         val page = activity(GuardHarnessActivity::class.java)
         val design = MobileNetworkDesign(page, MobileNetworkSettings(), emptyList(), false)

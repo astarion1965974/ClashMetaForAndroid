@@ -1,6 +1,7 @@
 package com.github.kr328.clash
 
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -28,6 +29,7 @@ import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
+import com.github.kr328.clash.util.NetworkPrivacyDiagnostics
 import com.github.kr328.clash.util.withProfile
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.async
@@ -89,6 +91,10 @@ class MainActivity : BaseActivity<MainDesign>() {
                         MainDesign.Request.OpenSettings ->
                             design.selectPrimaryTab(2)
                         MainDesign.Request.CheckDns -> launch { design.checkDns() }
+                        MainDesign.Request.CheckPrivacy -> launch { design.checkPrivacy() }
+                        MainDesign.Request.OpenIpleak -> startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://ipleak.net/"))
+                        )
                     }
                 }
                 profilesDesign.requests.onReceive { action ->
@@ -199,6 +205,18 @@ class MainActivity : BaseActivity<MainDesign>() {
             if (clashRunning && !pausedAtHome) setDnsResults(results)
         } finally {
             updateDnsLoading(false)
+        }
+    }
+
+    /** User-initiated third-party checks, never scheduled as a background probe. */
+    private suspend fun MainDesign.checkPrivacy() {
+        if (!clashRunning || pausedAtHome) return
+        updatePrivacyLoading(true)
+        try {
+            val result = NetworkPrivacyDiagnostics.check()
+            if (clashRunning && !pausedAtHome) setPrivacyResult(result)
+        } finally {
+            updatePrivacyLoading(false)
         }
     }
 

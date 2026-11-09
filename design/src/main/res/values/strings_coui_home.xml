@@ -27,6 +27,8 @@
     <string name="coui_dns_pending">Not checked</string>
     <string name="coui_dns_result">%1$s · %2$d ms</string>
     <string name="coui_dns_failed">Lookup failed or timed out</string>
+    <string name="coui_dns_failed_detail">DNS error: %1$s</string>
+    <string name="coui_dns_timeout_detail">DNS lookup timed out; check upstream and proxy connectivity</string>
     <string name="coui_dns_note">Shows configured DNS upstream candidates, not captured per-query transport. RULES, cache and fallback can change the actual DNS path.</string>
     <string name="coui_clear">Clear</string>
     <string name="coui_input_back_cancel">Press back to cancel</string>
@@ -54,4 +56,23 @@
     <string name="coui_dns_compare_varies">DNS candidates vary within a site group</string>
     <string name="coui_dns_compare_same">Mainland and overseas use identical DNS candidates</string>
     <string name="coui_dns_compare_different">Mainland and overseas use different DNS candidates</string>
+
+    <string name="coui_privacy_dashboard_title">IP purity &amp; DNS privacy</string>
+    <string name="coui_privacy_check">Check</string>
+    <string name="coui_privacy_checking">Checking…</string>
+    <string name="coui_privacy_risk_label">IPPure IP risk score</string>
+    <string name="coui_privacy_risk_hint">Lower is better; not a purity percentage</string>
+    <string name="coui_privacy_dns_label">IPLeak DNS leak status</string>
+    <string name="coui_privacy_not_verified">Unverified</string>
+    <string name="coui_privacy_resolver_count">%1$d resolver(s) observed</string>
+    <string name="coui_privacy_dns_unknown">No resolver confirmed</string>
+    <string name="coui_privacy_ippure_ip">IPPure public IP: %1$s</string>
+    <string name="coui_privacy_ipleak_ip">IPLeak public IP: %1$s</string>
+    <string name="coui_privacy_ippure_error">IPPure unavailable: %1$s</string>
+    <string name="coui_privacy_ipleak_error">IPLeak unavailable: %1$s</string>
+    <string name="coui_privacy_ip_mismatch">The two sites see different exit IPs. Split routing may be the cause.</string>
+    <string name="coui_privacy_dns_resolvers">Observed DNS resolvers: %1$s</string>
+    <string name="coui_privacy_dns_error">DNS probe: %1$s</string>
+    <string name="coui_privacy_scope_note">On-demand app-path observation only. DNS resolvers are not proof of a leak; the browser and other apps may follow different routes. Third-party checks disclose your exit IP.</string>
+    <string name="coui_privacy_open_ipleak">Open IPLeak for browser DNS / IPv6 / WebRTC check</string>
 </resources>

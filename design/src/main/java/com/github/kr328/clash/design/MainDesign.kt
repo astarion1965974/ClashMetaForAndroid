@@ -21,12 +21,16 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         OpenProviders,
         OpenSettings,
         CheckDns,
+        CheckPrivacy,
+        OpenIpleak,
     }
 
     private var profileName by mutableStateOf<String?>(null)
     private var quota by mutableStateOf<HomeQuota?>(null)
     private var dns by mutableStateOf<List<HomeDnsResult>>(emptyList())
     private var dnsLoading by mutableStateOf(false)
+    private var privacy by mutableStateOf<HomePrivacyResult?>(null)
+    private var privacyLoading by mutableStateOf(false)
     private var running by mutableStateOf(false)
     private var modeLabel by mutableStateOf<String?>(null)
     private var hasProviders by mutableStateOf(false)
@@ -66,6 +70,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                     quota = quota,
                     dns = dns,
                     dnsLoading = dnsLoading,
+                    privacy = privacy,
+                    privacyLoading = privacyLoading,
                     mode = modeLabel,
                     hasProviders = hasProviders,
                     onHomeRequest = ::request,
@@ -78,6 +84,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                 quota = quota,
                 dns = dns,
                 dnsLoading = dnsLoading,
+                privacy = privacy,
+                privacyLoading = privacyLoading,
                 mode = modeLabel,
                 hasProviders = hasProviders,
                 onRequest = ::request,
@@ -102,6 +110,11 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     }
 
     fun updateDnsLoading(value: Boolean) { dnsLoading = value }
+    fun updatePrivacyLoading(value: Boolean) { privacyLoading = value }
+    fun setPrivacyResult(value: HomePrivacyResult) {
+        privacy = value
+        privacyLoading = false
+    }
 
     fun setDnsResults(results: List<Pair<String, String>>) {
         dns = results.map { (domain, json) ->
@@ -121,13 +134,13 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     }
 
     fun setHomePaused(paused: Boolean) {
-        if (pausedAtHome != paused) dns = emptyList()
+        if (pausedAtHome != paused) { dns = emptyList(); privacy = null }
         pausedAtHome = paused
     }
 
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
-            if (this@MainDesign.running != running) dns = emptyList()
+            if (this@MainDesign.running != running) { dns = emptyList(); privacy = null }
             this@MainDesign.running = running
         }
     }
@@ -140,7 +153,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                 TunnelState.Mode.Rule -> context.getString(R.string.rule_mode)
                 else -> context.getString(R.string.rule_mode)
             }
-            if (modeLabel != next) dns = emptyList()
+            if (modeLabel != next) { dns = emptyList(); privacy = null }
             modeLabel = next
         }
     }

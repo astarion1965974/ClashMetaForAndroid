@@ -18,7 +18,9 @@ import (
 
 //export queryDnsDiagnostic
 func queryDnsDiagnostic(domain C.c_string) *C.char {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Allow slow proxy DNS upstreams to complete without spuriously showing
+	// failures for newly diagnosed overseas sites.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	host := C.GoString(domain)
 	policy := config.InspectDNSPolicy(host)
