@@ -8,11 +8,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.PowerManager
 import android.os.Bundle
-import android.provider.Settings
-import android.graphics.Typeface
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.style.StyleSpan
+import android.os.SystemClock
+import android.text.format.Formatter
 import androidx.core.content.getSystemService
 import com.github.kr328.clash.common.compat.getColorCompat
 import com.github.kr328.clash.common.compat.pendingIntentFlags
@@ -24,13 +21,14 @@ import com.github.kr328.clash.core.bridge.Bridge
 import kotlinx.serialization.json.*
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.core.model.TunnelState
-import com.github.kr328.clash.core.util.trafficDownload
-import com.github.kr328.clash.core.util.trafficUpload
-import com.github.kr328.clash.core.util.trafficTotal
 import com.github.kr328.clash.service.R
 import com.github.kr328.clash.service.StatusProvider
+import com.github.kr328.clash.service.data.ImportedDao
 import com.github.kr328.clash.service.store.ServiceStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.UUID
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
@@ -40,7 +38,7 @@ import kotlin.coroutines.coroutineContext
 
 /** Standard platform templates let ColorOS render the capsule and expanded live card. */
 @TargetApi(36)
-class LiveNotificationModule(service: Service, private val showTraffic: Boolean) : Module<Unit>(service) {
+class LiveNotificationModule(service: Service) : Module<Unit>(service) {
     private val manager = service.getSystemService<NotificationManager>()!!
     private val store = ServiceStore(service)
 
@@ -65,15 +63,6 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)
     )
 
-    private fun promotionSettings(): PendingIntent {
-        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(Settings.EXTRA_APP_PACKAGE, service.packageName)
-        return PendingIntent.getActivity(
-            service, R.id.nf_vpn_status, intent,
-            pendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT)
-        )
-    }
-
     private var lastContent: String? = null
     private var lastRegionNode: String? = null
     private var lastRegion: String? = null
@@ -82,7 +71,39 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         return lastRegion
     }
 
-    private fun update() {
+    private var quotaProfile: UUID? = null
+    private var quotaRefreshedAt = -1L
+    private var cachedQuota: SubscriptionQuota? = null
+
+    /** Subscription metadata belongs to the active imported profile, not session traffic. */
+    private suspend fun readQuota(): SubscriptionQuota? {
+        val active = store.activeProfile
+        if (active == null) {
+            quotaProfile = null
+            cachedQuota = null
+            return null
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (quotaProfile != active || quotaRefreshedAt < 0 || now - quotaRefreshedAt >= 60_000L) {
+            val result = try {
+                withContext(Dispatchers.IO) {
+                    ImportedDao().queryByUUID(active)?.let {
+                        SubscriptionQuota.from(it.upload, it.download, it.total)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null // Do not lose the VPN notification while a profile is being replaced.
+            }
+            cachedQuota = result
+            quotaProfile = active
+            quotaRefreshedAt = now
+        }
+        return cachedQuota
+    }
+
+    private suspend fun update() {
         if (!StatusProvider.profileLoaded) return
         try {
             val mode = Clash.queryTunnelState().mode
@@ -98,7 +119,7 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
             }
 
             val paused = StatusProvider.homePaused
-            val label = when {
+            val nodeLabel = when {
                 paused -> service.getString(R.string.live_home_title)
                 mode == TunnelState.Mode.Direct -> service.getString(R.string.live_direct)
                 selection?.balanced == true -> service.getString(R.string.live_multi_route)
@@ -115,33 +136,20 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                     ?: service.getString(R.string.live_proxy_active)
                 else -> service.getString(R.string.live_unavailable)
             }
-            val modeName = service.getString(when (mode) {
-                TunnelState.Mode.Direct -> R.string.live_mode_direct
-                TunnelState.Mode.Global -> R.string.live_mode_global
-                TunnelState.Mode.Rule -> R.string.live_mode_rule
-                TunnelState.Mode.Script -> R.string.live_mode_script
-            })
-            val details = SpannableStringBuilder().append(
-                if (mode == TunnelState.Mode.Direct) service.getString(R.string.live_mode_direct)
-                else service.getString(R.string.live_main_group, selection?.group ?: "—")
-            ).append("\n\n")
-            val summary = if (paused) service.getString(R.string.live_home_hint) else if (showTraffic) {
-                val now = Clash.queryTrafficNow()
-                service.getString(R.string.live_speed_compact, now.trafficDownload(), now.trafficUpload())
-            } else service.getString(R.string.live_connected)
-            val speedStart = details.length
-            details.append(summary)
-            details.setSpan(StyleSpan(Typeface.BOLD), speedStart, details.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            if (showTraffic && !paused) details.append("\n").append(
-                service.getString(R.string.live_total_compact, Clash.queryTrafficTotal().trafficTotal())
-            )
-            StatusProvider.currentProfile?.let {
-                details.append(if (showTraffic) " · " else "\n").append(service.getString(R.string.live_profile, it))
-            }
-
-            val fingerprint = listOf(label, capsuleLabel, summary, details.toString(), modeName,
-                selection?.group, manager.canPostPromotedNotifications()).joinToString("\u0000")
+            val groupLabel = service.getString(R.string.live_selected_group, selection?.group ?: "—")
+            val quota = readQuota()
+            val quotaLabel = quota?.let {
+                service.getString(
+                    R.string.live_quota_usage,
+                    Formatter.formatShortFileSize(service, it.used),
+                    Formatter.formatShortFileSize(service, it.total),
+                    it.percentage,
+                )
+            } ?: service.getString(R.string.live_quota_missing)
+            val fingerprint = listOf(nodeLabel, capsuleLabel, groupLabel, quotaLabel, quota?.percentage)
+                .joinToString("\u0000")
             if (fingerprint == lastContent) return
+
             val builder = Notification.Builder(service, StaticNotificationModule.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_logo_service)
                 .setColor(service.getColorCompat(R.color.color_live_notification))
@@ -150,25 +158,27 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
                 .setShowWhen(false)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .setContentTitle(capsuleLabel)
-                .setContentText(summary)
-                .setSubText(modeName)
+                // Title and group remain visible above the native ColorOS progress rail.
+                .setContentTitle(nodeLabel)
+                .setContentText(groupLabel)
+                .setSubText(quotaLabel)
                 .setContentIntent(openApp)
-                .setStyle(Notification.BigTextStyle().setBigContentTitle(label).bigText(details))
-                // The setter was added in 36.1; the standard extras contract also
-                // supports base API 36 without reflection or an AndroidX upgrade.
                 .addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
                 .setShortCriticalText(NotificationNodeResolver.chipText(capsuleLabel))
+                // Exactly two system-owned actions stay at the bottom of the expanded card.
                 .addAction(Notification.Action.Builder(null, service.getString(R.string.live_nodes), openNodes(selection?.group)).build())
                 .addAction(Notification.Action.Builder(null, service.getString(R.string.live_disconnect), stopVpn).build())
 
-            if (!manager.canPostPromotedNotifications()) {
-                builder.addAction(Notification.Action.Builder(
-                    null, service.getString(R.string.live_enable), promotionSettings()
-                ).build())
+            if (quota != null) {
+                // Native API 36 ProgressStyle expands to its content height on ColorOS 17.
+                // Custom RemoteViews would disqualify the notification from Live Updates.
+                builder.setStyle(Notification.ProgressStyle().setProgress(quota.percentage))
+            } else {
+                // File profiles or subscriptions without a known cap have no meaningful ratio.
+                builder.setStyle(Notification.BigTextStyle()
+                    .setBigContentTitle(nodeLabel).bigText("$groupLabel\n$quotaLabel"))
             }
 
-            // Same foreground ID throughout the session; no duplicate notifications.
             service.startForegroundCompat(R.id.nf_clash_status, builder.build())
             lastContent = fingerprint
         } catch (e: CancellationException) {
@@ -194,7 +204,10 @@ class LiveNotificationModule(service: Service, private val showTraffic: Boolean)
         update()
         while (coroutineContext.isActive) {
             select<Unit> {
-                changes.onReceive { if (interactive || StatusProvider.homePaused) update() }
+                changes.onReceive {
+                    if (it.action == Intents.ACTION_PROFILE_LOADED) quotaRefreshedAt = -1L
+                    if (interactive || StatusProvider.homePaused) update()
+                }
                 screens.onReceive {
                     interactive = it.action == Intent.ACTION_SCREEN_ON
                     if (interactive) update()

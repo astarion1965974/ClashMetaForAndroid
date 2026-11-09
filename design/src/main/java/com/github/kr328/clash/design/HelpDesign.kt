@@ -12,7 +12,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.preference.CouiRichText
 import com.github.kr328.clash.design.util.getHtml
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
@@ -39,7 +38,7 @@ class HelpDesign(
                         url = stringResource(R.string.clash_wiki_url),
                         onOpen = openLink,
                     )
-                    Divider()
+                    SettingDivider()
                     HelpLink(
                         title = stringResource(R.string.clash_meta_wiki),
                         url = stringResource(R.string.clash_meta_wiki_url),
@@ -52,7 +51,7 @@ class HelpDesign(
                         url = stringResource(R.string.clash_meta_core_url),
                         onOpen = openLink,
                     )
-                    Divider()
+                    SettingDivider()
                     HelpLink(
                         title = stringResource(R.string.clash_meta_for_android),
                         url = stringResource(R.string.meta_github_url),

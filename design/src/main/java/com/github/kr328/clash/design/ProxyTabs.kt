@@ -30,7 +30,7 @@ internal fun ProxyTabs(titles: List<String>, selected: Int, backdrop: CouiBackdr
     val renderers = remember(titles) {
         runCatching { titles.map { CouiFloatingRenderer.standalone() } }.getOrNull()
     }
-    // The tab glass samples the scrolling grid behind this overlay, not a flat spacer.
+    // COUI's backdrop is provided by the live node grid; the tab strip is a fixed overlay.
     Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
         if (renderers != null && titles.isNotEmpty()) {
             ChipTabRow(items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },

@@ -28,7 +28,6 @@ import com.github.kr328.clash.service.store.ManagedRoutingSettings
 import com.github.kr328.clash.design.util.getHtml
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
@@ -200,7 +199,7 @@ class ManagedRoutingDesign(
                 }
                 Group(title = stringResource(R.string.managed_categories)) {
                     categories.forEachIndexed { index, (category, titleRes) ->
-                        if (index > 0) Divider()
+                        if (index > 0) SettingDivider()
                         val choice = settings.targets[category]
                             ?: if (category == "cn") "DIRECT" else "Live · 默认代理"
                         NativeCouiAction(
@@ -214,7 +213,7 @@ class ManagedRoutingDesign(
                         title = stringResource(R.string.managed_ads),
                         value = settings::blockAds, enabled = editable, onChanged = { changed() },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.managed_dns),
                         summary = stringResource(R.string.managed_dns_hint),
@@ -229,7 +228,7 @@ class ManagedRoutingDesign(
                         else context.getString(R.string.managed_exception_count, settings.directDomains.size),
                         enabled = editable,
                     ) { editDomains(true) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.managed_proxy),
                         summary = if (settings.proxyDomains.isEmpty())
@@ -247,12 +246,12 @@ class ManagedRoutingDesign(
                         summary = status.toString(),
                         enabled = !savingState,
                     ) { requests.trySend(Request.Refresh) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.managed_update),
                         enabled = editable,
                     ) { requests.trySend(Request.Update) }
-                    Divider()
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.managed_reset),
                         enabled = editable,

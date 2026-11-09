@@ -175,7 +175,7 @@ internal fun HomeTabContent(
                     onRequest(HomeRequest.OpenProxy)
                 }
                 if (hasProviders) {
-                    Divider()
+                    SettingDivider()
                     PageRow(R.drawable.ic_baseline_swap_vertical_circle, stringResource(R.string.coui_home_providers_title),
                         stringResource(R.string.providers), resourceName("home_providers_view")) {
                         onRequest(HomeRequest.OpenProviders)
@@ -219,19 +219,25 @@ internal fun ClashSettings(
     }
 }
 
+/** Consistent group separator: span the icon gutter but retain COUI's card insets. */
+@Composable
+internal fun SettingDivider() {
+    Divider(startIndent = CouiPageDefaults.rowPadding, endIndent = CouiPageDefaults.rowPadding)
+}
+
 @Composable
 internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
         Group(title = stringResource(R.string.live_settings_intro),
             footer = stringResource(R.string.live_settings_intro_hint)) {
             PageRow(R.drawable.ic_baseline_settings, stringResource(R.string.app),
                 stringResource(R.string.live_setting_app_hint)) { onRequest(SettingsRequest.StartApp) }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.network),
                 stringResource(R.string.live_setting_network_hint)) { onRequest(SettingsRequest.StartNetwork) }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_extension, stringResource(R.string.override),
                 stringResource(R.string.live_setting_override_hint)) { onRequest(SettingsRequest.StartOverride) }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_meta, stringResource(R.string.meta_features),
                 stringResource(R.string.live_setting_meta_hint)) { onRequest(SettingsRequest.StartMetaFeature) }
         }
@@ -241,7 +247,7 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
                 stringResource(R.string.live_app_hint), resourceName("app_routing_view")) {
                 onRequest(SettingsRequest.OpenAppRouting)
             }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.live_rules),
                 stringResource(R.string.live_rules_hint), resourceName("rule_routing_view")) {
                 onRequest(SettingsRequest.OpenRouting)
@@ -251,10 +257,10 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
         Group(title = stringResource(R.string.coui_settings_support)) {
             PageRow(R.drawable.ic_baseline_assignment, stringResource(R.string.logs),
                 stringResource(R.string.live_logs_hint)) { onRequest(SettingsRequest.OpenLogs) }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_help_center,
                 stringResource(R.string.help), null) { onRequest(SettingsRequest.OpenHelp) }
-            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            SettingDivider()
             PageRow(R.drawable.ic_baseline_info,
                 stringResource(R.string.about), null) { onRequest(SettingsRequest.OpenAbout) }
         }

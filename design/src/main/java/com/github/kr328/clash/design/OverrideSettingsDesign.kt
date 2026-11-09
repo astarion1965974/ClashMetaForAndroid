@@ -19,7 +19,6 @@ import com.github.kr328.clash.design.preference.NativeCouiNullableString
 import com.github.kr328.clash.design.preference.NativeCouiStringList
 import com.github.kr328.clash.design.preference.NativeCouiStringMap
 import com.github.kr328.clash.design.preference.NativeCouiSelect
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 
 /**
@@ -54,102 +53,102 @@ class OverrideSettingsDesign(
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullablePort(
                         title = stringResource(R.string.socks_port), property = configuration::socksPort,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullablePort(
                         title = stringResource(R.string.redirect_port), property = configuration::redirectPort,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullablePort(
                         title = stringResource(R.string.tproxy_port), property = configuration::tproxyPort,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullablePort(
                         title = stringResource(R.string.mixed_port), property = configuration::mixedPort,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.authentication), property = configuration::authentication,
                         placeholder = stringResource(R.string.dont_modify),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.allow_lan), value = configuration::allowLan,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.ipv6), value = configuration::ipv6,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.bind_address), property = configuration::bindAddress,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.external_controller), property = configuration::externalController,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.external_controller_tls), property = configuration::externalControllerTLS,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.allow_origins), property = configuration.externalControllerCors::allowOrigins,
                         placeholder = stringResource(R.string.dont_modify),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.allow_private_network), value = configuration.externalControllerCors::allowPrivateNetwork,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.secret), property = configuration::secret,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.default_),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.mode), value = configuration::mode,
                         values = listOf<TunnelState.Mode?>(null, TunnelState.Mode.Direct, TunnelState.Mode.Global, TunnelState.Mode.Rule),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.direct_mode), stringResource(R.string.global_mode), stringResource(R.string.rule_mode)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.log_level), value = configuration::logLevel,
                         values = listOf<LogMessage.Level?>(null, LogMessage.Level.Info, LogMessage.Level.Warning, LogMessage.Level.Error, LogMessage.Level.Debug, LogMessage.Level.Silent),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.info), stringResource(R.string.warning), stringResource(R.string.error), stringResource(R.string.debug), stringResource(R.string.silent)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringMap(
                         title = stringResource(R.string.hosts), property = configuration::hosts,
                         placeholder = stringResource(R.string.dont_modify),
@@ -163,104 +162,104 @@ class OverrideSettingsDesign(
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.force_enable), stringResource(R.string.use_built_in)),
                         onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.prefer_h3), value = configuration.dns::preferH3,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.listen), property = configuration.dns::listen,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.disabled),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.append_system_dns), value = configuration.app::appendSystemDns,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.ipv6), value = configuration.dns::ipv6,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.use_hosts), value = configuration.dns::useHosts,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.enhanced_mode), value = configuration.dns::enhancedMode,
                         values = listOf<ConfigurationOverride.DnsEnhancedMode?>(null, ConfigurationOverride.DnsEnhancedMode.None, ConfigurationOverride.DnsEnhancedMode.FakeIp, ConfigurationOverride.DnsEnhancedMode.Mapping),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.disabled), stringResource(R.string.fakeip), stringResource(R.string.mapping)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.name_server), property = configuration.dns::nameServer,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.fallback), property = configuration.dns::fallback,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.default_name_server), property = configuration.dns::defaultServer,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.fakeip_filter), property = configuration.dns::fakeIpFilter,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.fakeip_filter_mode), value = configuration.dns::fakeIPFilterMode,
                         values = listOf<ConfigurationOverride.FilterMode?>(null, ConfigurationOverride.FilterMode.BlackList, ConfigurationOverride.FilterMode.WhiteList, ConfigurationOverride.FilterMode.Rule),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.blacklist), stringResource(R.string.whitelist), stringResource(R.string.rule)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiSelect(
                         title = stringResource(R.string.geoip_fallback), value = configuration.dns.fallbackFilter::geoIp,
                         values = listOf<Boolean?>(null, true, false),
                         labels = listOf(stringResource(R.string.dont_modify), stringResource(R.string.enabled), stringResource(R.string.disabled)),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiNullableString(
                         title = stringResource(R.string.geoip_fallback_code), property = configuration.dns.fallbackFilter::geoIpCode,
                         placeholder = stringResource(R.string.dont_modify), emptyLabel = stringResource(R.string.raw_cn),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.domain_fallback), property = configuration.dns.fallbackFilter::domain,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringList(
                         title = stringResource(R.string.ipcidr_fallback), property = configuration.dns.fallbackFilter::ipcidr,
                         placeholder = stringResource(R.string.dont_modify),
                         enabled = dnsEditable, onChanged = { revision++ },
                     )
-                    Divider()
+                    SettingDivider()
                     NativeCouiStringMap(
                         title = stringResource(R.string.name_server_policy), property = configuration.dns::nameserverPolicy,
                         placeholder = stringResource(R.string.dont_modify),

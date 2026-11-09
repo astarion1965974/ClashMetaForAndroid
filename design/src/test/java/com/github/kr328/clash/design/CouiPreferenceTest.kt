@@ -228,6 +228,9 @@ class CouiPreferenceTest {
         val right = compose.onNodeWithTag("proxy-node-long").fetchSemanticsNode().boundsInRoot
         assertEquals(left.top, right.top, 1f)
         assertEquals(left.height, right.height, 1f)
+        val tabs = compose.onNodeWithTag("proxy-group-tabs", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("Nodes must begin below the actual measured group tabs", left.top >= tabs.bottom - 1f)
         scope.cancel()
         activity.setContentView(View(activity))
     }

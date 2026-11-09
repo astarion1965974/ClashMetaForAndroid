@@ -14,7 +14,6 @@ import com.github.kr328.clash.design.preference.NativeCouiSelect
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
-import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
 import androidx.compose.ui.unit.dp
 
@@ -56,7 +55,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_brightness_4,
                         onChanged = { requests.trySend(Request.ReCreateAllActivities) },
                     )
-                    Divider(startIndent = 0.dp)
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_app_icon_title),
                         summary = stringResource(R.string.hide_app_icon_desc),
@@ -64,7 +63,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_hide,
                         onChanged = onHideIconChange,
                     )
-                    Divider(startIndent = 0.dp)
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_from_recents_title),
                         summary = stringResource(R.string.hide_from_recents_desc),
@@ -81,7 +80,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_domain,
                         enabled = !running,
                     )
-                    Divider(startIndent = 0.dp)
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.live_notification_group),
                         summary = srvStore.notificationProxyGroup.ifBlank {
@@ -89,7 +88,7 @@ class AppSettingsDesign(
                         },
                         enabled = running,
                     ) { requests.trySend(Request.SelectNotificationGroup) }
-                    Divider(startIndent = 0.dp)
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.live_notification_settings),
                         summary = stringResource(R.string.live_notification_settings_summary),
@@ -99,7 +98,7 @@ class AppSettingsDesign(
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                         context.startActivity(intent)
                     }
-                    Divider(startIndent = 0.dp)
+                    SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.show_traffic),
                         summary = stringResource(R.string.show_traffic_summary),
