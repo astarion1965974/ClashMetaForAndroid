@@ -2,14 +2,14 @@ package com.github.kr328.clash.design.util
 
 import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R
-import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.dialog.showCouiAlert
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
+/** Error feedback is a single native COUI dialog, never a stacked toast -> details dialog. */
 suspend fun Design<*>.showExceptionToast(message: CharSequence) {
-    showToast(message, ToastDuration.Long) {
-        setAction(R.string.detail) {
-            it.context.showCouiAlert(it.context.getText(R.string.error), message)
-        }
+    withContext(Dispatchers.Main) {
+        context.showCouiAlert(context.getText(R.string.error), message)
     }
 }
 
