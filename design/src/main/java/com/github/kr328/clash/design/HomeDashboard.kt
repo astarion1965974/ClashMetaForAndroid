@@ -1,5 +1,7 @@
 package com.github.kr328.clash.design
 
+import com.github.kr328.clash.common.constants.DnsDiagnosticTargets
+
 import android.text.format.Formatter
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -58,10 +60,10 @@ internal data class HomeDnsResult(
 
 /** One shared target registry: MainActivity probes the exact sites rendered on Home. */
 object HomeDnsTargets {
-    val mainland = listOf("baidu.com", "bilibili.com", "dianping.com", "douyin.com")
-    val overseas = listOf("google.com", "youtube.com")
-    val ai = listOf("chatgpt.com", "grok.com", "claude.ai")
-    val domains = mainland + overseas + ai
+    val mainland: List<String> = DnsDiagnosticTargets.mainland
+    val overseas: List<String> = DnsDiagnosticTargets.overseas
+    val ai: List<String> = DnsDiagnosticTargets.ai
+    val domains: List<String> = DnsDiagnosticTargets.domains
 }
 
 @Composable
