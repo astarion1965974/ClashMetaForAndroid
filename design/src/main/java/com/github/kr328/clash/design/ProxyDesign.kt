@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
@@ -143,12 +144,13 @@ class ProxyDesign(
                                     .testTag("proxy-header-solid-source"),
                             )
                             Column(Modifier.fillMaxWidth()) {
-                                // TopAppBar otherwise inherits Scaffold's BODY backdrop
-                                // and blurs nodes behind its compact title.
+                                // Use the one solid header backdrop for both components.
+                                // Transparent removes TopAppBar's independent tint gradient
+                                // while its native buttons retain their COUI glass.
                                 ProvideCouiBackdrop(headerBackdrop) {
                                     ColorOsCompactTopBar(
                                         title = stringResource(R.string.proxy),
-                                        backgroundColor = chromeSurface,
+                                        backgroundColor = Color.Transparent,
                                         navigationIcon = {
                                             ToolbarIcon(
                                                 com.itos.coui.icons.CouiIcons.Filled.Back,
@@ -178,7 +180,6 @@ class ProxyDesign(
                                         ProxyTabs(
                                             titles = groupNames,
                                             selected = selectedPage.coerceIn(groupNames.indices),
-                                            backgroundColor = chromeSurface,
                                             backdrop = headerBackdrop,
                                         ) { index ->
                                             selectedPage = index
