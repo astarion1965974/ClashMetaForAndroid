@@ -123,14 +123,18 @@ class LiveUiTest {
             val design = ProxyDesign(ctx, null, groups, UiStore(ctx))
             ctx.setContentView(design.root)
             compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-title-bar").assertIsDisplayed()
             compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
             compose.onNodeWithTag("proxy-chip-solid-host").assertIsDisplayed()
             compose.onNodeWithTag("proxy-header-solid-source").assertIsDisplayed()
             val header = compose.onNodeWithTag("proxy-fixed-header").getUnclippedBoundsInRoot()
+            val toolbar = compose.onNodeWithTag("proxy-title-bar").getUnclippedBoundsInRoot()
             val tabs = compose.onNodeWithTag("proxy-group-tabs").getUnclippedBoundsInRoot()
-            assertTrue("ChipTabRow should be fully contained in the pinned toolbar",
-                tabs.top >= header.top && tabs.bottom <= header.bottom)
-            // Native alpha8 chips own selectable Tab semantics. The JVM-only
+            assertEquals("Title and chip row must touch: no independent header spacing",
+                toolbar.bottom, tabs.top)
+            assertTrue("Unified header must contain both native components",
+                toolbar.top >= header.top && tabs.bottom <= header.bottom)
+            // Native alpha9 chips own selectable Tab semantics. The JVM-only
             // renderer fallback provides the same semantics without custom tags.
             // UiStore may persist a different initial group across test cases.
             compose.onNodeWithText(groups[0]).performClick().assertIsSelected()
