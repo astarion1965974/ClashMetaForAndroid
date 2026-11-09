@@ -40,8 +40,10 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
 
     override suspend fun main() {
         val service = ServiceStore(this)
-        val selected = withContext(Dispatchers.IO) { service.accessControlPackages.toMutableSet() }
-        val mode = withContext(Dispatchers.IO) { service.accessControlMode }
+        val (selected, mode) = withContext(Dispatchers.IO) {
+            service.initializeDomesticBypassIfUnconfigured()
+            service.accessControlPackages.toMutableSet() to service.accessControlMode
+        }
         val design = AccessControlDesign(this, uiStore, selected, mode, clashRunning)
         setContentDesign(design)
         interceptBack(design, { saving || (!saved && design.dirty) }, ::confirmBack)
@@ -55,6 +57,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.SelectAll -> design.select(AppAccessPolicy.Selection.All)
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
+                        AccessControlDesign.Request.ApplyDomesticDefaults -> design.applyDomesticDefaults()
                         AccessControlDesign.Request.Import -> {
                             val clip = getSystemService<ClipboardManager>()?.primaryClip
                             if (clip != null && clip.itemCount > 0) {

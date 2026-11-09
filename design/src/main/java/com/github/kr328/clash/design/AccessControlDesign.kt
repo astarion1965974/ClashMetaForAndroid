@@ -42,10 +42,12 @@ import com.itos.coui.theme.CouiTheme
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
+import com.github.kr328.clash.service.model.DomesticAppDefaults
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
 import com.itos.coui.layout.Group
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
@@ -59,7 +61,7 @@ class AccessControlDesign(
     initialMode: AccessControlMode,
     running: Boolean,
 ) : Design<AccessControlDesign.Request>(context) {
-    enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, Import, Export, Save }
+    enum class Request { ReloadApps, SelectAll, SelectNone, SelectInvert, ApplyDomesticDefaults, Import, Export, Save }
     private val original = selected.toSet()
     private val originalMode = initialMode
     private val menu by lazy { AccessControlMenu(context, uiStore, requests) }
@@ -203,6 +205,20 @@ class AccessControlDesign(
         refresh()
     }
 
+    /** Explicit opt-in for existing users: change only curated domestic package IDs.
+     * Do not override any other app's effective route or silently migrate old modes.
+     */
+    fun applyDomesticDefaults() {
+        if (savingState) return
+        DomesticAppDefaults.bypassPackages.forEach { pkg ->
+            val next = AppAccessPolicy.withRouting(mode, selected, pkg, throughClash = false)
+            mode = next.mode
+            selected.clear()
+            selected.addAll(next.selected)
+        }
+        refresh()
+    }
+
     /** Clipboard import is an explicit bypass list, independent of legacy mode. */
     fun replaceBypassApps(packages: Set<String>) {
         if (savingState) return
@@ -269,8 +285,17 @@ class AccessControlDesign(
 private fun AppRoutingListHeader(count: String, options: List<CouiMenuOption>, enabled: Boolean) {
     val colors = CouiTheme.colorScheme
     val source = remember { MutableInteractionSource() }
+    // Align count label, native SearchBar, filters and app cards to the
+    // same 16dp outer column; do not use Group's 32dp title inset here.
     Row(
-        Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+        Modifier.fillMaxWidth()
+            .padding(
+                start = CouiPageDefaults.horizontalMargin,
+                end = CouiPageDefaults.horizontalMargin,
+                top = CouiPageDefaults.groupSpacing,
+                bottom = 8.dp,
+            )
+            .testTag("app-routing-count-header"),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -278,7 +303,7 @@ private fun AppRoutingListHeader(count: String, options: List<CouiMenuOption>, e
             text = count,
             kind = CouiTextKind.GroupTitle,
             color = colors.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("app-routing-count-label"),
         )
         CouiAnchoredMenu(options) { open ->
             Box(

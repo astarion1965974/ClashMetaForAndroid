@@ -70,4 +70,5 @@
     <string name="managed_status_loaded">当前加载 %1$d 个规则集 · 缓存时间：%2$s</string>
     <string name="app_import_bypass">导入不经过 Clash 的应用</string>
     <string name="app_export_bypass">导出不经过 Clash 的应用</string>
+    <string name="app_domestic_defaults">将常见国内应用设为不经过 Clash</string>
 </resources>
