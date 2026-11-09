@@ -72,7 +72,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.Export -> {
                             val bypass = design.allApps.asSequence().map(AppInfo::packageName)
                                 .filter { !AppAccessPolicy.usesClash(design.mode, it in selected) }
-                                .sorted().joinToString("\\n")
+                                .sorted().joinToString("\n")
                             getSystemService<ClipboardManager>()?.setPrimaryClip(
                                 ClipData.newPlainText("clash_bypass_packages", bypass),
                             )
