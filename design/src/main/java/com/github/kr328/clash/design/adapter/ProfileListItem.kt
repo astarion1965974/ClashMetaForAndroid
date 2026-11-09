@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.preference.CouiRowAction
+import com.github.kr328.clash.design.dialog.CouiAnchoredMenu
+import com.github.kr328.clash.design.dialog.CouiMenuOption
 import com.github.kr328.clash.design.util.elapsedIntervalString
 import com.github.kr328.clash.design.util.toBytesString
 import com.github.kr328.clash.design.util.toDateStr
@@ -30,6 +32,7 @@ internal fun ProfileListItem(
     currentTime: Long,
     onClicked: (Profile) -> Unit,
     onMenuClicked: (Profile) -> Unit,
+    menuOptions: ((Profile) -> List<CouiMenuOption>)? = null,
 ) {
     val context = LocalContext.current
     val type = if (profile.pending) {
@@ -67,8 +70,14 @@ internal fun ProfileListItem(
             }
         } else null,
         trailing = {
-            CouiRowAction(R.drawable.ic_baseline_more_vert, stringResource(R.string.more)) {
-                onMenuClicked(profile)
+            if (menuOptions != null) {
+                CouiAnchoredMenu(menuOptions(profile)) { open ->
+                    CouiRowAction(R.drawable.ic_baseline_more_vert, stringResource(R.string.more), open)
+                }
+            } else {
+                CouiRowAction(R.drawable.ic_baseline_more_vert, stringResource(R.string.more)) {
+                    onMenuClicked(profile)
+                }
             }
         },
     )

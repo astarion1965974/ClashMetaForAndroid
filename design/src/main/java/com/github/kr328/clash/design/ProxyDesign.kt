@@ -21,13 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +41,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -50,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.component.ProxyMenu
+import com.github.kr328.clash.design.dialog.CouiAnchoredMenu
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
@@ -106,17 +105,9 @@ class ProxyDesign(
         setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
             val density = LocalDensity.current
-            // Every strategy group has an independent, saveable offset, including after
-            // Activity recreation; COUI's native chip bar remains outside this scroll.
-            val groupScrollStates = groupNames.map { name ->
-                key(name) { rememberLazyGridState() }
-            }
-            val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                canScroll = {
-                    groupScrollStates.getOrNull(selectedPage)?.let {
-                        it.canScrollBackward || it.canScrollForward
-                    } ?: false
-                })
+            val scrollBehavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            // Independent scroll positions prevent one strategy group's offset leaking into another.
+            val groupScrollStates = remember(groupNames) { groupNames.map { LazyGridState() } }
             var tabsHeightPx by remember { mutableIntStateOf(0) }
             val tabsBackdrop = rememberCouiBackdrop()
             CouiTheme(darkTheme = dark) {
@@ -140,78 +131,80 @@ class ProxyDesign(
                                         stringResource(R.string.delay_test),
                                     ) { requestUrlTesting() }
                                 }
-                                ToolbarIcon(
-                                    ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
-                                    stringResource(R.string.more),
-                                ) { menu.show() }
+                                CouiAnchoredMenu(menu.options()) { open ->
+                                    ToolbarIcon(
+                                        ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
+                                        stringResource(R.string.more),
+                                        open,
+                                    )
+                                }
                             },
                         )
                     },
                 ) { padding ->
-                    val scrollPadding = scrollBehavior.state.contentPadding(padding, density)
-                    if (groupNames.isEmpty()) {
-                        Box(
-                            Modifier.fillMaxSize().padding(scrollPadding).consumeWindowInsets(padding),
-                        ) {
+                    val contentPadding = scrollBehavior.state.contentPadding(padding, density)
+                    Column(Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding)) {
+                        if (groupNames.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.proxy_empty_tips),
                                 kind = CouiTextKind.PreferenceSummary,
                                 modifier = Modifier.padding(24.dp),
                             )
-                        }
-                    } else {
-                        val groupIndex = selectedPage.coerceIn(groupNames.indices)
-                        val current = groups.getOrNull(groupIndex)
-                        val gridState = groupScrollStates[groupIndex]
-                        // Match COUI's Scaffold: the full viewport is a sampling source,
-                        // while the top bar and chip glass float over scrolling content.
-                        Box(Modifier.fillMaxSize().consumeWindowInsets(padding)) {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
-                                state = gridState,
-                                modifier = Modifier.fillMaxSize()
-                                    .couiBackdrop(tabsBackdrop)
-                                    .background(CouiTheme.colorScheme.background),
-                                contentPadding = PaddingValues(
-                                    start = scrollPadding.calculateStartPadding(LocalLayoutDirection.current),
-                                    top = scrollPadding.calculateTopPadding() + with(density) { tabsHeightPx.toDp() },
-                                    end = scrollPadding.calculateEndPadding(LocalLayoutDirection.current),
-                                    bottom = scrollPadding.calculateBottomPadding() + 24.dp,
-                                ),
-                            ) {
-                                itemsIndexed(
-                                    current?.proxies.orEmpty(),
-                                    key = { index, proxy -> "${index}:${proxy.name}" },
-                                ) { _, proxy ->
-                                    val description = if (proxy.isGroup) {
-                                        val linked = current?.links?.get(proxy.name)
-                                        if (linked != null) "${proxy.type} (${linked.ifEmpty { "*" }})"
-                                        else proxy.type
-                                    } else proxy.subtitle
-                                    val delayText = proxy.delay.takeIf {
-                                        it in 0..Short.MAX_VALUE
-                                    }?.let { " · ${it} ms" }.orEmpty()
-                                    ProxyNodeCard(
-                                        name = proxy.name,
-                                        title = if (proxy.isGroup) proxy.name else proxy.title,
-                                        summary = description + delayText,
-                                        selected = proxy.name == current?.selectedName,
-                                        enabled = current?.selectable == true,
-                                        onSelect = {
-                                            requests.trySend(Request.Select(groupIndex, proxy.name))
-                                        },
-                                    )
+                        } else {
+                            val groupIndex = selectedPage.coerceIn(groupNames.indices)
+                            val current = groups.getOrNull(groupIndex)
+                            val gridState = groupScrollStates[groupIndex]
+                            Box(Modifier.weight(1f)) {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(proxyLine.coerceIn(1, 3)),
+                                    state = gridState,
+                                    modifier = Modifier.fillMaxSize()
+                                        .background(CouiTheme.colorScheme.background)
+                                        .couiBackdrop(tabsBackdrop),
+                                    // Measure the actual tab row, including its vertical margins.
+                                    // Nodes scroll beneath the glass instead of a hard-coded 72dp gap.
+                                    contentPadding = PaddingValues(
+                                        top = with(density) { tabsHeightPx.toDp() },
+                                        bottom = 24.dp,
+                                    ),
+                                ) {
+                                    itemsIndexed(
+                                        current?.proxies.orEmpty(),
+                                        key = { index, proxy -> "${index}:${proxy.name}" },
+                                    ) { _, proxy ->
+                                        val description = if (proxy.isGroup) {
+                                            val linked = current?.links?.get(proxy.name)
+                                            if (linked != null) "${proxy.type} (${linked.ifEmpty { "*" }})"
+                                            else proxy.type
+                                        } else proxy.subtitle
+                                        val delayText = proxy.delay.takeIf {
+                                            it in 0..Short.MAX_VALUE
+                                        }?.let { " · ${it} ms" }.orEmpty()
+                                        ProxyNodeCard(
+                                            name = proxy.name,
+                                            title = if (proxy.isGroup) proxy.name else proxy.title,
+                                            summary = description + delayText,
+                                            selected = proxy.name == current?.selectedName,
+                                            enabled = current?.selectable == true,
+                                            onSelect = {
+                                                requests.trySend(Request.Select(groupIndex, proxy.name))
+                                            },
+                                        )
+                                    }
                                 }
-                            }
-                            Box(
-                                Modifier.align(Alignment.TopCenter)
-                                    .padding(top = scrollPadding.calculateTopPadding())
-                                    .onSizeChanged { tabsHeightPx = it.height }
-                                    .testTag("proxy-group-tabs"),
-                            ) {
-                                ProxyTabs(groupNames, groupIndex, tabsBackdrop) { index ->
-                                    selectedPage = index
-                                    uiStore.proxyLastGroup = groupNames[index]
+                                // This overlay is anchored directly below the collapsing top bar;
+                                // it does not participate in LazyGrid scroll or move with its items.
+                                Box(
+                                    Modifier.align(Alignment.TopCenter)
+                                        .onSizeChanged { tabsHeightPx = it.height }
+                                        .testTag("proxy-group-tabs"),
+                                ) {
+                                    ProxyTabs(
+                                        groupNames, groupIndex, tabsBackdrop,
+                                    ) { index ->
+                                        selectedPage = index
+                                        uiStore.proxyLastGroup = groupNames[index]
+                                    }
                                 }
                             }
                         }

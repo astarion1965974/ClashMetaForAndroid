@@ -28,14 +28,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.dialog.CouiMenuOption
 import com.github.kr328.clash.design.dialog.showCouiContent
-import com.github.kr328.clash.design.dialog.showCouiMenu
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.github.kr328.clash.service.model.Profile
@@ -79,10 +77,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     override val root: View = ComposeView(context).apply {
         setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-            val listState = rememberLazyListState()
-            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                canScroll = { listState.canScrollForward || listState.canScrollBackward })
+            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
             val density = LocalDensity.current
+            val listState = rememberLazyListState()
             CouiTheme(darkTheme = dark) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
@@ -125,16 +122,11 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     ) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
-            contentPadding = PaddingValues(
-                start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
-                top = contentPadding.calculateTopPadding(),
-                end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
-                bottom = contentPadding.calculateBottomPadding() + 16.dp,
-            ),
+            modifier = Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding),
+            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
             items(visibleProfiles, key = { it.uuid.toString() }) { profile ->
-                ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu)
+                ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu, menuOptions = ::menuOptions)
             }
         }
     }
@@ -174,7 +166,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
     fun updateElapsed() { displayedTime = System.currentTimeMillis() }
 
-    private fun showMenu(profile: Profile) {
+    private fun menuOptions(profile: Profile): List<CouiMenuOption> {
         val options = mutableListOf<CouiMenuOption>()
         fun add(res: Int, request: Request) {
             options.add(CouiMenuOption(context.getString(res)) { requests.trySend(request) })
@@ -186,7 +178,13 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         if (profile.imported && profile.type == Profile.Type.Url && profile.source.isNotEmpty())
             add(R.string.share_qr_code, Request.ShareQrCode(profile))
         add(R.string.delete, Request.Delete(profile))
-        context.showCouiMenu(options)
+        return options
+    }
+
+
+    private fun showMenu(profile: Profile) {
+        // Legacy test callback retained; production overflows use anchored COUI Menu.
+        menuOptions(profile)
     }
 
     fun requestUpdateAll() {

@@ -18,12 +18,16 @@ class ProxyMenu(
     private val updateConfig: () -> Unit,
 ) {
     fun show() {
+        context.showCouiMenu(options())
+    }
+
+    fun options(): List<CouiMenuOption> {
         fun option(group: Int, label: Int, selected: Boolean, action: () -> Unit) = CouiMenuOption(
             "${context.getString(group)} · ${context.getString(label)}", selected, action = action)
         fun line(value: Int) { uiStore.proxyLine = value; updateConfig(); requests.trySend(ProxyDesign.Request.ReloadAll) }
         fun sort(value: ProxySort) { uiStore.proxySort = value; requests.trySend(ProxyDesign.Request.ReloadAll) }
         fun changeMode(value: TunnelState.Mode?) { requests.trySend(ProxyDesign.Request.PatchMode(value)) }
-        context.showCouiMenu(listOf(
+        return listOf(
             option(R.string.filter, R.string.not_selectable, uiStore.proxyExcludeNotSelectable) {
                 uiStore.proxyExcludeNotSelectable = !uiStore.proxyExcludeNotSelectable; requests.trySend(ProxyDesign.Request.ReLaunch)
             },
@@ -37,6 +41,6 @@ class ProxyMenu(
             option(R.string.sort, R.string.default_, uiStore.proxySort == ProxySort.Default) { sort(ProxySort.Default) },
             option(R.string.sort, R.string.name, uiStore.proxySort == ProxySort.Title) { sort(ProxySort.Title) },
             option(R.string.sort, R.string.delay, uiStore.proxySort == ProxySort.Delay) { sort(ProxySort.Delay) },
-        ))
+        )
     }
 }
