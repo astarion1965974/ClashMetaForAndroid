@@ -3,4 +3,6 @@
     <string name="coui_editor_reset_override">重置为不修改</string>
     <string name="coui_editor_clear_input">清除输入</string>
     <string name="coui_editor_invalid_value">输入无效，请检查格式</string>
+    <string name="coui_node_full_name">查看完整节点名称</string>
+    <string name="coui_node_copy_name">复制节点名称</string>
 </resources>

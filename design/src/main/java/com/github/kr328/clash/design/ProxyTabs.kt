@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.itos.coui.backdrop.CouiBackdrop
 import com.itos.coui.chip.ChipTabRow
 import com.itos.coui.chip.CouiChipTabItem
@@ -30,8 +31,9 @@ internal fun ProxyTabs(titles: List<String>, selected: Int, backdrop: CouiBackdr
     val renderers = remember(titles) {
         runCatching { titles.map { CouiFloatingRenderer.standalone() } }.getOrNull()
     }
-    // COUI's backdrop is provided by the live node grid; the tab strip is a fixed overlay.
-    Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
+    // The bar uses the solid light/dark surface from DemoChipSamples; chip material remains native.
+    Box(Modifier.fillMaxWidth().background(if (CouiTheme.isDark) Color.Black else Color.White)
+        .padding(top = 8.dp, bottom = 12.dp)) {
         if (renderers != null && titles.isNotEmpty()) {
             ChipTabRow(items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },
                 selectedKey = selected.coerceIn(titles.indices), onSelectedKeyChange = { onSelect(it as Int) },
