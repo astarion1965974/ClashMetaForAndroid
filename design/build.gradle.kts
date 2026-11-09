@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":service"))
     implementation(libs.coui)
+    implementation(libs.coui.icons)
 
     implementation(libs.kotlin.coroutine)
     implementation(libs.androidx.core)
