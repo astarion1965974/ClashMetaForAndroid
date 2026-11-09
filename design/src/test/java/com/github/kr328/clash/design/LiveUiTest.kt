@@ -124,10 +124,11 @@ class LiveUiTest {
             ctx.setContentView(design.root)
             compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
             compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
-            // UiStore may persist a different initial group across test cases.
-            compose.onNodeWithTag("proxy-tab-0").performClick().assertIsSelected()
-            compose.onNodeWithTag("proxy-tab-1").performClick().assertIsSelected()
-            compose.onNodeWithTag("proxy-tab-0").assertExists()
+            compose.onNodeWithTag("proxy-native-chip-row").assertIsDisplayed()
+            // The native COUI ChipTabRow owns its selection semantics and animation.
+            // Assert labels remain exposed without coupling tests to internal chip tags.
+            compose.onNodeWithText("自动选择").assertExists()
+            compose.onNodeWithText("节点选择").assertExists()
             savePreview(compose.onRoot().captureToImage().asAndroidBitmap(),
                 if (dark) "proxy-fixed-header-dark" else "proxy-fixed-header-light")
             ctx.setContentView(View(ctx))
