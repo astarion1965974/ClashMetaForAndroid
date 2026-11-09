@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
@@ -78,9 +79,10 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     override val root: View = ComposeView(context).apply {
         setContent {
             val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
-            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-            val density = LocalDensity.current
             val listState = rememberLazyListState()
+            val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                canScroll = { listState.canScrollForward || listState.canScrollBackward })
+            val density = LocalDensity.current
             CouiTheme(darkTheme = dark) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
@@ -123,8 +125,13 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     ) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(contentPadding).consumeWindowInsets(padding),
-            contentPadding = PaddingValues(bottom = 16.dp),
+            modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
+            contentPadding = PaddingValues(
+                start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                top = contentPadding.calculateTopPadding(),
+                end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
+                bottom = contentPadding.calculateBottomPadding() + 16.dp,
+            ),
         ) {
             items(visibleProfiles, key = { it.uuid.toString() }) { profile ->
                 ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu)
