@@ -1,4 +1,6 @@
 import java.net.URL
+import java.net.HttpURLConnection
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -94,13 +96,47 @@ task("downloadGeoFiles") {
 
     doLast {
         geoFilesUrls.forEach { (downloadUrl, outputFileName) ->
-            val url = URL(downloadUrl)
             val outputPath = file("$geoFilesDownloadDir/$outputFileName")
             outputPath.parentFile.mkdirs()
-            url.openStream().use { input ->
-                Files.copy(input, outputPath.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                println("$outputFileName downloaded to $outputPath")
+            // GitHub release CDN occasionally returns HTTP 504 for individual
+            // large geo assets. Retry each independently; never retain partial
+            // files after a failed attempt or replace a valid prior download.
+            val target = outputPath.toPath()
+            val staging = outputPath.toPath().resolveSibling("$outputFileName.download")
+            val attempts = 10
+            var downloaded = false
+            for (attempt in 1..attempts) {
+                var connection: HttpURLConnection? = null
+                try {
+                    connection = (URL(downloadUrl).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 20_000
+                        readTimeout = 90_000
+                        instanceFollowRedirects = true
+                        setRequestProperty("User-Agent", "ClashMetaLive-Android-Release")
+                    }
+                    connection.inputStream.use { input ->
+                        Files.copy(input, staging, StandardCopyOption.REPLACE_EXISTING)
+                    }
+                    require(Files.size(staging) > 1024L) {
+                        "Downloaded geo file is unexpectedly small: $outputFileName"
+                    }
+                    Files.move(staging, target, StandardCopyOption.REPLACE_EXISTING)
+                    println("$outputFileName downloaded to $outputPath (attempt $attempt)")
+                    downloaded = true
+                    break
+                } catch (cause: Exception) {
+                    Files.deleteIfExists(staging)
+                    if (attempt == attempts) {
+                        throw IOException("Unable to download $outputFileName after $attempts attempts", cause)
+                    }
+                    val delayMs = (attempt * 3_000L).coerceAtMost(15_000L)
+                    logger.warn("Download $outputFileName attempt $attempt/$attempts failed: ${cause.message}. Retrying.")
+                    Thread.sleep(delayMs)
+                } finally {
+                    connection?.disconnect()
+                }
             }
+            check(downloaded) { "No successful geo download: $outputFileName" }
         }
     }
 }
