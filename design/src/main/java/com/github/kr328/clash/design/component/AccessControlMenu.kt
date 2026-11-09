@@ -23,6 +23,9 @@ class AccessControlMenu(
             CouiMenuOption(context.getString(res), selected, enabled, action)
         fun sort(value: AppInfoSort) { uiStore.accessControlSort = value; requests.trySend(Request.ReloadApps) }
         return listOf(
+            option(R.string.app_domestic_defaults, enabled = selectionEnabled) {
+                requests.trySend(Request.ApplyDomesticDefaults)
+            },
             option(R.string.app_bulk_all, enabled = selectionEnabled) { requests.trySend(Request.SelectAll) },
             option(R.string.app_bulk_none, enabled = selectionEnabled) { requests.trySend(Request.SelectNone) },
             option(R.string.app_bulk_invert, enabled = selectionEnabled) { requests.trySend(Request.SelectInvert) },
