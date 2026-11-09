@@ -161,9 +161,9 @@ internal fun ColorOsLazyFormPage(
                 state = state,
                 modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
                 contentPadding = PaddingValues(
-                    start = scrollingPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    start = scrollingPadding.calculateLeftPadding(LocalLayoutDirection.current),
                     top = scrollingPadding.calculateTopPadding(),
-                    end = scrollingPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    end = scrollingPadding.calculateRightPadding(LocalLayoutDirection.current),
                     bottom = scrollingPadding.calculateBottomPadding() + CouiPageDefaults.groupSpacing,
                 ),
                 content = content,

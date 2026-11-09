@@ -21,7 +21,7 @@ class ProxyMenu(
         context.showCouiMenu(options())
     }
 
-    fun options(): List<CouiMenuOption> {
+    internal fun options(): List<CouiMenuOption> {
         fun option(group: Int, label: Int, selected: Boolean, action: () -> Unit) = CouiMenuOption(
             "${context.getString(group)} · ${context.getString(label)}", selected, action = action)
         fun line(value: Int) { uiStore.proxyLine = value; updateConfig(); requests.trySend(ProxyDesign.Request.ReloadAll) }

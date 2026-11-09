@@ -18,7 +18,7 @@ class AccessControlMenu(
         context.showCouiMenu(options(selectionEnabled))
     }
 
-    fun options(selectionEnabled: Boolean = true): List<CouiMenuOption> {
+    internal fun options(selectionEnabled: Boolean = true): List<CouiMenuOption> {
         fun option(res: Int, selected: Boolean? = null, enabled: Boolean = true, action: () -> Unit) =
             CouiMenuOption(context.getString(res), selected, enabled, action)
         fun sort(value: AppInfoSort) { uiStore.accessControlSort = value; requests.trySend(Request.ReloadApps) }

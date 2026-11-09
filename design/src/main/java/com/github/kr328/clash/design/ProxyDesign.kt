@@ -171,9 +171,9 @@ class ProxyDesign(
                                     .couiBackdrop(tabsBackdrop)
                                     .background(CouiTheme.colorScheme.background),
                                 contentPadding = PaddingValues(
-                                    start = scrollPadding.calculateStartPadding(LocalLayoutDirection.current),
+                                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current),
                                     top = scrollPadding.calculateTopPadding() + with(density) { tabsHeightPx.toDp() },
-                                    end = scrollPadding.calculateEndPadding(LocalLayoutDirection.current),
+                                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current),
                                     bottom = scrollPadding.calculateBottomPadding() + 24.dp,
                                 ),
                             ) {

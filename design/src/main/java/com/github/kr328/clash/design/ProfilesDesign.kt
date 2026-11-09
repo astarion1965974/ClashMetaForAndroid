@@ -126,9 +126,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
             state = listState,
             modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
             contentPadding = PaddingValues(
-                start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                start = contentPadding.calculateLeftPadding(LocalLayoutDirection.current),
                 top = contentPadding.calculateTopPadding(),
-                end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
+                end = contentPadding.calculateRightPadding(LocalLayoutDirection.current),
                 bottom = contentPadding.calculateBottomPadding() + 16.dp,
             ),
         ) {

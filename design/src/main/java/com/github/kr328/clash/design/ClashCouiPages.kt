@@ -692,9 +692,9 @@ internal fun ColorOsLazySubPage(
                 reverseLayout = reverseLayout,
                 modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
                 contentPadding = PaddingValues(
-                    start = scrollPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    start = scrollPadding.calculateLeftPadding(LocalLayoutDirection.current),
                     top = scrollPadding.calculateTopPadding(),
-                    end = scrollPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    end = scrollPadding.calculateRightPadding(LocalLayoutDirection.current),
                     bottom = scrollPadding.calculateBottomPadding() + 24.dp,
                 ),
                 content = content,
@@ -714,8 +714,11 @@ internal fun ColorOsLargeTopBar(
     // Let COUI alpha8 own the expanded/collapsed type ramp, material and typography.
     LargeTopAppBar(
         title = {
-            androidx.compose.material3.Text(
-                text = title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            BasicText(
+                text = title,
+                style = LocalCouiTextStyle.current.copy(color = CouiTheme.colorScheme.onSurface),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         navigationIcon = navigationIcon,
