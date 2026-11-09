@@ -25,7 +25,7 @@ object AppAccessPolicy {
         throughClash: Boolean,
     ): RoutingState = when (mode) {
         AccessControlMode.AcceptAll -> if (throughClash) {
-            RoutingState(mode, selected)
+            RoutingState(mode, selected.toSet())
         } else {
             RoutingState(AccessControlMode.DenySelected, setOf(packageName))
         }
