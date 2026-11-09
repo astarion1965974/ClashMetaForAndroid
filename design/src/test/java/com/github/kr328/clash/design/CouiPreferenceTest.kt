@@ -10,12 +10,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.github.kr328.clash.core.model.Proxy
@@ -177,8 +179,8 @@ class CouiPreferenceTest {
             }
         })
         compose.onNodeWithText("Mixed", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithTag("coui-setting-chevron", useUnmergedTree = true)
-            .assertIsDisplayed()
+        compose.onAllNodesWithTag("coui-setting-chevron", useUnmergedTree = true)
+            .assertCountEquals(2)
         val title = compose.onNodeWithText("TUN stack", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
         val value = compose.onNodeWithText("Mixed", useUnmergedTree = true)
