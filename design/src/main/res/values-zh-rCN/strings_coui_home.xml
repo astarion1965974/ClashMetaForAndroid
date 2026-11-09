@@ -27,6 +27,8 @@
     <string name="coui_dns_pending">尚未检测</string>
     <string name="coui_dns_result">%1$s · %2$d 毫秒</string>
     <string name="coui_dns_failed">解析失败或超时</string>
+    <string name="coui_dns_failed_detail">DNS 错误：%1$s</string>
+    <string name="coui_dns_timeout_detail">DNS 查询超时，请检查上游服务器及代理连接</string>
     <string name="coui_dns_note">展示当前配置命中的 DNS 上游候选，不是逐次查询链路抓包。RULES、缓存与 Fallback 可能改变实际 DNS 路径。</string>
     <string name="coui_clear">清除</string>
     <string name="coui_input_back_cancel">返回可取消修改</string>
