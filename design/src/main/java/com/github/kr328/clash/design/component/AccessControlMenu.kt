@@ -31,8 +31,8 @@ class AccessControlMenu(
             option(R.string.install_time, uiStore.accessControlSort == AppInfoSort.InstallTime) { sort(AppInfoSort.InstallTime) },
             option(R.string.update_time, uiStore.accessControlSort == AppInfoSort.UpdateTime) { sort(AppInfoSort.UpdateTime) },
             option(R.string.reverse, uiStore.accessControlReverse) { uiStore.accessControlReverse = !uiStore.accessControlReverse; requests.trySend(Request.ReloadApps) },
-            option(R.string.import_from_clipboard, enabled = selectionEnabled) { requests.trySend(Request.Import) },
-            option(R.string.export_to_clipboard) { requests.trySend(Request.Export) },
+            option(R.string.app_import_bypass, enabled = selectionEnabled) { requests.trySend(Request.Import) },
+            option(R.string.app_export_bypass) { requests.trySend(Request.Export) },
         )
     }
 }
