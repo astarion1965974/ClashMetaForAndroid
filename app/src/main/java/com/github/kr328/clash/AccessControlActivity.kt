@@ -40,8 +40,10 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
 
     override suspend fun main() {
         val service = ServiceStore(this)
-        val selected = withContext(Dispatchers.IO) { service.accessControlPackages.toMutableSet() }
-        val mode = withContext(Dispatchers.IO) { service.accessControlMode }
+        val (selected, mode) = withContext(Dispatchers.IO) {
+            service.initializeDomesticBypassIfUnconfigured()
+            service.accessControlPackages.toMutableSet() to service.accessControlMode
+        }
         val design = AccessControlDesign(this, uiStore, selected, mode, clashRunning)
         setContentDesign(design)
         interceptBack(design, { saving || (!saved && design.dirty) }, ::confirmBack)
