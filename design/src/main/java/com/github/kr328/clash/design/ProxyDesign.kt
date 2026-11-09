@@ -144,11 +144,13 @@ class ProxyDesign(
                                     .testTag("proxy-header-solid-source"),
                             )
                             Column(Modifier.fillMaxWidth()) {
-                                // Use the one solid header backdrop for both components.
-                                // Transparent removes TopAppBar's independent tint gradient
-                                // while its native buttons retain their COUI glass.
-                                ProvideCouiBackdrop(headerBackdrop) {
-                                    ColorOsCompactTopBar(
+                                // This title and the native ChipTabRow must be vertically
+                                // adjacent without an intermediate spacer or material seam.
+                                Box(Modifier.fillMaxWidth().testTag("proxy-title-bar")) {
+                                    // Transparent removes TopAppBar's independent tint
+                                    // gradient; its buttons still use native COUI glass.
+                                    ProvideCouiBackdrop(headerBackdrop) {
+                                        ColorOsCompactTopBar(
                                         title = stringResource(R.string.proxy),
                                         backgroundColor = Color.Transparent,
                                         navigationIcon = {
@@ -173,7 +175,8 @@ class ProxyDesign(
                                                 )
                                             }
                                         },
-                                    )
+                                        )
+                                    }
                                 }
                                 if (groupNames.isNotEmpty()) {
                                     Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
