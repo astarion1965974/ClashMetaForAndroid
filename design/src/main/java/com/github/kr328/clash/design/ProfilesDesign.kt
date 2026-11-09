@@ -232,7 +232,11 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         requests.trySend(Request.UpdateAll)
     }
 
-    fun finishUpdateAll() { allUpdating = false }
+    fun finishUpdateAll() {
+        // Dispatch of update requests can finish before asynchronous update callbacks.
+        // The UI stays busy until the batch has received every result.
+        if (batchPending.isEmpty()) allUpdating = false
+    }
     fun requestCreate() { requests.trySend(Request.Create) }
     private fun requestActive(profile: Profile) { requests.trySend(Request.Active(profile)) }
 
