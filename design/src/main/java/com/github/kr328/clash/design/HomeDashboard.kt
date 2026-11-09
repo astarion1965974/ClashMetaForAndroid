@@ -208,7 +208,11 @@ private fun DnsWebsiteRow(site: DnsWebsite, result: HomeDnsResult?) {
             } else {
                 DnsRouteText(result)
                 val detail = when {
-                    result.error.isNotBlank() -> stringResource(R.string.coui_dns_failed)
+                    result.error.contains("deadline exceeded", ignoreCase = true) ||
+                        result.error.contains("i/o timeout", ignoreCase = true) ->
+                        stringResource(R.string.coui_dns_timeout_detail)
+                    result.error.isNotBlank() ->
+                        stringResource(R.string.coui_dns_failed_detail, result.error.take(150))
                     result.address.isNotBlank() -> stringResource(R.string.coui_dns_result,
                         result.address, result.millis)
                     else -> stringResource(R.string.coui_dns_failed)
