@@ -370,13 +370,13 @@ internal fun HomePrivacyCard(
                         .padding(14.dp).testTag("home-privacy-risk"),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(stringResource(R.string.coui_privacy_risk_label),
+                    Text(text = stringResource(R.string.coui_privacy_risk_label),
                         kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant)
                     Text(
-                        result?.fraudScore?.let { "$it / 100" } ?: "—",
+                        text = result?.fraudScore?.let { "$it / 100" } ?: "—",
                         kind = CouiTextKind.PageTitle,
                     )
-                    Text(stringResource(R.string.coui_privacy_risk_hint),
+                    Text(text = stringResource(R.string.coui_privacy_risk_hint),
                         kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
                 }
                 Column(
@@ -384,14 +384,14 @@ internal fun HomePrivacyCard(
                         .padding(14.dp).testTag("home-privacy-dns"),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(stringResource(R.string.coui_privacy_dns_label),
+                    Text(text = stringResource(R.string.coui_privacy_dns_label),
                         kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant)
                     Text(
-                        stringResource(R.string.coui_privacy_not_verified),
+                        text = stringResource(R.string.coui_privacy_not_verified),
                         kind = CouiTextKind.PreferenceTitle,
                     )
                     Text(
-                        result?.dnsResolvers?.takeIf { it.isNotEmpty() }?.let {
+                        text = result?.dnsResolvers?.takeIf { it.isNotEmpty() }?.let {
                             stringResource(R.string.coui_privacy_resolver_count, it.size)
                         } ?: stringResource(R.string.coui_privacy_dns_unknown),
                         kind = CouiTextKind.Description, color = colors.onSurfaceVariant,
@@ -430,15 +430,15 @@ internal fun HomePrivacyCard(
                 }
                 if (result.ippureIp.isNotBlank() && result.ipleakIp.isNotBlank() &&
                     result.ippureIp != result.ipleakIp) {
-                    Text(stringResource(R.string.coui_privacy_ip_mismatch),
+                    Text(text = stringResource(R.string.coui_privacy_ip_mismatch),
                         kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
                 }
                 if (result.dnsResolvers.isNotEmpty()) {
-                    Text(stringResource(R.string.coui_privacy_dns_resolvers,
+                    Text(text = stringResource(R.string.coui_privacy_dns_resolvers,
                             result.dnsResolvers.take(8).joinToString(", ")),
                         kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
                 } else if (result.dnsError.isNotBlank()) {
-                    Text(stringResource(R.string.coui_privacy_dns_error, result.dnsError.take(150)),
+                    Text(text = stringResource(R.string.coui_privacy_dns_error, result.dnsError.take(150)),
                         kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
                 }
             }
