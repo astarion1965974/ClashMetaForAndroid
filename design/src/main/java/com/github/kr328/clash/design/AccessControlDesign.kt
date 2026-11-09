@@ -71,6 +71,11 @@ class AccessControlDesign(
     var allApps by mutableStateOf<List<AppInfo>>(emptyList())
         private set
     private var filteredApps by mutableStateOf<List<AppInfo>>(emptyList())
+    // The backing preference set is intentionally mutable and shared with the
+    // Activity; LazyColumn's keyed item slots do NOT observe its mutations.
+    // Give each visible row a real Compose snapshot dependency so a route choice
+    // immediately redraws, without writing preferences or reconnecting yet.
+    private var visibleSelection by mutableStateOf(selected.toSet())
     val apps get() = filteredApps
     val dirty get() = selected != original || mode != originalMode
 
@@ -134,7 +139,7 @@ class AccessControlDesign(
                     }
                 } else {
                     itemsIndexed(filteredApps, key = { _, app -> app.packageName }) { index, app ->
-                        val through = AppAccessPolicy.usesClash(mode, app.packageName in selected)
+                        val through = AppAccessPolicy.usesClash(mode, app.packageName in visibleSelection)
                         val route = stringResource(
                             if (through) R.string.app_via_clash else R.string.app_bypass,
                         )
@@ -149,6 +154,7 @@ class AccessControlDesign(
                                 Text(
                                     text = route, kind = CouiTextKind.PreferenceValue,
                                     color = CouiTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.testTag("app-route-${app.packageName}"),
                                 )
                             },
                             grouped = true,
@@ -247,7 +253,7 @@ class AccessControlDesign(
                             trailing = {
                                 RadioButton(
                                     selected = AppAccessPolicy.usesClash(
-                                        mode, app.packageName in selected,
+                                        mode, app.packageName in visibleSelection,
                                     ) == through,
                                 )
                             },
@@ -260,6 +266,9 @@ class AccessControlDesign(
     }
 
     private fun refresh() {
+        // Update before the filtering/count recomposition. Immutable Set equality
+        // avoids spurious changes when only a search term or UI filter changes.
+        visibleSelection = selected.toSet()
         val query = keyword.trim()
         filteredApps = allApps.filter {
             (showSystem || !it.systemApp ||
