@@ -113,6 +113,8 @@ internal fun ClashHome(
     quota: HomeQuota?,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
+    privacy: HomePrivacyResult?,
+    privacyLoading: Boolean,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
@@ -145,7 +147,7 @@ internal fun ClashHome(
     ) {
         HomeTabContent(
             running, paused, profileName, quota, dns, dnsLoading,
-            mode, hasProviders, onRequest,
+            privacy, privacyLoading, mode, hasProviders, onRequest,
         )
     }
 }
@@ -158,12 +160,22 @@ internal fun HomeTabContent(
     quota: HomeQuota?,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
+    privacy: HomePrivacyResult?,
+    privacyLoading: Boolean,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
 ) {
         HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
         HomeQuotaCard(quota)
+        HomePrivacyCard(
+            running = running,
+            paused = paused,
+            result = privacy,
+            loading = privacyLoading,
+            check = { onRequest(HomeRequest.CheckPrivacy) },
+            openIpleak = { onRequest(HomeRequest.OpenIpleak) },
+        )
         HomeDnsCard(mode, dns, dnsLoading, running && !paused) { onRequest(HomeRequest.CheckDns) }
 
         if (running) {
@@ -291,6 +303,8 @@ internal fun ClashPrimaryTabs(
     quota: HomeQuota?,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
+    privacy: HomePrivacyResult?,
+    privacyLoading: Boolean,
     mode: String?,
     hasProviders: Boolean,
     onHomeRequest: (HomeRequest) -> Unit,
@@ -384,7 +398,7 @@ internal fun ClashPrimaryTabs(
                                 .padding(bottom = CouiPageDefaults.groupSpacing),
                         ) {
                             HomeTabContent(running, paused, profileName, quota, dns,
-                                dnsLoading, mode, hasProviders, onHomeRequest)
+                                dnsLoading, privacy, privacyLoading, mode, hasProviders, onHomeRequest)
                         }
                         1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
                         2 -> Column(
