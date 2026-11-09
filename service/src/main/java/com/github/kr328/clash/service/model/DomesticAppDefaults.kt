@@ -9,8 +9,9 @@ package com.github.kr328.clash.service.model
  * This is a one-time default for an unconfigured VPN, NOT a language / developer
  * prefix heuristic. Unknown or foreign applications remain on Clash by default.
  *
- * Keep package ids even when the app is not yet installed: VpnService.Builder
- * ignores unknown ids, and will apply the same default after future installs.
+ * Keep IDs for not-yet-installed apps in persisted preferences; TunService only
+ * passes installed IDs to VpnService.Builder. Future installs inherit these
+ * choices on the next VPN reconnect.
  * The user's saved per-app routes always override this initial snapshot.
  */
 object DomesticAppDefaults {
