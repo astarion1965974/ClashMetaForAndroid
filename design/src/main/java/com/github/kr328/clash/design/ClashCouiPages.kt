@@ -81,8 +81,6 @@ import com.github.kr328.clash.design.MainDesign.Request as HomeRequest
 import com.github.kr328.clash.design.SettingsDesign.Request as SettingsRequest
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.github.kr328.clash.design.util.resolveThemedColor
-import com.itos.coui.backdrop.CouiBackdrop
-import com.itos.coui.backdrop.LocalCouiBackdrop
 import com.itos.coui.effect.CouiFloatingRenderer
 import com.itos.coui.icons.CouiIcons
 import com.itos.coui.layout.CouiPageDefaults
@@ -732,9 +730,6 @@ internal fun ColorOsCompactTopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     backgroundColor: Color? = null,
-    backdrop: CouiBackdrop = checkNotNull(LocalCouiBackdrop.current) {
-        "Compact top bar requires a COUI backdrop"
-    },
 ) {
     TopAppBar(
         title = {
@@ -750,7 +745,6 @@ internal fun ColorOsCompactTopBar(
         colors = CouiTopAppBarDefaults.colors(
             backgroundColor = backgroundColor ?: CouiPageDefaults.themeColors().background,
         ),
-        backdrop = backdrop,
     )
 }
 
