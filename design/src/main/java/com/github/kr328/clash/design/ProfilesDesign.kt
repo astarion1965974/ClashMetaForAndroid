@@ -3,6 +3,7 @@ package com.github.kr328.clash.design
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import java.util.UUID
 import android.graphics.Color
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +35,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.dialog.CouiMenuOption
+import com.github.kr328.clash.design.dialog.showCouiAlert
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.resolveThemedBoolean
@@ -74,6 +76,25 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     private var canUpdate by mutableStateOf(false)
     private var visibleProfiles by mutableStateOf<List<Profile>>(emptyList())
     private var displayedTime by mutableLongStateOf(System.currentTimeMillis())
+    private var updateErrors by mutableStateOf<Map<UUID, String>>(emptyMap())
+    private var batchPending by mutableStateOf<Set<UUID>>(emptySet())
+    private var batchSucceeded = 0
+    private var batchFailed = 0
+
+    data class BatchSummary(val succeeded: Int, val failed: Int, val complete: Boolean)
+
+    /** Null means an individual update; incomplete batch callbacks do not show toasts. */
+    suspend fun recordUpdateResult(uuid: UUID, failure: String?): BatchSummary? =
+        withContext(Dispatchers.Main) {
+            updateErrors = if (failure == null) updateErrors - uuid
+                else updateErrors + (uuid to failure)
+            if (uuid !in batchPending) return@withContext null
+            batchPending = batchPending - uuid
+            if (failure == null) batchSucceeded++ else batchFailed++
+            val complete = batchPending.isEmpty()
+            if (complete) allUpdating = false
+            BatchSummary(batchSucceeded, batchFailed, complete)
+        }
 
     override val root: View = ComposeView(context).apply {
         setContent {
@@ -129,7 +150,17 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
             ),
         ) {
             items(visibleProfiles, key = { it.uuid.toString() }) { profile ->
-                ProfileListItem(profile, displayedTime, ::requestActive, ::showMenu, menuOptions = ::menuOptions)
+                ProfileListItem(
+                    profile, displayedTime, ::requestActive, ::showMenu,
+                    menuOptions = ::menuOptions,
+                    updateError = updateErrors[profile.uuid],
+                    onErrorClicked = {
+                        context.showCouiAlert(
+                            context.getString(R.string.coui_profile_update_failed),
+                            updateErrors[profile.uuid].orEmpty(),
+                        )
+                    },
+                )
             }
         }
     }
@@ -192,6 +223,11 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
     fun requestUpdateAll() {
         if (allUpdating) return
+        batchPending = visibleProfiles.filter { it.imported && it.type != Profile.Type.File }
+            .map { it.uuid }.toSet()
+        batchSucceeded = 0
+        batchFailed = 0
+        if (batchPending.isEmpty()) return
         allUpdating = true
         requests.trySend(Request.UpdateAll)
     }

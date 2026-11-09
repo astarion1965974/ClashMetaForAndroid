@@ -113,10 +113,16 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
             withProfile {
                 name = queryByUUID(uuid)?.name
             }
-            design?.showToast(
-                getString(R.string.toast_profile_updated_complete, name),
-                ToastDuration.Long
-            )
+            val batch = design?.recordUpdateResult(uuid, null)
+            when {
+                batch == null -> design?.showToast(
+                    getString(R.string.toast_profile_updated_complete, name), ToastDuration.Short
+                )
+                batch.complete -> design?.showToast(
+                    getString(R.string.coui_profile_update_summary, batch.succeeded, batch.failed),
+                    ToastDuration.Short,
+                )
+            }
         }
     }
     override fun onProfileUpdateFailed(uuid: UUID?, reason: String?) {
@@ -127,13 +133,22 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
             withProfile {
                 name = queryByUUID(uuid)?.name
             }
-            design?.showToast(
-                getString(R.string.toast_profile_updated_failed, name, reason),
-                ToastDuration.Long
-            ){
-                setAction(R.string.edit) {
-                    startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+            val batch = design?.recordUpdateResult(
+                uuid, reason ?: getString(R.string.coui_profile_update_failed)
+            )
+            when {
+                batch == null -> design?.showToast(
+                    getString(R.string.toast_profile_updated_failed, name, reason),
+                    ToastDuration.Long
+                ) {
+                    setAction(R.string.edit) {
+                        startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+                    }
                 }
+                batch.complete -> design?.showToast(
+                    getString(R.string.coui_profile_update_summary, batch.succeeded, batch.failed),
+                    ToastDuration.Short,
+                )
             }
         }
     }

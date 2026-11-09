@@ -1,6 +1,7 @@
 package com.github.kr328.clash.design.adapter
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.itos.coui.text.Text
+import com.itos.coui.text.CouiTextKind
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.preference.CouiRowAction
@@ -33,6 +36,8 @@ internal fun ProfileListItem(
     onClicked: (Profile) -> Unit,
     onMenuClicked: (Profile) -> Unit,
     menuOptions: ((Profile) -> List<CouiMenuOption>)? = null,
+    updateError: String? = null,
+    onErrorClicked: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val type = if (profile.pending) {
@@ -57,15 +62,26 @@ internal fun ProfileListItem(
         leading = { RadioButton(selected = profile.active) },
         enabled = true,
         onClick = { onClicked(profile) },
-        afterSummary = if (profile.total > 1) {
+        afterSummary = if (profile.total > 1 || updateError != null) {
             {
-                val progress = (used.toDouble() / profile.total).toFloat().coerceIn(0f, 1f)
                 val colors = CouiTheme.colorScheme
-                Box(
-                    Modifier.fillMaxWidth().height(4.dp).clip(CircleShape)
-                        .progressSemantics(progress).background(colors.outlineVariant),
-                ) {
-                    Box(Modifier.fillMaxWidth(progress).height(4.dp).background(colors.accent))
+                if (profile.total > 1) {
+                    val progress = (used.toDouble() / profile.total).toFloat().coerceIn(0f, 1f)
+                    Box(
+                        Modifier.fillMaxWidth().height(4.dp).clip(CircleShape)
+                            .progressSemantics(progress).background(colors.outlineVariant),
+                    ) {
+                        Box(Modifier.fillMaxWidth(progress).height(4.dp).background(colors.accent))
+                    }
+                }
+                if (updateError != null) {
+                    Text(
+                        text = stringResource(R.string.coui_profile_update_failed),
+                        kind = CouiTextKind.PreferenceSummary,
+                        color = colors.accent,
+                        modifier = Modifier.clickable { onErrorClicked?.invoke() },
+                        maxLines = 1,
+                    )
                 }
             }
         } else null,

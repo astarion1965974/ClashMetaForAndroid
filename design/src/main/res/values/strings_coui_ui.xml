@@ -5,4 +5,6 @@
     <string name="coui_editor_invalid_value">Invalid value. Check the input format.</string>
     <string name="coui_node_full_name">Full node name</string>
     <string name="coui_node_copy_name">Copy node name</string>
+    <string name="coui_profile_update_failed">Update failed · Tap for details</string>
+    <string name="coui_profile_update_summary">Updates: %1$d succeeded, %2$d failed</string>
 </resources>
