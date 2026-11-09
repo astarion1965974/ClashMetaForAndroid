@@ -1,6 +1,12 @@
 package com.github.kr328.clash
 
 import android.app.ActivityManager
+import android.graphics.Color
+import android.graphics.Outline
+import android.graphics.PixelFormat
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
+import android.view.ViewOutlineProvider
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
@@ -55,6 +61,51 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
     private var deferRunning = false
     private val nextRequestKey = AtomicInteger(0)
     private var dayNight: DayNight = DayNight.Day
+    private var roundedPageEntering = false
+    private var previousPageOutline: ViewOutlineProvider? = null
+
+    /**
+     * Secondary / tertiary pages are separate activities, unlike main tabs.
+     * Their default system OPEN motion used a hard-edged rectangular surface.
+     * Keep the native Android 17 predictive CLOSE animation entirely untouched.
+     */
+    private fun configureRoundedPageOpen() {
+        if (this is MainActivity || Build.VERSION.SDK_INT < 34) return
+
+        val decor = window.decorView
+        val radiusPx = 30f * resources.displayMetrics.density
+        previousPageOutline = decor.outlineProvider
+        decor.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+            }
+        }
+        decor.clipToOutline = true
+        roundedPageEntering = true
+
+        // Transparent window pixels reveal the previous Activity at rounded edges.
+        // Clipping only Compose content leaves an opaque rectangular window behind.
+        window.setFormat(PixelFormat.TRANSLUCENT)
+        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        overrideActivityTransition(
+            OVERRIDE_TRANSITION_OPEN,
+            com.github.kr328.clash.R.anim.coui_subpage_enter,
+            0,
+        )
+    }
+
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        if (roundedPageEntering) {
+            window.decorView.apply {
+                clipToOutline = false
+                outlineProvider = previousPageOutline ?: ViewOutlineProvider.BACKGROUND
+            }
+            roundedPageEntering = false
+            previousPageOutline = null
+        }
+    }
+
 
     protected abstract suspend fun main()
 
@@ -104,6 +155,7 @@ abstract class BaseActivity<D : Design<*>> : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyDayNight()
+        configureRoundedPageOpen()
 
         // Apply excludeFromRecents setting to all app tasks.
         checkNotNull(getSystemService<ActivityManager>()).appTasks.forEach { task ->
