@@ -9,16 +9,28 @@ import (
 	"unsafe"
 
 	"cfa/native/app"
+	"cfa/native/config"
 	"cfa/native/tunnel"
 	"github.com/metacubex/mihomo/component/resolver"
+	mihomoTunnel "github.com/metacubex/mihomo/tunnel"
+	"github.com/metacubex/mihomo/adapter/outboundgroup"
 )
 
 //export queryDnsDiagnostic
 func queryDnsDiagnostic(domain C.c_string) *C.char {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	host := C.GoString(domain)
+	policy := config.InspectDNSPolicy(host)
+	if policy.Route=="proxy" && policy.Proxy!="" {
+		if proxy:=mihomoTunnel.Proxies()[policy.Proxy];proxy!=nil {
+			if group,ok:=proxy.Adapter().(outboundgroup.ProxyGroup);ok {
+				policy.Proxy = policy.Proxy+" → "+group.Now()
+			}
+		}
+	}
 	start := time.Now()
-	ips, err := resolver.LookupIP(ctx, C.GoString(domain))
+	ips, err := resolver.LookupIP(ctx, host)
 	addresses := make([]string, 0, len(ips))
 	for _, ip := range ips {
 		addresses = append(addresses, ip.String())
@@ -31,7 +43,12 @@ func queryDnsDiagnostic(domain C.c_string) *C.char {
 		Addresses []string `json:"addresses"`
 		Error string `json:"error"`
 		Millis int64 `json:"millis"`
-	}{addresses, message, time.Since(start).Milliseconds()})
+		DNSRoute string `json:"dnsRoute"`
+		DNSProxy string `json:"dnsProxy"`
+		DNSUpstream string `json:"dnsUpstream"`
+		DNSSource string `json:"dnsSource"`
+	}{addresses, message, time.Since(start).Milliseconds(),
+		policy.Route,policy.Proxy,policy.Upstream,policy.Source})
 }
 
 //export queryTunnelState
