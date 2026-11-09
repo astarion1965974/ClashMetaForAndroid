@@ -136,6 +136,7 @@ class MobileNetworkDesign(
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_apps),
                         summary = stringResource(R.string.mobile_apps_hint),
+                        navigation = true,
                         enabled = interactive,
                     ) { requests.trySend(Request.AppRouting) }
                 }
