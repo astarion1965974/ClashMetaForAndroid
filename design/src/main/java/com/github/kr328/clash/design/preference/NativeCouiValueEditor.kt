@@ -1,6 +1,8 @@
 package com.github.kr328.clash.design.preference
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -12,24 +14,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
+import com.itos.coui.dialog.InputDialog
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Item
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.text.rememberCouiTextStyle
 import com.itos.coui.theme.CouiTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.reflect.KMutableProperty0
 
 /**
- * Native COUI editing surface for nullable override properties. The explicit
- * Reset action restores the unset (null) override; saving an empty string/list
- * keeps a real empty value, matching the core's tri-state override model.
+ * alpha8's native InputDialog is used for single-line properties. Long list/map
+ * editors keep a scrollable multiline COUI dialog and the existing Reset action.
+ * Both editors preserve the three-way unset/empty/value override contract.
  */
 @Composable
 internal fun <T : Any> NativeCouiValueEditor(
@@ -50,54 +57,90 @@ internal fun <T : Any> NativeCouiValueEditor(
     val summary = when {
         value == null -> placeholder
         format(value).isEmpty() -> emptyLabel
-        else -> if (multiLine) {
+        multiLine -> {
             val length = format(value).lines().count { it.isNotBlank() }
             context.getString(R.string.format_elements, length)
-        } else format(value)
+        }
+        else -> format(value)
     }
-    NativeCouiAction(title = title, summary = summary, enabled = enabled) {
+    val reset: () -> Unit = {
+        property.set(null)
+        localVersion++
+        onChanged()
+    }
+    NativeCouiAction(
+        title = title,
+        summary = summary,
+        enabled = enabled,
+        trailingAction = if (enabled && !multiLine && value != null) reset else null,
+        trailingDescription = context.getString(R.string.coui_editor_reset_override),
+    ) {
         context.showCouiContent { dismiss ->
-            var input by remember { mutableStateOf(value?.let(format).orEmpty()) }
+            var input by remember { mutableStateOf(TextFieldValue(value?.let(format).orEmpty())) }
             var invalid by remember { mutableStateOf(false) }
-            Dialog(
-                onDismissRequest = dismiss,
-                title = title,
-                dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
-                confirmAction = CouiDialogAction(context.getString(R.string.route_save), {
-                    try {
-                        property.set(parse(input))
-                        localVersion++
-                        onChanged()
-                        dismiss()
-                    } catch (_: IllegalArgumentException) {
-                        invalid = true
-                    }
-                }),
-            ) {
-                BasicTextField(
-                    value = input,
-                    onValueChange = { input = it; invalid = false },
-                    textStyle = rememberCouiTextStyle(CouiTextKind.Body)
-                        .copy(color = CouiTheme.colorScheme.onSurface),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
-                        .heightIn(min = if (multiLine) 120.dp else 48.dp)
-                        .background(CouiTheme.colorScheme.background).padding(12.dp),
-                    cursorBrush = SolidColor(CouiTheme.colorScheme.accent),
-                    minLines = if (multiLine) 5 else 1,
-                    maxLines = if (multiLine) 12 else 1,
-                    singleLine = !multiLine,
-                )
-                if (invalid) Text(
-                    text = "Invalid value", kind = CouiTextKind.Description,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                )
-                Item(onClick = {
-                    property.set(null)
+            val save = {
+                try {
+                    property.set(parse(input.text))
                     localVersion++
                     onChanged()
                     dismiss()
-                }) {
-                    Text(text = context.getString(R.string.reset), kind = CouiTextKind.PreferenceTitle)
+                } catch (_: IllegalArgumentException) {
+                    invalid = true
+                }
+            }
+            if (!multiLine) {
+                InputDialog(
+                    value = input,
+                    onValueChange = { input = it; invalid = false },
+                    onDismissRequest = dismiss,
+                    title = title,
+                    placeholder = placeholder,
+                    message = if (invalid) context.getString(R.string.coui_editor_invalid_value) else null,
+                    clearContentDescription = context.getString(R.string.coui_editor_clear_input),
+                    confirmAction = CouiDialogAction(context.getString(R.string.route_save), save),
+                    dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+                )
+            } else {
+                Dialog(
+                    onDismissRequest = dismiss,
+                    title = title,
+                    dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
+                    confirmAction = CouiDialogAction(context.getString(R.string.route_save), save),
+                ) {
+                    val shape = RoundedCornerShape(18.dp)
+                    val colors = CouiPageDefaults.themeColors()
+                    BasicTextField(
+                        value = input,
+                        onValueChange = { input = it; invalid = false },
+                        textStyle = rememberCouiTextStyle(CouiTextKind.Body).copy(color = colors.title),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                            .heightIn(min = 120.dp)
+                            .clip(shape).background(colors.card)
+                            .border(1.dp, colors.divider, shape),
+                        cursorBrush = SolidColor(CouiTheme.colorScheme.accent),
+                        minLines = 5,
+                        maxLines = 12,
+                        singleLine = false,
+                        decorationBox = { inner ->
+                            Box(Modifier.padding(12.dp)) {
+                                if (input.text.isEmpty()) Text(
+                                    text = placeholder,
+                                    kind = CouiTextKind.PreferenceSummary,
+                                    color = colors.summary,
+                                )
+                                inner()
+                            }
+                        },
+                    )
+                    if (invalid) Text(
+                        text = context.getString(R.string.coui_editor_invalid_value),
+                        kind = CouiTextKind.Description,
+                        color = CouiTheme.colorScheme.accent,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    )
+                    Item(onClick = { reset(); dismiss() }) {
+                        Text(text = context.getString(R.string.reset), kind = CouiTextKind.PreferenceTitle)
+                    }
                 }
             }
         }

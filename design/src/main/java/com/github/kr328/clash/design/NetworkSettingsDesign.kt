@@ -94,16 +94,19 @@ class NetworkSettingsDesign(
                 Group {
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_title),
+                        navigation = true,
                         summary = stringResource(R.string.mobile_ready),
                     ) { requests.trySend(Request.StartMobileNetwork) }
                     Divider()
                     NativeCouiAction(
                         title = stringResource(R.string.app_routing),
+                        navigation = true,
                         summary = stringResource(R.string.app_routing_summary),
                     ) { requests.trySend(Request.StartAccessControlList) }
                     Divider()
                     NativeCouiAction(
                         title = stringResource(R.string.managed_routing),
+                        navigation = true,
                         summary = stringResource(R.string.managed_summary),
                     ) { requests.trySend(Request.StartManagedRouting) }
                 }

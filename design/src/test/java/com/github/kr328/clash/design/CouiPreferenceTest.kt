@@ -10,12 +10,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.github.kr328.clash.core.model.Proxy
@@ -23,6 +25,9 @@ import com.github.kr328.clash.design.adapter.ProfileListItem
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
 import com.github.kr328.clash.design.preference.NativeCouiSwitch
+import com.github.kr328.clash.design.preference.NativeCouiSelect
+import com.github.kr328.clash.design.preference.NativeCouiAction
+import com.github.kr328.clash.design.preference.NativeCouiNullablePort
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.Profile
 import com.itos.coui.theme.CouiTheme
@@ -151,6 +156,57 @@ class CouiPreferenceTest {
         compose.onNodeWithContentDescription(activity.getString(R.string.more)).performClick()
         assertEquals(profile, menu)
         assertEquals(null, activated)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun nativeSettingsAccessoriesMatchAlpha8Demo() {
+        val activity = activity()
+        class Choice { var value = "mixed" }
+        val model = Choice()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    com.itos.coui.layout.Group {
+                        NativeCouiSelect(
+                            title = "TUN stack",
+                            value = model::value,
+                            values = listOf("system", "mixed"),
+                            labels = listOf("System", "Mixed"),
+                        )
+                        NativeCouiAction(title = "Mobile routing", navigation = true, onClick = {})
+                    }
+                }
+            }
+        })
+        compose.onNodeWithText("Mixed", useUnmergedTree = true).assertIsDisplayed()
+        compose.onAllNodesWithTag("coui-setting-chevron", useUnmergedTree = true)
+            .assertCountEquals(2)
+        val title = compose.onNodeWithText("TUN stack", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val value = compose.onNodeWithText("Mixed", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(value.left > title.left)
+        activity.setContentView(View(activity))
+    }
+
+    @Test fun nativeInputResetKeepsUnsetValueDistinctFromEmpty() {
+        val activity = activity()
+        class Model { var port: Int? = 7890 }
+        val model = Model()
+        activity.setContentView(ComposeView(activity).apply {
+            setContent {
+                CouiTheme(darkTheme = false) {
+                    NativeCouiNullablePort(
+                        title = "Port",
+                        property = model::port,
+                        placeholder = "Do not modify",
+                        emptyLabel = "Disabled",
+                    )
+                }
+            }
+        })
+        compose.onNodeWithTag("coui-setting-reset", useUnmergedTree = true).performClick()
+        assertEquals(null, model.port)
         activity.setContentView(View(activity))
     }
 

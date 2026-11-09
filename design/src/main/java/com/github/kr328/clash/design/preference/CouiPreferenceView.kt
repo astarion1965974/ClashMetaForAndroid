@@ -52,25 +52,32 @@ internal fun CouiPreferenceRow(
     afterSummary: (@Composable () -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
-    val colors = CouiTheme.colorScheme
+    val colors = CouiPageDefaults.themeColors()
+    val source = remember { MutableInteractionSource() }
     val longClickModifier = if (onClick != null && onLongClick != null) {
-        Modifier.combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick)
-    } else {
-        Modifier
-    }
+        Modifier.couiButtonFeedback(CouiTheme.isDark, source, enabled, list = true)
+            .combinedClickable(
+                interactionSource = source,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+    } else Modifier
     Item(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp)
-            .clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
+        modifier = Modifier.fillMaxWidth().padding(
+                horizontal = CouiPageDefaults.horizontalMargin, vertical = 4.dp,
+            ).clip(CouiPageDefaults.shape).background(colors.card).then(longClickModifier),
         icon = leading ?: icon?.let { drawable -> { PreferenceIcon(drawable, iconSize) } },
         iconSize = iconSize,
         summary = if (!summary.isNullOrEmpty() || afterSummary != null) {
             {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(if (afterSummary != null) 6.dp else CouiPageDefaults.summarySpacing)) {
                     if (!summary.isNullOrEmpty()) {
                         Text(
                             text = summary.toString(),
                             kind = CouiTextKind.PreferenceSummary,
-                            color = colors.onSurfaceVariant,
+                            color = if (enabled) colors.summary else colors.disabled,
                         )
                     }
                     afterSummary?.invoke()
@@ -80,10 +87,11 @@ internal fun CouiPreferenceRow(
         trailing = trailing,
         enabled = enabled,
         onClick = if (onLongClick == null) onClick else null,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = CouiPageDefaults.contentPadding),
     ) {
         if (!title.isNullOrEmpty()) {
-            Text(text = title.toString(), kind = CouiTextKind.PreferenceTitle)
+            Text(text = title.toString(), kind = CouiTextKind.PreferenceTitle,
+                color = if (enabled) colors.title else colors.disabled)
         }
     }
 }

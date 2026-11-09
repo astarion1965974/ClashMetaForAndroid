@@ -99,6 +99,7 @@ import com.itos.coui.text.Text
 import com.itos.coui.text.rememberCouiTextStyle
 import com.itos.coui.theme.CouiTheme
 import com.itos.coui.theme.LocalCouiContentColor
+import com.itos.coui.theme.LocalCouiTextStyle
 import com.itos.coui.topappbar.CouiTopAppBarScrollBehavior
 import com.itos.coui.topappbar.CouiTopAppBarDefaults
 import com.itos.coui.topappbar.LargeTopAppBar
@@ -126,7 +127,7 @@ internal fun ClashHome(
                 title = stringResource(R.string.application_name),
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                    ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
                         onRequest(HomeRequest.OpenSettings)
                     }
                 },
@@ -206,7 +207,7 @@ internal fun ClashSettings(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     ToolbarIcon(
-                        icon = CouiIcons.Back,
+                        icon = CouiIcons.Filled.Back,
                         label = stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                         onClick = onBack,
                     )
@@ -224,13 +225,13 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
             footer = stringResource(R.string.live_settings_intro_hint)) {
             PageRow(R.drawable.ic_baseline_settings, stringResource(R.string.app),
                 stringResource(R.string.live_setting_app_hint)) { onRequest(SettingsRequest.StartApp) }
-            Divider()
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.network),
                 stringResource(R.string.live_setting_network_hint)) { onRequest(SettingsRequest.StartNetwork) }
-            Divider()
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
             PageRow(R.drawable.ic_baseline_extension, stringResource(R.string.override),
                 stringResource(R.string.live_setting_override_hint)) { onRequest(SettingsRequest.StartOverride) }
-            Divider()
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
             PageRow(R.drawable.ic_baseline_meta, stringResource(R.string.meta_features),
                 stringResource(R.string.live_setting_meta_hint)) { onRequest(SettingsRequest.StartMetaFeature) }
         }
@@ -240,7 +241,7 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
                 stringResource(R.string.live_app_hint), resourceName("app_routing_view")) {
                 onRequest(SettingsRequest.OpenAppRouting)
             }
-            Divider()
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
             PageRow(R.drawable.ic_baseline_dns, stringResource(R.string.live_rules),
                 stringResource(R.string.live_rules_hint), resourceName("rule_routing_view")) {
                 onRequest(SettingsRequest.OpenRouting)
@@ -250,14 +251,12 @@ internal fun SettingsTabContent(onRequest: (SettingsRequest) -> Unit) {
         Group(title = stringResource(R.string.coui_settings_support)) {
             PageRow(R.drawable.ic_baseline_assignment, stringResource(R.string.logs),
                 stringResource(R.string.live_logs_hint)) { onRequest(SettingsRequest.OpenLogs) }
-            Divider()
-            Item(onClick = { onRequest(SettingsRequest.OpenHelp) }) {
-                Text(text = stringResource(R.string.help), kind = CouiTextKind.PreferenceTitle)
-            }
-            Divider()
-            Item(onClick = { onRequest(SettingsRequest.OpenAbout) }) {
-                Text(text = stringResource(R.string.about), kind = CouiTextKind.PreferenceTitle)
-            }
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            PageRow(R.drawable.ic_baseline_help_center,
+                stringResource(R.string.help), null) { onRequest(SettingsRequest.OpenHelp) }
+            Divider(startIndent = 0.dp, endIndent = CouiPageDefaults.rowPadding)
+            PageRow(R.drawable.ic_baseline_info,
+                stringResource(R.string.about), null) { onRequest(SettingsRequest.OpenAbout) }
         }
 }
 
@@ -313,7 +312,7 @@ internal fun ClashPrimaryTabs(
                     scrollBehavior = activeTopBar,
                     actions = {
                         when (selected) {
-                            0 -> ToolbarIcon(CouiIcons.Settings, stringResource(R.string.settings)) {
+                            0 -> ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
                                 onSelected(2)
                             }
                             1 -> profiles.PrimaryTabActions()
@@ -434,7 +433,7 @@ internal fun PrimaryBottomBar(
     val items = listOf(
         CouiNavigationItem(stringResource(R.string.coui_home_tab), home, homeSelected),
         CouiNavigationItem(stringResource(R.string.profiles), profiles, profilesSelected),
-        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Settings, settingsSelected),
+        CouiNavigationItem(stringResource(R.string.settings), CouiIcons.Filled.Setting, settingsSelected),
     )
     var selectedIndex by remember(selected) { mutableIntStateOf(selected) }
     val lifecycle = LocalView.current.findViewTreeLifecycleOwner()?.lifecycle
@@ -607,20 +606,20 @@ private fun Metric(label: String, value: String, modifier: Modifier = Modifier) 
 internal fun PageRow(
     @DrawableRes icon: Int,
     title: String,
-    summary: String,
+    summary: String?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val colors = CouiTheme.colorScheme
     Item(
         modifier = modifier,
-        icon = { PageIcon(icon, colors.accentOnSurface, Modifier.size(24.dp)) },
-        summary = {
-            Text(text = summary, kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant,
+        icon = { PageIcon(icon, colors.accentOnSurface, Modifier.size(CouiPageDefaults.iconSize)) },
+        summary = summary?.takeIf { it.isNotBlank() }?.let { description -> {
+            Text(text = description, kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-        },
-        trailing = { PageIcon(R.drawable.ic_live_chevron, colors.onSurfaceVariant, Modifier.size(18.dp)) },
-        contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = 12.dp),
+        } },
+        trailing = { PageIcon(R.drawable.ic_live_chevron, colors.onSurfaceVariant, Modifier.size(16.dp)) },
+        contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = CouiPageDefaults.contentPadding),
         onClick = onClick,
     ) {
         Text(text = title, kind = CouiTextKind.PreferenceTitle)
@@ -647,7 +646,7 @@ internal fun ColorOsSubPage(
                     title = title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        ToolbarIcon(CouiIcons.Back,
+                        ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack)
                     },
@@ -688,7 +687,7 @@ internal fun ColorOsLazySubPage(
                     title = title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
-                        ToolbarIcon(CouiIcons.Back,
+                        ToolbarIcon(CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack)
                     },
@@ -716,19 +715,14 @@ internal fun ColorOsLargeTopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    // COUI Kit scales its default 40sp title down to 24dp. A continuous text
-    // size adjustment yields a 32sp expanded title without shrinking the final label.
-    val fraction = scrollBehavior?.state?.collapsedFraction ?: 0f
-    val style = rememberCouiTextStyle(CouiTextKind.HomeTitle)
+    // alpha8 owns its large-title type ramp, easing, position and scale.
+    // Inheriting its provided style prevents the double scaling of the old
+    // manually interpolated font size.
     LargeTopAppBar(
         title = {
             BasicText(
                 text = title,
-                style = style.copy(
-                    fontSize = (32f + 8f * fraction).sp,
-                    color = CouiTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Start,
-                ),
+                style = LocalCouiTextStyle.current.copy(color = CouiTheme.colorScheme.onSurface),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -736,6 +730,8 @@ internal fun ColorOsLargeTopBar(
         navigationIcon = navigationIcon,
         actions = actions,
         scrollBehavior = scrollBehavior,
+        expandedTitleSize = 32.sp,
+        collapsedTitleSize = 24.sp,
     )
 }
 

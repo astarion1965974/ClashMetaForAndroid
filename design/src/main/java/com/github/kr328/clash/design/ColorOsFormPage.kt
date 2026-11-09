@@ -60,7 +60,7 @@ internal fun ColorOsFormPage(
                     title = title, scrollBehavior = behavior,
                     navigationIcon = {
                         ToolbarIcon(
-                            CouiIcons.Back,
+                            CouiIcons.Filled.Back,
                             stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                             onBack,
                         )
@@ -124,7 +124,7 @@ internal fun ColorOsLazyFormPage(
             topBar = {
                 ColorOsLargeTopBar(title = title, scrollBehavior = behavior, navigationIcon = {
                     ToolbarIcon(
-                        CouiIcons.Back,
+                        CouiIcons.Filled.Back,
                         stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                         onBack,
                     )

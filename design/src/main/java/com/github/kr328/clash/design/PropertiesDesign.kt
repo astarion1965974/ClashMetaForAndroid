@@ -104,6 +104,7 @@ class PropertiesDesign(context: Context) : Design<PropertiesDesign.Request>(cont
                     Group {
                         NativeCouiAction(
                             title = stringResource(R.string.browse_files),
+                        navigation = true,
                             summary = stringResource(R.string.browse_configuration_providers),
                             icon = R.drawable.ic_outline_folder,
                             enabled = !progressing,
