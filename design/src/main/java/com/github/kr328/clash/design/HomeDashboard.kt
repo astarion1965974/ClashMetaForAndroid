@@ -46,6 +46,23 @@ import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
+/** Snapshot of user-initiated third-party checks, NEVER a claimed leak pass/fail.
+ * The app's own outbound route can differ from browser/VPN-app routes.
+ */
+internal data class HomePrivacyResult(
+    val ippureIp: String = "",
+    val fraudScore: Int? = null,
+    val isp: String = "",
+    val country: String = "",
+    val residential: Boolean? = null,
+    val ipleakIp: String = "",
+    val ipleakIsp: String = "",
+    val dnsResolvers: List<String> = emptyList(),
+    val ippureError: String = "",
+    val ipleakError: String = "",
+    val dnsError: String = "",
+)
+
 internal data class HomeQuota(val total: Long, val used: Long, val remaining: Long)
 internal data class HomeDnsResult(
     val domain: String,
@@ -294,6 +311,153 @@ internal fun HomeDnsCard(mode: String?, results: List<HomeDnsResult>, loading: B
             DnsCategory(stringResource(R.string.coui_dns_ai), aiSites, results)
             Text(text=stringResource(R.string.coui_dns_note), kind=CouiTextKind.Description,
                 color=colors.onSurfaceVariant, modifier=Modifier.padding(top=12.dp))
+        }
+    }
+}
+
+/**
+ * Native COUI Home privacy health dashboard. IPPure supplies an IP *risk*
+ * score (not an official purity percentage); IPLeak supplies the externally
+ * observed resolver addresses. Without a known-good resolver baseline, those
+ * observations must never be advertised as "DNS secure/no leak".
+ */
+@Composable
+internal fun HomePrivacyCard(
+    running: Boolean,
+    paused: Boolean,
+    result: HomePrivacyResult?,
+    loading: Boolean,
+    check: () -> Unit,
+    openIpleak: () -> Unit,
+) {
+    val colors = CouiTheme.colorScheme
+    val available = running && !paused
+    Group {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)
+                .testTag("home-privacy-dashboard"),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.coui_privacy_dashboard_title),
+                    kind = CouiTextKind.PreferenceTitle,
+                    modifier = Modifier.weight(1f),
+                )
+                Box(
+                    Modifier.heightIn(min = 44.dp)
+                        .clickable(enabled = available && !loading, role = Role.Button, onClick = check)
+                        .testTag("home-privacy-check")
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (loading) R.string.coui_privacy_checking else R.string.coui_privacy_check
+                        ),
+                        kind = CouiTextKind.PreferenceTitle,
+                        color = if (available && !loading) colors.accentOnSurface else colors.onSurfaceVariant,
+                    )
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    Modifier.weight(1f).background(colors.background, RoundedCornerShape(16.dp))
+                        .padding(14.dp).testTag("home-privacy-risk"),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(stringResource(R.string.coui_privacy_risk_label),
+                        kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant)
+                    Text(
+                        result?.fraudScore?.let { "$it / 100" } ?: "—",
+                        kind = CouiTextKind.PageTitle,
+                    )
+                    Text(stringResource(R.string.coui_privacy_risk_hint),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+                }
+                Column(
+                    Modifier.weight(1f).background(colors.background, RoundedCornerShape(16.dp))
+                        .padding(14.dp).testTag("home-privacy-dns"),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(stringResource(R.string.coui_privacy_dns_label),
+                        kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.coui_privacy_not_verified),
+                        kind = CouiTextKind.PreferenceTitle,
+                    )
+                    Text(
+                        result?.dnsResolvers?.takeIf { it.isNotEmpty() }?.let {
+                            stringResource(R.string.coui_privacy_resolver_count, it.size)
+                        } ?: stringResource(R.string.coui_privacy_dns_unknown),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant,
+                    )
+                }
+            }
+            if (result != null) {
+                if (result.ippureIp.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.coui_privacy_ippure_ip, result.ippureIp),
+                        kind = CouiTextKind.PreferenceSummary,
+                    )
+                    Text(
+                        text = listOf(result.country, result.isp).filter { it.isNotBlank() }.joinToString(" · "),
+                        kind = CouiTextKind.Description,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else if (result.ippureError.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.coui_privacy_ippure_error, result.ippureError.take(120)),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant,
+                    )
+                }
+                if (result.ipleakIp.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.coui_privacy_ipleak_ip, result.ipleakIp),
+                        kind = CouiTextKind.PreferenceSummary,
+                    )
+                } else if (result.ipleakError.isNotBlank()) {
+                    Text(
+                        text = stringResource(R.string.coui_privacy_ipleak_error, result.ipleakError.take(120)),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant,
+                    )
+                }
+                if (result.ippureIp.isNotBlank() && result.ipleakIp.isNotBlank() &&
+                    result.ippureIp != result.ipleakIp) {
+                    Text(stringResource(R.string.coui_privacy_ip_mismatch),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+                }
+                if (result.dnsResolvers.isNotEmpty()) {
+                    Text(stringResource(R.string.coui_privacy_dns_resolvers,
+                            result.dnsResolvers.take(8).joinToString(", ")),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+                } else if (result.dnsError.isNotBlank()) {
+                    Text(stringResource(R.string.coui_privacy_dns_error, result.dnsError.take(150)),
+                        kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+                }
+            }
+            Text(
+                text = stringResource(R.string.coui_privacy_scope_note),
+                kind = CouiTextKind.Description, color = colors.onSurfaceVariant,
+            )
+            Box(
+                Modifier.fillMaxWidth().heightIn(min = 44.dp)
+                    .clickable(role = Role.Button, onClick = openIpleak)
+                    .testTag("home-privacy-open-ipleak"),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Text(
+                    text = stringResource(R.string.coui_privacy_open_ipleak),
+                    kind = CouiTextKind.PreferenceTitle,
+                    color = colors.accentOnSurface,
+                )
+            }
         }
     }
 }
