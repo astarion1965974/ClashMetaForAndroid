@@ -124,10 +124,24 @@ class LiveUiTest {
         updateHome {
             design.setProfile(profile)
             design.setClashRunning(true)
-            design.setTrafficHistory("""[{"date":"2026-11-07","upload":30,"download":70,"recorded":true}]""")
-            design.setDnsResults(listOf("baidu.com" to """{"addresses":["192.0.2.1"],"millis":42}"""))
+            design.setDnsResults(listOf(
+                "baidu.com" to """{"addresses":["192.0.2.1"],"millis":42,"dnsRoute":"direct","dnsUpstream":"udp://223.5.5.5"}""",
+                "chatgpt.com" to """{"addresses":["192.0.2.2"],"millis":61,"dnsRoute":"proxy","dnsProxy":"AI-Auto → Tokyo","dnsUpstream":"https://dns.google"}""",
+            ))
         }
         ctx.setContentView(design.root)
+        assertEquals(9, HomeDnsTargets.domains.size)
+        assertEquals(9, HomeDnsTargets.domains.distinct().size)
+        assertTrue(HomeDnsTargets.domains.containsAll(
+            listOf("dianping.com", "douyin.com", "chatgpt.com", "grok.com", "claude.ai")))
+        compose.onNodeWithText(ctx.getString(R.string.coui_home_header)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.coui_traffic_week)).assertDoesNotExist()
+        compose.onNodeWithText(ctx.getString(R.string.coui_dns_site_dianping)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.coui_dns_site_douyin)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.coui_dns_site_chatgpt)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.coui_dns_site_grok)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.coui_dns_site_claude)).assertExists()
+        compose.onNodeWithText("配置 DNS 代理：AI-Auto → Tokyo").assertExists()
         compose.onNodeWithText(ctx.getString(R.string.coui_quota_title)).assertIsDisplayed()
         savePreview(compose.onRoot().captureToImage().asAndroidBitmap(), "dashboard-light")
         compose.onNodeWithText("192.0.2.1 · 42 毫秒").performScrollTo().assertIsDisplayed()
@@ -162,7 +176,6 @@ class LiveUiTest {
             val design = MainDesign(ctx)
             updateHome {
                 design.setClashRunning(true)
-                design.setForwarded(128L * 1024 * 1024)
                 design.setMode(TunnelState.Mode.Rule)
                 design.setProfileName("我的日常订阅")
                 design.setHasProviders(true)
@@ -438,8 +451,10 @@ class LiveUiTest {
         compose.onRoot().performTouchInput {
             swipeUp(startY = height * 0.74f, endY = height * 0.30f)
         }
-        val metric = compose.onAllNodesWithText("—")[1].getUnclippedBoundsInRoot()
+        val dnsTitle = compose.onNodeWithText(ctx.getString(R.string.coui_dns_title))
+            .performScrollTo().getUnclippedBoundsInRoot()
         val bottomBar = nodeWithResourceName(ctx, "home_navigation").getUnclippedBoundsInRoot()
-        assertTrue("The overview should scroll above the floating navigation", metric.bottom <= bottomBar.top)
+        assertTrue("The DNS diagnostic should scroll above the floating navigation",
+            dnsTitle.bottom <= bottomBar.top)
     }
 }

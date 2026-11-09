@@ -4,6 +4,7 @@ import (
 	"os"
 	P "path"
 	"runtime"
+	"sync/atomic"
 	"strings"
 
 	"cfa/native/app"
@@ -13,6 +14,8 @@ import (
 	"github.com/metacubex/mihomo/hub"
 	"github.com/metacubex/mihomo/log"
 )
+
+var activeDNSConfig atomic.Pointer[config.DNS]
 
 func logDns(cfg *config.RawConfig) {
 	bytes, err := yaml.Marshal(&cfg.DNS)
@@ -77,6 +80,7 @@ func Load(path string) error {
 
 	// like hub.Parse()
 	hub.ApplyConfig(cfg)
+	activeDNSConfig.Store(cfg.DNS)
 
 	app.ApplySubtitlePattern(rawCfg.ClashForAndroid.UiSubtitlePattern)
 
@@ -92,4 +96,5 @@ func LoadDefault() {
 	}
 
 	hub.ApplyConfig(cfg)
+	activeDNSConfig.Store(cfg.DNS)
 }

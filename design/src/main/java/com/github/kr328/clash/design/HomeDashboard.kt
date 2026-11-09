@@ -2,6 +2,7 @@ package com.github.kr328.clash.design
 
 import android.text.format.Formatter
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,13 +24,17 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.layout.Divider
@@ -39,8 +45,24 @@ import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
 internal data class HomeQuota(val total: Long, val used: Long, val remaining: Long)
-internal data class HomeTrafficDay(val date: String, val upload: Long, val download: Long, val recorded: Boolean)
-internal data class HomeDnsResult(val domain: String, val address: String, val error: String, val millis: Long)
+internal data class HomeDnsResult(
+    val domain: String,
+    val address: String,
+    val error: String,
+    val millis: Long,
+    val dnsRoute: String = "unknown",
+    val dnsProxy: String = "",
+    val dnsUpstream: String = "",
+    val dnsSource: String = "",
+)
+
+/** One shared target registry: MainActivity probes the exact sites rendered on Home. */
+object HomeDnsTargets {
+    val mainland = listOf("baidu.com", "bilibili.com", "dianping.com", "douyin.com")
+    val overseas = listOf("google.com", "youtube.com")
+    val ai = listOf("chatgpt.com", "grok.com", "claude.ai")
+    val domains = mainland + overseas + ai
+}
 
 @Composable
 private fun bytes(value: Long): String = Formatter.formatFileSize(LocalContext.current, value.coerceAtLeast(0))
@@ -97,79 +119,175 @@ internal fun HomeQuotaCard(quota: HomeQuota?) {
     }
 }
 
+private data class DnsWebsite(
+    val domain: String,
+    @StringRes val name: Int,
+    @DrawableRes val icon: Int? = null,
+    val symbol: String = "",
+    val tint: Color,
+)
+
+private val mainlandSites = listOf(
+    DnsWebsite("baidu.com", R.string.coui_dns_site_baidu, R.drawable.ic_dns_site_baidu, tint=Color(0xff4267E9)),
+    DnsWebsite("bilibili.com", R.string.coui_dns_site_bilibili, R.drawable.ic_dns_site_bilibili, tint=Color(0xff00A1D6)),
+    DnsWebsite("dianping.com", R.string.coui_dns_site_dianping, symbol="评", tint=Color(0xffFF7134)),
+    DnsWebsite("douyin.com", R.string.coui_dns_site_douyin, R.drawable.ic_dns_site_douyin, tint=Color(0xff39C6C4)),
+)
+private val overseasSites = listOf(
+    DnsWebsite("google.com", R.string.coui_dns_site_google, R.drawable.ic_dns_site_google, tint=Color(0xff4285F4)),
+    DnsWebsite("youtube.com", R.string.coui_dns_site_youtube, R.drawable.ic_dns_site_youtube, tint=Color(0xffFF0033)),
+)
+private val aiSites = listOf(
+    DnsWebsite("chatgpt.com", R.string.coui_dns_site_chatgpt, R.drawable.ic_dns_site_chatgpt, tint=Color(0xff10A37F)),
+    DnsWebsite("grok.com", R.string.coui_dns_site_grok, R.drawable.ic_dns_site_grok, tint=Color(0xff707989)),
+    DnsWebsite("claude.ai", R.string.coui_dns_site_claude, R.drawable.ic_dns_site_claude, tint=Color(0xffD97757)),
+)
+
 @Composable
-internal fun HomeTrafficCard(days: List<HomeTrafficDay>, forwarded: String?, connected: Boolean) {
-    val colors = CouiTheme.colorScheme
-    val recorded = days.any { it.recorded }
-    Group {
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = stringResource(R.string.coui_traffic_week), kind = CouiTextKind.PreferenceTitle)
-                Text(text = forwarded.takeIf { connected } ?: "—", kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant)
-            }
-            Text(text = stringResource(R.string.coui_traffic_legend), kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
-            if (!recorded) {
-                Text(text = stringResource(R.string.coui_traffic_empty), kind = CouiTextKind.Description,
-                    color = colors.onSurfaceVariant, modifier = Modifier.padding(vertical = 12.dp))
-            } else {
-                val maxValue = days.maxOfOrNull { maxOf(it.upload, it.download) }?.coerceAtLeast(1L) ?: 1L
-                Canvas(Modifier.fillMaxWidth().height(72.dp)) {
-                    val cell = size.width / 7f
-                    val width = (cell * .18f).coerceAtMost(12.dp.toPx())
-                    days.takeLast(7).forEachIndexed { index, day ->
-                        if (day.recorded) {
-                            val up = size.height * (day.upload.toDouble() / maxValue).toFloat()
-                            val down = size.height * (day.download.toDouble() / maxValue).toFloat()
-                            val x = cell * index + cell * .28f
-                            drawRoundRect(Color(0xff19c879), Offset(x, size.height - down), Size(width, down), CornerRadius(width / 2))
-                            drawRoundRect(Color(0xff508af5), Offset(x + width + 3.dp.toPx(), size.height - up), Size(width, up), CornerRadius(width / 2))
-                        }
-                    }
-                }
-                Row(Modifier.fillMaxWidth()) {
-                    days.takeLast(7).forEach { day ->
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            Text(text = day.date.takeLast(2), kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-            Text(text = stringResource(R.string.coui_traffic_note), kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+private fun DnsSiteIcon(site: DnsWebsite) {
+    Box(
+        Modifier.size(36.dp).background(site.tint.copy(alpha=0.12f), RoundedCornerShape(11.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (site.icon != null) {
+            Image(
+                painter = painterResource(site.icon),
+                contentDescription = null,
+                modifier = Modifier.size(23.dp),
+                colorFilter = ColorFilter.tint(site.tint),
+            )
+        } else {
+            Text(text = site.symbol, kind = CouiTextKind.PreferenceTitle, color=site.tint)
         }
     }
+}
+
+@Composable
+private fun DnsRouteText(result: HomeDnsResult) {
+    val colors = CouiTheme.colorScheme
+    val route = when (result.dnsRoute) {
+        "direct" -> stringResource(R.string.coui_dns_route_direct)
+        "proxy" -> stringResource(R.string.coui_dns_route_proxy,
+            result.dnsProxy.ifEmpty { stringResource(R.string.coui_dns_unknown) })
+        "rules" -> stringResource(R.string.coui_dns_route_rules)
+        "mixed" -> stringResource(R.string.coui_dns_route_mixed)
+        else -> stringResource(R.string.coui_dns_route_unknown)
+    }
+    Text(text = route, kind = CouiTextKind.PreferenceSummary,
+        color = if (result.dnsRoute == "proxy") colors.accentOnSurface else colors.onSurfaceVariant,
+        maxLines = 2, overflow = TextOverflow.Ellipsis)
+    if (result.dnsUpstream.isNotEmpty()) {
+        Text(
+            text = stringResource(R.string.coui_dns_upstream, result.dnsUpstream),
+            kind = CouiTextKind.Description,
+            color = colors.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun DnsWebsiteRow(site: DnsWebsite, result: HomeDnsResult?) {
+    val colors = CouiTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 11.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        DnsSiteIcon(site)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(text = stringResource(site.name), kind = CouiTextKind.PreferenceTitle,
+                maxLines=1, overflow=TextOverflow.Ellipsis)
+            Text(text = site.domain, kind = CouiTextKind.Description, color=colors.onSurfaceVariant)
+            if (result == null) {
+                Text(text = stringResource(R.string.coui_dns_pending), kind = CouiTextKind.PreferenceSummary,
+                    color = colors.onSurfaceVariant)
+            } else {
+                DnsRouteText(result)
+                val detail = when {
+                    result.error.isNotBlank() -> stringResource(R.string.coui_dns_failed)
+                    result.address.isNotBlank() -> stringResource(R.string.coui_dns_result,
+                        result.address, result.millis)
+                    else -> stringResource(R.string.coui_dns_failed)
+                }
+                Text(text=detail, kind=CouiTextKind.Description, color=colors.onSurfaceVariant,
+                    maxLines=2, overflow=TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DnsCategory(label: String, sites: List<DnsWebsite>, results: List<HomeDnsResult>) {
+    val colors = CouiTheme.colorScheme
+    Text(text=label, kind=CouiTextKind.PreferenceSummary, color=colors.onSurfaceVariant,
+        modifier=Modifier.padding(top=15.dp, bottom=4.dp))
+    sites.forEachIndexed { index, site ->
+        if (index>0) Divider(startIndent = 48.dp, endIndent = 0.dp)
+        DnsWebsiteRow(site, results.find { it.domain == site.domain })
+    }
+}
+
+private fun dnsStrategyFingerprint(result: HomeDnsResult?): String? {
+    if (result == null || result.error.isNotEmpty()) return null
+    if (result.dnsRoute !in setOf("direct","proxy")) return null
+    return listOf(result.dnsRoute,result.dnsProxy,result.dnsUpstream).joinToString("|")
+}
+
+@Composable
+private fun DnsSplitSummary(results: List<HomeDnsResult>) {
+    if (results.isEmpty()) return
+    val cn = HomeDnsTargets.mainland.map { domain ->
+        dnsStrategyFingerprint(results.find { it.domain == domain })
+    }
+    val abroad = (HomeDnsTargets.overseas + HomeDnsTargets.ai).map { domain ->
+        dnsStrategyFingerprint(results.find { it.domain == domain })
+    }
+    val message = when {
+        cn.any { it == null } || abroad.any { it == null } ->
+            R.string.coui_dns_compare_unknown
+        cn.distinct().size>1 || abroad.distinct().size>1 ->
+            R.string.coui_dns_compare_varies
+        cn.first() == abroad.first() -> R.string.coui_dns_compare_same
+        else -> R.string.coui_dns_compare_different
+    }
+    Text(
+        text=stringResource(message),
+        kind=CouiTextKind.PreferenceSummary,
+        color=CouiTheme.colorScheme.accentOnSurface,
+        modifier=Modifier.padding(top=10.dp, bottom=4.dp),
+    )
 }
 
 @Composable
 internal fun HomeDnsCard(mode: String?, results: List<HomeDnsResult>, loading: Boolean, enabled: Boolean, check: () -> Unit) {
     val colors = CouiTheme.colorScheme
     Group {
-        Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.fillMaxWidth().padding(horizontal=20.dp, vertical=16.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(text = stringResource(R.string.coui_dns_title), kind = CouiTextKind.PreferenceTitle)
-                    Text(text = stringResource(R.string.coui_dns_mode, mode ?: "—"), kind = CouiTextKind.Description, color = colors.onSurfaceVariant)
+                    Text(text=stringResource(R.string.coui_dns_title), kind=CouiTextKind.PreferenceTitle)
+                    Text(text=stringResource(R.string.coui_dns_mode, mode ?: "—"),
+                        kind=CouiTextKind.Description, color=colors.onSurfaceVariant)
                 }
-                Box(Modifier.heightIn(min = 48.dp).clickable(enabled = enabled && !loading, role = Role.Button, onClick = check)
-                    .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                    Text(text = stringResource(if (loading) R.string.coui_dns_checking else R.string.coui_dns_check),
-                        kind = CouiTextKind.PreferenceTitle, color = if (enabled) colors.accentOnSurface else colors.onSurfaceVariant)
-                }
-            }
-            listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").forEachIndexed { index, domain ->
-                if (index > 0) Divider(startIndent = CouiPageDefaults.rowPadding, endIndent = CouiPageDefaults.rowPadding)
-                val result = results.find { it.domain == domain }
-                val detail = when {
-                    result == null -> stringResource(R.string.coui_dns_pending)
-                    result.address.isNotEmpty() -> stringResource(R.string.coui_dns_result, result.address, result.millis)
-                    else -> stringResource(R.string.coui_dns_failed)
-                }
-                Item(summary = { Text(text = detail, kind = CouiTextKind.PreferenceSummary, color = colors.onSurfaceVariant,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis) }) {
-                    Text(text = domain, kind = CouiTextKind.PreferenceTitle)
+                Box(
+                    Modifier.heightIn(min=48.dp)
+                        .clickable(enabled=enabled&&!loading,role=Role.Button,onClick=check)
+                        .padding(horizontal=12.dp),
+                    contentAlignment=Alignment.Center,
+                ) {
+                    Text(text=stringResource(if(loading)R.string.coui_dns_checking else R.string.coui_dns_check),
+                        kind=CouiTextKind.PreferenceTitle,
+                        color=if(enabled)colors.accentOnSurface else colors.onSurfaceVariant)
                 }
             }
-            Text(text = stringResource(R.string.coui_dns_note), kind = CouiTextKind.Description,
-                color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            DnsSplitSummary(results)
+            DnsCategory(stringResource(R.string.coui_dns_mainland), mainlandSites, results)
+            DnsCategory(stringResource(R.string.coui_dns_overseas), overseasSites, results)
+            DnsCategory(stringResource(R.string.coui_dns_ai), aiSites, results)
+            Text(text=stringResource(R.string.coui_dns_note), kind=CouiTextKind.Description,
+                color=colors.onSurfaceVariant, modifier=Modifier.padding(top=12.dp))
         }
     }
 }

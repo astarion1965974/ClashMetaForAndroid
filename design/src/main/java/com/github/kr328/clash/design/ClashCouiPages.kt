@@ -2,6 +2,16 @@ package com.github.kr328.clash.design
 
 import android.util.Log
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.background
@@ -31,6 +41,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -100,10 +111,8 @@ internal fun ClashHome(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
@@ -116,7 +125,7 @@ internal fun ClashHome(
         scrollState = scroll,
         topBar = {
             ColorOsLargeTopBar(
-                title = stringResource(R.string.application_name),
+                title = stringResource(R.string.coui_home_header),
                 scrollBehavior = scrollBehavior,
                 actions = {
                     ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
@@ -135,8 +144,8 @@ internal fun ClashHome(
         },
     ) {
         HomeTabContent(
-            running, paused, profileName, quota, days, dns, dnsLoading,
-            forwarded, mode, hasProviders, onRequest,
+            running, paused, profileName, quota, dns, dnsLoading,
+            mode, hasProviders, onRequest,
         )
     }
 }
@@ -147,17 +156,14 @@ internal fun HomeTabContent(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
 ) {
         HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
         HomeQuotaCard(quota)
-        HomeTrafficCard(days, forwarded, running && !paused)
         HomeDnsCard(mode, dns, dnsLoading, running && !paused) { onRequest(HomeRequest.CheckDns) }
 
         if (running) {
@@ -283,10 +289,8 @@ internal fun ClashPrimaryTabs(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onHomeRequest: (HomeRequest) -> Unit,
@@ -318,7 +322,7 @@ internal fun ClashPrimaryTabs(
                     title = stringResource(when (selected) {
                         1 -> R.string.profiles
                         2 -> R.string.settings
-                        else -> R.string.application_name
+                        else -> R.string.coui_home_header
                     }),
                     scrollBehavior = activeTopBar,
                     actions = {
@@ -343,24 +347,54 @@ internal fun ClashPrimaryTabs(
             val homePadding = homeTopBar.state.contentPadding(padding, density)
             val profilesPadding = profilesTopBar.state.contentPadding(padding, density)
             val settingsPadding = settingsTopBar.state.contentPadding(padding, density)
-            // Follow DemoApp: keep scroll/title state, switch only the active body.
-            // The native COUI NavigationBar owns its own transition.
-            when (selected) {
-                0 -> Column(
-                    Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
-                        .padding(homePadding).consumeWindowInsets(padding)
-                        .padding(bottom = CouiPageDefaults.groupSpacing),
+            // COUI keeps the toolbar and glass navigation stable. Animate only the
+            // owned tab body, with a rounded page surface during movement rather than
+            // cross-fading a full-screen rectangular texture.
+            val pageTransition = updateTransition(targetState=selected, label="coloros-primary-page")
+            val inMotion = pageTransition.currentState != pageTransition.targetState
+            pageTransition.AnimatedContent(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopStart,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    (slideInHorizontally(
+                        animationSpec = tween(durationMillis = 270),
+                        initialOffsetX = { width -> if (forward) width / 4 else -width / 4 },
+                    ) + fadeIn(animationSpec = tween(durationMillis = 190)))
+                        .togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = 270),
+                                targetOffsetX = { width -> if (forward) -width / 5 else width / 5 },
+                            ) + fadeOut(animationSpec = tween(durationMillis = 150))
+                        ).using(SizeTransform(clip = false))
+                },
+            ) { page ->
+                Box(
+                    Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            clip = inMotion
+                            shape = RoundedCornerShape(26.dp)
+                        }
+                        .background(CouiPageDefaults.themeColors().background),
                 ) {
-                    HomeTabContent(running, paused, profileName, quota, days, dns,
-                        dnsLoading, forwarded, mode, hasProviders, onHomeRequest)
-                }
-                1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
-                2 -> Column(
-                    Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
-                        .padding(settingsPadding).consumeWindowInsets(padding)
-                        .padding(bottom = CouiPageDefaults.groupSpacing),
-                ) {
-                    SettingsTabContent(onSettingsRequest)
+                    when (page) {
+                        0 -> Column(
+                            Modifier.fillMaxSize().couiVerticalScroll(homeScroll)
+                                .padding(homePadding).consumeWindowInsets(padding)
+                                .padding(bottom = CouiPageDefaults.groupSpacing),
+                        ) {
+                            HomeTabContent(running, paused, profileName, quota, dns,
+                                dnsLoading, mode, hasProviders, onHomeRequest)
+                        }
+                        1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
+                        2 -> Column(
+                            Modifier.fillMaxSize().couiVerticalScroll(settingsScroll)
+                                .padding(settingsPadding).consumeWindowInsets(padding)
+                                .padding(bottom = CouiPageDefaults.groupSpacing),
+                        ) {
+                            SettingsTabContent(onSettingsRequest)
+                        }
+                    }
                 }
             }
         }
@@ -695,6 +729,7 @@ internal fun ColorOsCompactTopBar(
     title: String,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    backgroundColor: Color? = null,
 ) {
     TopAppBar(
         title = {
@@ -708,7 +743,7 @@ internal fun ColorOsCompactTopBar(
         navigationIcon = navigationIcon,
         actions = actions,
         colors = CouiTopAppBarDefaults.colors(
-            backgroundColor = CouiPageDefaults.themeColors().background,
+            backgroundColor = backgroundColor ?: CouiPageDefaults.themeColors().background,
         ),
     )
 }
