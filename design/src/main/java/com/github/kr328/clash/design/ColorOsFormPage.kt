@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -50,8 +51,9 @@ internal fun ColorOsFormPage(
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
     val density = LocalDensity.current
-    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scroll = rememberScrollState()
+    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { scroll.maxValue > 0 })
     CouiTheme(darkTheme = dark) {
         Scaffold(
             modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
@@ -71,7 +73,7 @@ internal fun ColorOsFormPage(
                 val colors = CouiTheme.colorScheme
                 Box(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(horizontal = CouiPageDefaults.horizontalMargin, vertical = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Item(
@@ -80,7 +82,7 @@ internal fun ColorOsFormPage(
                             .background(colors.accent.copy(alpha = if (canSave) 1f else .38f)),
                         enabled = canSave,
                         onClick = onSave,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = CouiPageDefaults.contentPadding + 6.dp),
                     ) {
                         Text(
                             text = saveLabel, kind = CouiTextKind.PreferenceTitle,
@@ -116,8 +118,9 @@ internal fun ColorOsLazyFormPage(
     val context = LocalContext.current
     val dark = !context.resolveThemedBoolean(androidx.appcompat.R.attr.isLightTheme)
     val density = LocalDensity.current
-    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val state = rememberLazyListState()
+    val behavior = CouiTopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        canScroll = { state.canScrollForward || state.canScrollBackward })
     CouiTheme(darkTheme = dark) {
         Scaffold(
             modifier = Modifier.fillMaxSize().nestedScroll(behavior.nestedScrollConnection),
@@ -134,7 +137,7 @@ internal fun ColorOsLazyFormPage(
                 val colors = CouiTheme.colorScheme
                 Box(
                     Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(horizontal = CouiPageDefaults.horizontalMargin, vertical = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Item(
@@ -142,7 +145,7 @@ internal fun ColorOsLazyFormPage(
                             .clip(CouiPageDefaults.shape)
                             .background(colors.accent.copy(alpha = if (canSave) 1f else .38f)),
                         enabled = canSave, onClick = onSave,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        contentPadding = PaddingValues(horizontal = CouiPageDefaults.rowPadding, vertical = CouiPageDefaults.contentPadding + 6.dp),
                     ) {
                         Text(
                             text = saveLabel, kind = CouiTextKind.PreferenceTitle,
@@ -156,8 +159,13 @@ internal fun ColorOsLazyFormPage(
             val scrollingPadding = behavior.state.contentPadding(padding, density)
             LazyColumn(
                 state = state,
-                modifier = Modifier.fillMaxSize().padding(scrollingPadding).consumeWindowInsets(padding),
-                contentPadding = PaddingValues(bottom = 16.dp),
+                modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
+                contentPadding = PaddingValues(
+                    start = scrollingPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    top = scrollingPadding.calculateTopPadding(),
+                    end = scrollingPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    bottom = scrollingPadding.calculateBottomPadding() + CouiPageDefaults.groupSpacing,
+                ),
                 content = content,
             )
         }
