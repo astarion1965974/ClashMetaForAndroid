@@ -8,6 +8,8 @@ on:
       - 'app/**'
       - 'gradle/**'
       - '.github/workflows/coui-pr-verify.yml'
+      - '.github/workflows/mainline-release.yaml'
+      - '.github/scripts/prepare_geoassets.py'
 
 permissions:
   contents: read
@@ -55,6 +57,8 @@ jobs:
           for p in "$GITHUB_WORKSPACE"/.github/patch/*.patch; do
             patch -d "$RUNNER_TEMP/cmfa-go/go" --forward -p 1 -i "$p"
           done
+      - name: Offline GeoData cache integrity regression tests
+        run: python3 .github/scripts/prepare_geoassets.py --self-test
       - name: Test native DNS routing diagnostics
         working-directory: core/src/main/golang
         run: |

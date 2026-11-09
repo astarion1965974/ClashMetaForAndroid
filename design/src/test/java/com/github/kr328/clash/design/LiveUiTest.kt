@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
@@ -114,6 +116,24 @@ class LiveUiTest {
     private fun nodeWithResourceName(context: Context, name: String) =
         compose.onNodeWithTag("${context.packageName}:id/$name")
 
+    @Test fun proxyHeaderRemainsSolidAndGroupSelectorIsAccessible() {
+        for (dark in listOf(false, true)) {
+            val ctx = context(dark)
+            val groups = listOf("自动选择", "节点选择", "香港地区")
+            val design = ProxyDesign(ctx, null, groups, UiStore(ctx))
+            ctx.setContentView(design.root)
+            compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
+            // UiStore may persist a different initial group across test cases.
+            compose.onNodeWithTag("proxy-tab-0").performClick().assertIsSelected()
+            compose.onNodeWithTag("proxy-tab-1").performClick().assertIsSelected()
+            compose.onNodeWithTag("proxy-tab-0").assertExists()
+            savePreview(compose.onRoot().captureToImage().asAndroidBitmap(),
+                if (dark) "proxy-fixed-header-dark" else "proxy-fixed-header-light")
+            ctx.setContentView(View(ctx))
+        }
+    }
+
     @Test fun dashboardShowsQuotaAndRealDnsResults() {
         val ctx = context(false)
         val design = MainDesign(ctx)
@@ -156,9 +176,12 @@ class LiveUiTest {
             val design=MobileNetworkDesign(ctx,settings,listOf("东京 1","东京 2"),true)
             render(design.root,if(dark) "mobile-dark" else "mobile-light")
             assertFalse(design.dirty)
+            compose.onNodeWithTag("coui-form-save-action").assertIsNotEnabled()
             design.bind("Home Wi-Fi")
             assertTrue(design.dirty)
             compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
+            compose.onNodeWithTag("coui-form-save-action").assertIsEnabled().performClick()
+            assertEquals(MobileNetworkDesign.Request.Save, design.requests.tryReceive().getOrNull())
             val home=MainDesign(ctx)
             updateHome {
                 home.setClashRunning(true)

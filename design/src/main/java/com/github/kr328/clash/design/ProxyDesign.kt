@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
@@ -65,7 +64,6 @@ import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.resolveThemedBoolean
-import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.layout.CouiPageDefaults
@@ -78,7 +76,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Pure COUI proxy selection: native glass TopAppBar, COUI chip tab groups,
+ * Pure COUI proxy selection: fixed opaque native top bar and group strip,
  * and lazy proxy cards. The Clash core request and state contracts are unchanged.
  */
 class ProxyDesign(
@@ -121,14 +119,13 @@ class ProxyDesign(
             val groupScrollStates = groupNames.map { name ->
                 key(name) { rememberLazyGridState() }
             }
-            val tabsBackdrop = rememberCouiBackdrop()
-            // Calendar-style chrome: title and segment strip share one opaque surface.
-            val chromeSurface = if (dark) Color.Black else Color.White
             CouiTheme(darkTheme = dark) {
+                // One pinned opaque surface: exactly the native compact title color.
+                val chromeSurface = CouiPageDefaults.themeColors().background
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        Column(Modifier.fillMaxWidth().background(chromeSurface)) {
+                        Column(Modifier.fillMaxWidth().background(chromeSurface).testTag("proxy-fixed-header")) {
                         ColorOsCompactTopBar(
                             title = stringResource(R.string.proxy),
                             backgroundColor = chromeSurface,
@@ -158,7 +155,7 @@ class ProxyDesign(
                         if (groupNames.isNotEmpty()) {
                             Box(Modifier.fillMaxWidth().testTag("proxy-group-tabs")) {
                                 ProxyTabs(groupNames, selectedPage.coerceIn(groupNames.indices),
-                                    tabsBackdrop, chromeSurface) { index ->
+                                    chromeSurface) { index ->
                                     selectedPage = index
                                     uiStore.proxyLastGroup = groupNames[index]
                                 }

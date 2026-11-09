@@ -1,7 +1,7 @@
 import java.net.URL
 import java.net.HttpURLConnection
 import java.io.IOException
-import java.nio.file.Files
+import java.security.MessageDigest
 import java.nio.file.StandardCopyOption
 
 plugins {
@@ -82,75 +82,62 @@ tasks.getByName("clean", type = Delete::class) {
     delete(file("release"))
 }
 
-val geoFilesDownloadDir = "src/main/assets"
+// GeoData is provisioned independently by .github/scripts/prepare_geoassets.py.
+// Ordinary Android builds only verify the local assets and their SHA-256 manifest.
+val geoFilesDownloadDir = file("src/main/assets")
+val requiredGeoAssets = setOf("geoip.metadb", "geosite.dat", "ASN.mmdb", "BundleMRS.7z")
+val geoManifest = rootProject.file(".geoassets/sha256sums")
 
-task("downloadGeoFiles") {
-
-    val geoFilesUrls = mapOf(
-        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb" to "geoip.metadb",
-        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" to "geosite.dat",
-        // "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb" to "country.mmdb",
-        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb" to "ASN.mmdb",
-        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z" to "BundleMRS.7z",
-    )
-
+tasks.register("verifyGeoFiles") {
+    inputs.files(requiredGeoAssets.map { geoFilesDownloadDir.resolve(it) })
+    inputs.file(geoManifest)
     doLast {
-        geoFilesUrls.forEach { (downloadUrl, outputFileName) ->
-            val outputPath = file("$geoFilesDownloadDir/$outputFileName")
-            outputPath.parentFile.mkdirs()
-            // GitHub release CDN occasionally returns HTTP 504 for individual
-            // large geo assets. Retry each independently; never retain partial
-            // files after a failed attempt or replace a valid prior download.
-            val target = outputPath.toPath()
-            val staging = outputPath.toPath().resolveSibling("$outputFileName.download")
-            val attempts = 10
-            var downloaded = false
-            for (attempt in 1..attempts) {
-                var connection: HttpURLConnection? = null
-                try {
-                    connection = (URL(downloadUrl).openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 20_000
-                        readTimeout = 90_000
-                        instanceFollowRedirects = true
-                        setRequestProperty("User-Agent", "ClashMetaLive-Android-Release")
-                    }
-                    connection.inputStream.use { input ->
-                        Files.copy(input, staging, StandardCopyOption.REPLACE_EXISTING)
-                    }
-                    require(Files.size(staging) > 1024L) {
-                        "Downloaded geo file is unexpectedly small: $outputFileName"
-                    }
-                    Files.move(staging, target, StandardCopyOption.REPLACE_EXISTING)
-                    println("$outputFileName downloaded to $outputPath (attempt $attempt)")
-                    downloaded = true
-                    break
-                } catch (cause: Exception) {
-                    Files.deleteIfExists(staging)
-                    if (attempt == attempts) {
-                        throw IOException("Unable to download $outputFileName after $attempts attempts", cause)
-                    }
-                    val delayMs = (attempt * 3_000L).coerceAtMost(15_000L)
-                    logger.warn("Download $outputFileName attempt $attempt/$attempts failed: ${cause.message}. Retrying.")
-                    Thread.sleep(delayMs)
-                } finally {
-                    connection?.disconnect()
+        check(geoManifest.isFile) {
+            "GeoData manifest is missing. Run: python3 .github/scripts/prepare_geoassets.py"
+        }
+        val linePattern = Regex("^([a-f0-9]{64})  ([A-Za-z0-9_.-]+)$")
+        val entries = geoManifest.readLines().filter { it.isNotBlank() }.map { line ->
+            val match = linePattern.matchEntire(line)
+                ?: error("Invalid GeoData manifest line: $line")
+            match.groupValues[2] to match.groupValues[1]
+        }.toMap()
+        check(entries.keys == requiredGeoAssets) {
+            "GeoData manifest must contain exactly the four required data assets"
+        }
+        requiredGeoAssets.forEach { name ->
+            val asset = geoFilesDownloadDir.resolve(name)
+            check(asset.isFile && asset.length() > 1024L) {
+                "Missing or truncated GeoData: $name. Run: python3 .github/scripts/prepare_geoassets.py"
+            }
+            val digest = MessageDigest.getInstance("SHA-256")
+            asset.inputStream().buffered().use { stream ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val count = stream.read(buffer)
+                    if (count == -1) break
+                    digest.update(buffer, 0, count)
                 }
             }
-            check(downloaded) { "No successful geo download: $outputFileName" }
+            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            check(actual == entries[name]) {
+                "GeoData checksum mismatch for $name; refresh via prepare_geoassets.py"
+            }
         }
+        val archive = geoFilesDownloadDir.resolve("BundleMRS.7z")
+        check(archive.inputStream().use { stream ->
+            stream.readNBytes(6).contentEquals(byteArrayOf(0x37, 0x7a, 0xbc.toByte(), 0xaf.toByte(), 0x27, 0x1c))
+        }) { "BundleMRS.7z has an invalid archive signature" }
+        println("GeoData integrity verified; no network access in Android assemble")
     }
 }
 
+// This check replaces the former download-on-every-build dependency.
 afterEvaluate {
-    val downloadGeoFilesTask = tasks["downloadGeoFiles"]
-
-    tasks.forEach {
-        if (it.name.startsWith("assemble")) {
-            it.dependsOn(downloadGeoFilesTask)
-        }
+    tasks.matching { it.name.startsWith("assemble") }.configureEach {
+        dependsOn("verifyGeoFiles")
     }
 }
 
 tasks.getByName("clean", type = Delete::class) {
-    delete(file(geoFilesDownloadDir))
+    delete(geoFilesDownloadDir, geoManifest)
 }

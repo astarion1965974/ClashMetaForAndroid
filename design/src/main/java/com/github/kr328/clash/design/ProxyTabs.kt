@@ -11,48 +11,63 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
-import com.itos.coui.backdrop.CouiBackdrop
-import com.itos.coui.backdrop.couiBackdrop
-import com.itos.coui.chip.ChipTabRow
-import com.itos.coui.chip.CouiChipTabItem
-import com.itos.coui.effect.CouiFloatingRenderer
+import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
 
+/**
+ * Fixed opaque proxy-group selector. Its background is exactly the same as
+ * the compact title bar above it. No ChipTabRow floating renderers, glass,
+ * backdrop sampling, gradient or blur are used in this header.
+ */
 @Composable
-internal fun ProxyTabs(titles: List<String>, selected: Int, backdrop: CouiBackdrop,
-    backgroundColor: Color, onSelect: (Int) -> Unit) {
-    val renderers = remember(titles) {
-        runCatching { titles.map { CouiFloatingRenderer.standalone() } }.getOrNull()
-    }
-    // One opaque, shared ColorOS chrome surface under both toolbar and chips.
-    // Record that same solid color as the ChipTabRow backdrop source.
-    Box(Modifier.fillMaxWidth().background(backgroundColor)) {
-        Box(Modifier.matchParentSize().couiBackdrop(backdrop).background(backgroundColor))
-        Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
-        if (renderers != null && titles.isNotEmpty()) {
-            ChipTabRow(items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },
-                selectedKey = selected.coerceIn(titles.indices), onSelectedKeyChange = { onSelect(it as Int) },
-                backdrop = backdrop, renderers = renderers)
-        } else {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                titles.forEachIndexed { index, title ->
-                    Text(text = title, kind = CouiTextKind.PreferenceTitle,
-                        modifier = Modifier.clip(CircleShape)
-                            .background(if (selected == index) CouiTheme.colorScheme.card else CouiTheme.colorScheme.background)
-                            .selectable(selected == index, role = Role.Tab) { onSelect(index) }.padding(12.dp))
-                }
+internal fun ProxyTabs(
+    titles: List<String>,
+    selected: Int,
+    backgroundColor: Color,
+    onSelect: (Int) -> Unit,
+) {
+    val colors = CouiTheme.colorScheme
+    val scrollState = rememberScrollState()
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .background(backgroundColor)
+            .horizontalScroll(scrollState)
+            .padding(
+                start = CouiPageDefaults.horizontalMargin,
+                end = CouiPageDefaults.horizontalMargin,
+                top = 8.dp,
+                bottom = 12.dp,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        titles.forEachIndexed { index, title ->
+            val active = index == selected
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(if (active) colors.onSurface.copy(alpha = 0.10f) else Color.Transparent)
+                    .selectable(selected = active, role = Role.Tab) { onSelect(index) }
+                    .testTag("proxy-tab-$index")
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = title,
+                    kind = CouiTextKind.PreferenceTitle,
+                    color = if (active) colors.onSurface else colors.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
-        }
         }
     }
 }
