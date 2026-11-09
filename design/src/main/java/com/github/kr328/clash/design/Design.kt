@@ -9,7 +9,7 @@ import com.itos.coui.dialog.Dialog
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.dialog.CouiNoticeOptions
-import com.github.kr328.clash.design.dialog.showCouiNotice
+import com.github.kr328.clash.design.dialog.showCouiAlert
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -40,8 +40,8 @@ abstract class Design<R>(val context: Context) :
         withContext(Dispatchers.Main) {
             val options = CouiNoticeOptions(context).apply(configure)
             when {
-                duration == ToastDuration.Indefinite ->
-                    context.showCouiNotice(message, duration, options)
+                duration == ToastDuration.Indefinite && options.onAction == null ->
+                    context.showCouiAlert(context.getString(R.string.application_name), message)
                 options.onAction != null -> context.showCouiContent { dismiss ->
                     val anchorView = LocalView.current
                     Dialog(
