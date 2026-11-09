@@ -57,6 +57,7 @@ class AccessControlActivity : BaseActivity<AccessControlDesign>() {
                         AccessControlDesign.Request.SelectAll -> design.select(AppAccessPolicy.Selection.All)
                         AccessControlDesign.Request.SelectNone -> design.select(AppAccessPolicy.Selection.None)
                         AccessControlDesign.Request.SelectInvert -> design.select(AppAccessPolicy.Selection.Invert)
+                        AccessControlDesign.Request.ApplyDomesticDefaults -> design.applyDomesticDefaults()
                         AccessControlDesign.Request.Import -> {
                             val clip = getSystemService<ClipboardManager>()?.primaryClip
                             if (clip != null && clip.itemCount > 0) {
