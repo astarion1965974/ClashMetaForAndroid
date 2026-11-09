@@ -77,6 +77,16 @@ class BackGuardTest {
         }
     }
 
+    @Test fun secondaryActivitiesKeepAnUnclippedPlatformOwnedWindow() {
+        // Like COUI alpha9 DemoSecondaryActivity: start/finish own navigation,
+        // ColorOS owns window open/close motion and predictive-back shape.
+        val page = activity(AccessControlActivity::class.java)
+        assertFalse("Subpages must not install a permanent custom decor clip",
+            page.window.decorView.clipToOutline)
+        assertNotEquals("Do not force a translucent app window for manual entry corners",
+            android.graphics.PixelFormat.TRANSLUCENT, page.window.attributes.format)
+    }
+
     @Test fun saveCompletingDuringGestureFallsThroughExactlyOnce() {
         val page = activity(GuardHarnessActivity::class.java)
         val design = MobileNetworkDesign(page, MobileNetworkSettings(), emptyList(), false)
