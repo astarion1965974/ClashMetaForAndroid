@@ -110,7 +110,7 @@ class ProxyDesign(
                             scrollBehavior = scrollBehavior,
                             navigationIcon = {
                                 ToolbarIcon(
-                                    com.itos.coui.icons.CouiIcons.Back,
+                                    com.itos.coui.icons.CouiIcons.Filled.Back,
                                     stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
                                 ) { context.colorOsNavigateBack() }
                             },
