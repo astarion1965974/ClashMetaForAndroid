@@ -214,9 +214,11 @@ class AccessControlDesign(
     /** Explicit opt-in for existing users: change only curated domestic package IDs.
      * Do not override any other app's effective route or silently migrate old modes.
      */
-    fun applyDomesticDefaults() {
+    fun applyDomesticDefaults(additionalInstalled: Set<String> = emptySet()) {
         if (savingState) return
-        DomesticAppDefaults.bypassPackages.forEach { pkg ->
+        // Always retain offline curated defaults; remotely verified entries are
+        // opt-in and restricted to installed app package IDs by the Activity.
+        (DomesticAppDefaults.bypassPackages + additionalInstalled).forEach { pkg ->
             val next = AppAccessPolicy.withRouting(mode, selected, pkg, throughClash = false)
             mode = next.mode
             selected.clear()
