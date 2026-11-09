@@ -125,7 +125,7 @@ class LiveUiTest {
             compose.onNodeWithTag("proxy-fixed-header").assertIsDisplayed()
             compose.onNodeWithTag("proxy-group-tabs").assertIsDisplayed()
             compose.onNodeWithTag("proxy-chip-solid-host").assertIsDisplayed()
-            compose.onNodeWithTag("proxy-chip-solid-source").assertIsDisplayed()
+            compose.onNodeWithTag("proxy-header-solid-source").assertIsDisplayed()
             val header = compose.onNodeWithTag("proxy-fixed-header").getUnclippedBoundsInRoot()
             val tabs = compose.onNodeWithTag("proxy-group-tabs").getUnclippedBoundsInRoot()
             assertTrue("ChipTabRow should be fully contained in the pinned toolbar",
