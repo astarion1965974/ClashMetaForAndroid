@@ -1,7 +1,7 @@
 import java.net.URL
 import java.net.HttpURLConnection
 import java.io.IOException
-import java.nio.file.Files
+import java.security.MessageDigest
 import java.nio.file.StandardCopyOption
 
 plugins {
@@ -109,7 +109,7 @@ tasks.register("verifyGeoFiles") {
             check(asset.isFile && asset.length() > 1024L) {
                 "Missing or truncated GeoData: $name. Run: python3 .github/scripts/prepare_geoassets.py"
             }
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            val digest = MessageDigest.getInstance("SHA-256")
             asset.inputStream().buffered().use { stream ->
                 val buffer = ByteArray(64 * 1024)
                 while (true) {
