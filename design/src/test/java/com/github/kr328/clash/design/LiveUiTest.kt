@@ -303,14 +303,23 @@ class LiveUiTest {
             search.left.value, count.left.value, 1f)
         compose.onNodeWithText(ctx.getString(R.string.access_control_mode)).assertDoesNotExist()
         assertTrue(selected.contains("org.example.chat"))
-        // The public policy setter is used by each of the two native Dialog choices.
+        compose.onNodeWithTag("app-route-org.example.browser")
+            .assertTextContains(ctx.getString(R.string.app_bypass))
+        // Simulate the selected value returned by the native per-app dialog.
+        // The visible row MUST update now, before Save/Save & Reconnect is pressed.
         design.setAppRouting("org.example.browser", throughClash = true)
+        compose.onNodeWithTag("app-route-org.example.browser")
+            .assertTextContains(ctx.getString(R.string.app_via_clash))
+        assertNull("Editing must not persist or reconnect before the user saves",
+            design.requests.tryReceive().getOrNull())
         assertTrue(selected.contains("org.example.browser"))
         assertEquals(AccessControlMode.AcceptSelected, design.mode)
         assertTrue(design.dirty)
         compose.onNodeWithTag("app-routing-save").assertIsEnabled().performClick()
         assertEquals(AccessControlDesign.Request.Save, design.requests.tryReceive().getOrNull())
         design.setAppRouting("org.example.browser", throughClash = false)
+        compose.onNodeWithTag("app-route-org.example.browser")
+            .assertTextContains(ctx.getString(R.string.app_bypass))
         assertFalse(design.dirty)
         compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
     }
@@ -326,6 +335,8 @@ class LiveUiTest {
         render(design.root, "apps-acceptall-light")
         compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
         design.setAppRouting("org.example.browser", throughClash = false)
+        compose.onNodeWithTag("app-route-org.example.browser")
+            .assertTextContains(ctx.getString(R.string.app_bypass))
         assertEquals(AccessControlMode.DenySelected, design.mode)
         assertEquals(setOf("org.example.browser"), selected)
         compose.onNodeWithTag("app-routing-save").assertIsEnabled()
