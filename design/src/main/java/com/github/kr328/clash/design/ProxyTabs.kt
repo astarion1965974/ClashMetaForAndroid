@@ -25,14 +25,15 @@ internal fun ProxyTabs(titles: List<String>, selected: Int, backdrop: CouiBackdr
     Box(Modifier.fillMaxWidth().background(backgroundColor).testTag("proxy-native-chip-row")) {
         Box(Modifier.matchParentSize().couiBackdrop(backdrop).background(backgroundColor))
         Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
-        if (renderers != null && titles.isNotEmpty()) {
-            ChipTabRow(
+            if (titles.isNotEmpty()) {
+                ChipTabRow(
                 items = titles.mapIndexed { index, title -> CouiChipTabItem(index, title) },
                 selectedKey = selected.coerceIn(titles.indices),
                 onSelectedKeyChange = { onSelect(it as Int) },
                 backdrop = backdrop,
                 renderers = renderers,
-            )
+                )
+            }
         }
     }
 }
