@@ -5,14 +5,12 @@ import com.github.kr328.clash.common.store.Store
 import com.github.kr328.clash.common.store.asStoreProvider
 import com.github.kr328.clash.service.PreferenceProvider
 import com.github.kr328.clash.service.model.AccessControlMode
+import com.github.kr328.clash.service.model.DomesticAppDefaults
 import java.util.*
 
 class ServiceStore(context: Context) {
-    private val store = Store(
-        PreferenceProvider
-            .createSharedPreferencesFromContext(context)
-            .asStoreProvider()
-    )
+    private val preferences = PreferenceProvider.createSharedPreferencesFromContext(context)
+    private val store = Store(preferences.asStoreProvider())
 
     var activeProfile: UUID? by store.typedString(
         key = "active_profile",
@@ -35,6 +33,20 @@ class ServiceStore(context: Context) {
         key = "access_control_packages",
         defaultValue = emptySet()
     )
+
+    /**
+     * Only first-run defaults. Detect actual legacy preferences, not the in-memory
+     * AcceptAll default: any previously saved user mode OR package selection wins.
+     * A complete curated package set intentionally includes not-yet-installed apps.
+     */
+    fun initializeDomesticBypassIfUnconfigured() {
+        if (!DomesticAppDefaults.shouldInitialize(
+                preferences.contains("access_control_mode"),
+                preferences.contains("access_control_packages"),
+            )) return
+        accessControlPackages = DomesticAppDefaults.bypassPackages
+        accessControlMode = AccessControlMode.DenySelected
+    }
 
     var dnsHijacking by store.boolean(
         key = "dns_hijacking",
