@@ -292,10 +292,18 @@ class LiveUiTest {
         render(design.root, "apps-dark")
         assertFalse(design.dirty)
         assertTrue(selected.contains("org.example.chat"))
+        compose.onNodeWithTag("app-routing-save").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
+        compose.onNodeWithTag("app-routing-bulk-action").assertIsDisplayed()
         compose.onNodeWithText("浏览器").performClick()
         assertTrue(selected.contains("org.example.browser"))
         assertTrue(design.dirty)
-        compose.onNodeWithText(ctx.getString(R.string.route_save_reconnect)).assertIsDisplayed()
+        compose.onNodeWithTag("app-routing-save").assertIsEnabled().performClick()
+        assertEquals(AccessControlDesign.Request.Save, design.requests.tryReceive().getOrNull())
+        // Reverting the selection must return the native save button to grey/disabled.
+        compose.onNodeWithText("浏览器").performClick()
+        assertFalse(design.dirty)
+        compose.onNodeWithTag("app-routing-save").assertIsNotEnabled()
     }
 
     @Test fun ruleSettingsInflateInBothThemesAndKeepSaveReachable() {
@@ -325,7 +333,9 @@ class LiveUiTest {
         val ctx = context(false)
         val design = AccessControlDesign(ctx, UiStore(ctx), mutableSetOf(), AccessControlMode.DenySelected, false)
         render(design.root, "apps-landscape", 800, 360)
-        compose.onNodeWithText(ctx.getString(R.string.route_save)).assertIsDisplayed()
+        // No obsolete fixed bottom save bar may overlap the small landscape viewport.
+        compose.onNodeWithTag("app-routing-save").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithTag("coui-form-save-action").assertDoesNotExist()
         compose.onNodeWithText(ctx.getString(R.string.app_mode_bypass)).assertIsDisplayed()
     }
 
