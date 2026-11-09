@@ -49,7 +49,7 @@ import com.itos.coui.theme.CouiTheme
 /** Snapshot of user-initiated third-party checks, NEVER a claimed leak pass/fail.
  * The app's own outbound route can differ from browser/VPN-app routes.
  */
-internal data class HomePrivacyResult(
+data class HomePrivacyResult(
     val ippureIp: String = "",
     val fraudScore: Int? = null,
     val isp: String = "",
