@@ -1,5 +1,6 @@
 package com.github.kr328.clash.design
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,17 +26,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.util.resolveThemedBoolean
 import com.itos.coui.icons.CouiIcons
+import com.itos.coui.effect.CouiFloatingRenderer
+import com.itos.coui.effect.LocalCouiContourGlowEnabled
+import com.itos.coui.floatingactionbutton.CouiFabColor
+import com.itos.coui.floatingactionbutton.CouiFabDefaults
 import com.itos.coui.layout.CouiPageDefaults
 import com.itos.coui.effect.couiButtonFeedback
 import com.itos.coui.shape.CouiCapsuleShape
@@ -43,6 +54,9 @@ import com.itos.coui.scroll.couiVerticalScroll
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
 import com.itos.coui.theme.CouiTheme
+import com.itos.coui.theme.LocalCouiContentColor
+import com.itos.coui.topappbar.TopAppBarButton
+import com.itos.coui.topappbar.CouiTopAppBarButtonDefaults
 import com.itos.coui.topappbar.CouiTopAppBarDefaults
 
 /**
@@ -90,6 +104,61 @@ internal fun ColorOsSaveAction(
                 color = labelColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/** Native ColorOS 17 top-right save control for application routing only.
+ * Uses alpha9's actual floating toolbar surface, rather than a tinted custom circle.
+ * Its material is grey and disabled until the form is dirty and loaded, then blue.
+ */
+@Composable
+internal fun ColorOsToolbarSaveAction(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val dark = CouiTheme.isDark
+    val colors = CouiTheme.colorScheme
+    val density = LocalDensity.current.density
+    val contour = LocalCouiContourGlowEnabled.current
+    val blue = CouiFabDefaults.containerColor(CouiFabColor.InfraredRemote, dark)
+    val disabledGrey = if (dark) Color(0xFF454950) else Color(0xFFDADDE2)
+    val fill = if (enabled) blue else disabledGrey
+    val renderer = remember { runCatching { CouiFloatingRenderer.standalone() }.getOrNull() }
+    val icon = ImageVector.vectorResource(R.drawable.ic_baseline_save)
+    if (renderer != null) {
+        TopAppBarButton(
+            modifier = Modifier.testTag("app-routing-save"),
+            onClick = onClick,
+            enabled = enabled,
+            renderer = renderer,
+            style = CouiTopAppBarButtonDefaults.style(dark).copy(
+                contentColor = if (enabled) Color.White else colors.onSurfaceVariant,
+                material = { CouiFabDefaults.material(fill, dark) },
+                shadow = { CouiFabDefaults.shadow(fill, density, contour) },
+            ),
+        ) {
+            Image(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(LocalCouiContentColor.current),
+            )
+        }
+    } else {
+        // Off-device Robolectric fallback only; ColorOS 17 uses TopAppBarButton.
+        Box(
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(fill)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .testTag("app-routing-save"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                imageVector = icon, contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(if (enabled) Color.White else colors.onSurfaceVariant),
             )
         }
     }
@@ -147,6 +216,7 @@ internal fun ColorOsLazyFormPage(
     canSave: Boolean,
     onBack: () -> Unit,
     onSave: () -> Unit,
+    saveInToolbar: Boolean = false,
     content: LazyListScope.() -> Unit,
 ) {
     val context = LocalContext.current
@@ -156,16 +226,26 @@ internal fun ColorOsLazyFormPage(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                ColorOsCompactTopBar(title = title, navigationIcon = {
-                    ToolbarIcon(
-                        CouiIcons.Filled.Back,
-                        stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
-                        onBack,
-                    )
-                })
+                ColorOsCompactTopBar(
+                    title = title,
+                    navigationIcon = {
+                        ToolbarIcon(
+                            CouiIcons.Filled.Back,
+                            stringResource(androidx.appcompat.R.string.abc_action_bar_up_description),
+                            onBack,
+                        )
+                    },
+                    actions = {
+                        if (saveInToolbar) {
+                            ColorOsToolbarSaveAction(
+                                label = saveLabel, enabled = canSave, onClick = onSave,
+                            )
+                        }
+                    },
+                )
             },
             bottomBar = {
-                ColorOsSaveAction(label = saveLabel, enabled = canSave, onClick = onSave)
+                if (!saveInToolbar) ColorOsSaveAction(label = saveLabel, enabled = canSave, onClick = onSave)
             },
         ) { padding ->
             val scrollingPadding = padding

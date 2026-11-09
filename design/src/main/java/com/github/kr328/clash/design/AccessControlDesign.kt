@@ -3,10 +3,30 @@ package com.github.kr328.clash.design
 import android.content.Context
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -17,6 +37,8 @@ import com.github.kr328.clash.design.dialog.CouiMenuOption
 import com.github.kr328.clash.design.dialog.showCouiContent
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.preference.CouiPreferenceRow
+import com.itos.coui.effect.couiButtonFeedback
+import com.itos.coui.theme.CouiTheme
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.model.AppAccessPolicy
@@ -24,6 +46,7 @@ import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.dialog.CouiDialogAction
 import com.itos.coui.dialog.Dialog
 import com.itos.coui.layout.Item
+import com.itos.coui.layout.Group
 import com.itos.coui.radiobutton.RadioButton
 import com.itos.coui.text.CouiTextKind
 import com.itos.coui.text.Text
@@ -73,12 +96,13 @@ class AccessControlDesign(
                     else -> R.string.route_save
                 }),
                 canSave = dirty && loaded && !savingState,
+                saveInToolbar = true,
                 onBack = { context.colorOsNavigateBack() },
                 onSave = { if (dirty && loaded && !savingState) requests.trySend(Request.Save) },
             ) {
                 item(key = "app-filter-controls") {
                     AccessControls(
-                        modeLabel, modeHint, keyword, selectedOnly, showSystem, count, !savingState,
+                        modeLabel, modeHint, keyword, selectedOnly, showSystem, !savingState,
                         onMode = ::chooseMode,
                         onKeyword = { keyword = it; refresh() },
                         onSelectedOnly = { selectedOnly = it; refresh() },
@@ -90,20 +114,25 @@ class AccessControlDesign(
                     )
                 }
                 item(key = "app-list-actions") {
-                    ToolbarSectionBulk(
+                    AppRoutingListHeader(
+                        count = count,
                         options = menu.options(mode != AccessControlMode.AcceptAll),
                         enabled = !savingState,
                     )
                 }
                 if (filteredApps.isEmpty()) {
                     item(key = "app-empty") {
-                        Text(
-                            text = stringResource(if (loaded) R.string.app_empty else R.string.app_loading),
-                            kind = CouiTextKind.PreferenceSummary,
-                        )
+                        Group {
+                            Item {
+                                Text(
+                                    text = stringResource(if (loaded) R.string.app_empty else R.string.app_loading),
+                                    kind = CouiTextKind.PreferenceSummary,
+                                )
+                            }
+                        }
                     }
                 } else {
-                    items(filteredApps, key = { it.packageName }) { app ->
+                    itemsIndexed(filteredApps, key = { _, app -> app.packageName }) { index, app ->
                         val checked = app.packageName in selected
                         val route = context.getString(
                             if (AppAccessPolicy.usesClash(mode, checked)) R.string.app_via_clash
@@ -122,6 +151,9 @@ class AccessControlDesign(
                                 }
                             },
                             trailing = { Checkbox(checked = checked, enabled = editable) },
+                            grouped = true,
+                            firstInGroup = index == 0,
+                            lastInGroup = index == filteredApps.lastIndex,
                         )
                     }
                 }
@@ -188,17 +220,43 @@ class AccessControlDesign(
     init { refresh() }
 }
 
-/** COUI toolbar-style operation displayed inside the app list, not a second XML action bar. */
-@androidx.compose.runtime.Composable
-private fun ToolbarSectionBulk(options: List<CouiMenuOption>, enabled: Boolean) {
-    com.itos.coui.layout.Group {
+/** COUI category header: counts and native anchored bulk menu share one line.
+ * The app list below remains lazy, with one connected rounded card surface.
+ */
+@Composable
+private fun AppRoutingListHeader(count: String, options: List<CouiMenuOption>, enabled: Boolean) {
+    val colors = CouiTheme.colorScheme
+    val source = remember { MutableInteractionSource() }
+    Row(
+        Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = count,
+            kind = CouiTextKind.GroupTitle,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
         CouiAnchoredMenu(options) { open ->
-            com.github.kr328.clash.design.preference.NativeCouiAction(
-                title = stringResource(R.string.more),
-                enabled = enabled,
-                navigation = true,
-                onClick = { if (enabled) open() },
-            )
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).background(colors.card)
+                    .couiButtonFeedback(CouiTheme.isDark, source, enabled)
+                    .clickable(
+                        interactionSource = source, indication = null, enabled = enabled,
+                        role = Role.Button, onClick = open,
+                    ).testTag("app-routing-bulk-action"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_baseline_more_vert),
+                    contentDescription = stringResource(R.string.more),
+                    modifier = Modifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (enabled) colors.onSurface else colors.onSurfaceVariant.copy(alpha = 0.38f),
+                    ),
+                )
+            }
         }
     }
 }

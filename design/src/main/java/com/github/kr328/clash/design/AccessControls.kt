@@ -2,12 +2,14 @@ package com.github.kr328.clash.design
 
 import android.os.Build
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -39,6 +43,9 @@ import com.itos.coui.backdrop.couiBackdrop
 import com.itos.coui.backdrop.rememberCouiBackdrop
 import com.itos.coui.checkbox.Checkbox
 import com.itos.coui.layout.Item
+import com.itos.coui.layout.Group
+import com.itos.coui.layout.Divider
+import com.itos.coui.icons.CouiIcons
 import com.itos.coui.search.SearchBar
 import com.itos.coui.search.rememberCouiSearchBarState
 import com.itos.coui.text.CouiTextKind
@@ -48,7 +55,7 @@ import com.itos.coui.theme.CouiTheme
 @Composable
 internal fun AccessControls(
     mode: String, hint: String, keyword: String, selectedOnly: Boolean, system: Boolean,
-    count: String, enabled: Boolean, onMode: () -> Unit, onKeyword: (String) -> Unit,
+    enabled: Boolean, onMode: () -> Unit, onKeyword: (String) -> Unit,
     onSelectedOnly: (Boolean) -> Unit, onSystem: (Boolean) -> Unit,
 ) {
     val backdrop = rememberCouiBackdrop()
@@ -66,32 +73,38 @@ internal fun AccessControls(
                 Modifier.fillMaxWidth().couiBackdrop(backdrop)
                     .background(CouiTheme.colorScheme.background),
             ) {
-                Item(
+                Group(
+                    title = stringResource(R.string.access_control_mode),
                     modifier = Modifier.onSizeChanged { modeHeightPx = it.height },
-                    onClick = onMode, enabled = enabled,
-                    summary = {
-                        Text(
-                            text = hint, kind = CouiTextKind.PreferenceSummary,
-                            color = CouiTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                ) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
+                ) {
+                    Item(
+                        onClick = onMode, enabled = enabled,
+                        summary = {
+                            Text(
+                                text = hint, kind = CouiTextKind.PreferenceSummary,
+                                color = CouiTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailing = {
+                            Image(
+                                imageVector = CouiIcons.Filled.Back,
+                                contentDescription = null,
+                                modifier = Modifier.padding(start = 4.dp).size(12.dp, 24.dp).rotate(180f),
+                                colorFilter = ColorFilter.tint(CouiTheme.colorScheme.onSurfaceVariant),
+                            )
+                        },
+                    ) { Text(text = mode, kind = CouiTextKind.PreferenceTitle) }
+                }
                 Spacer(Modifier.fillMaxWidth().height(with(density) { searchHeightPx.toDp() }))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Group {
                     FilterToggle(
-                        stringResource(R.string.app_selected_only), selectedOnly, enabled,
-                        Modifier.weight(1f), onSelectedOnly,
+                        stringResource(R.string.app_selected_only), selectedOnly, enabled, onSelectedOnly,
                     )
+                    Divider()
                     FilterToggle(
-                        stringResource(R.string.app_system), system, enabled,
-                        Modifier.weight(1f), onSystem,
+                        stringResource(R.string.app_system), system, enabled, onSystem,
                     )
                 }
-                Text(
-                    text = count, kind = CouiTextKind.Description,
-                    color = CouiTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                )
             }
             // The search capsule samples the recorded mode/filter area without
             // including itself, preventing feedback and preserving COUI material.
@@ -165,11 +178,14 @@ private fun StableSearchField(keyword: String, enabled: Boolean, onKeyword: (Str
     }
 }
 
+/** Full-width native COUI preference row with a single click owner. */
 @Composable
-private fun FilterToggle(label: String, checked: Boolean, enabled: Boolean, modifier: Modifier, change: (Boolean) -> Unit) {
-    Row(modifier.heightIn(min = 48.dp).toggleable(checked, enabled = enabled, role = Role.Checkbox, onValueChange = change),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Checkbox(checked = checked, enabled = enabled)
-        Text(text = label, kind = CouiTextKind.PreferenceSummary, maxLines = 2)
+private fun FilterToggle(label: String, checked: Boolean, enabled: Boolean, change: (Boolean) -> Unit) {
+    Item(
+        enabled = enabled,
+        onClick = { change(!checked) },
+        trailing = { Checkbox(checked = checked, enabled = enabled) },
+    ) {
+        Text(text = label, kind = CouiTextKind.PreferenceTitle)
     }
 }
