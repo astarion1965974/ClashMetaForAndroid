@@ -16,6 +16,7 @@ import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
 import com.itos.coui.layout.Divider
 import com.itos.coui.layout.Group
+import androidx.compose.ui.unit.dp
 
 /** ColorOS 17 native COUI application settings; preserve all existing store callbacks. */
 class AppSettingsDesign(
@@ -55,7 +56,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_brightness_4,
                         onChanged = { requests.trySend(Request.ReCreateAllActivities) },
                     )
-                    Divider()
+                    Divider(startIndent = 0.dp)
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_app_icon_title),
                         summary = stringResource(R.string.hide_app_icon_desc),
@@ -63,7 +64,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_hide,
                         onChanged = onHideIconChange,
                     )
-                    Divider()
+                    Divider(startIndent = 0.dp)
                     NativeCouiSwitch(
                         title = stringResource(R.string.hide_from_recents_title),
                         summary = stringResource(R.string.hide_from_recents_desc),
@@ -80,7 +81,7 @@ class AppSettingsDesign(
                         icon = R.drawable.ic_baseline_domain,
                         enabled = !running,
                     )
-                    Divider()
+                    Divider(startIndent = 0.dp)
                     NativeCouiAction(
                         title = stringResource(R.string.live_notification_group),
                         summary = srvStore.notificationProxyGroup.ifBlank {
@@ -88,16 +89,17 @@ class AppSettingsDesign(
                         },
                         enabled = running,
                     ) { requests.trySend(Request.SelectNotificationGroup) }
-                    Divider()
+                    Divider(startIndent = 0.dp)
                     NativeCouiAction(
                         title = stringResource(R.string.live_notification_settings),
                         summary = stringResource(R.string.live_notification_settings_summary),
+                        navigation = true,
                     ) {
                         val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                         context.startActivity(intent)
                     }
-                    Divider()
+                    Divider(startIndent = 0.dp)
                     NativeCouiSwitch(
                         title = stringResource(R.string.show_traffic),
                         summary = stringResource(R.string.show_traffic_summary),
