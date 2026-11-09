@@ -14,7 +14,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
-import com.github.kr328.clash.common.util.ticker
+import com.github.kr328.clash.design.HomeDnsTargets
 import com.github.kr328.clash.design.MainDesign
 import com.github.kr328.clash.design.ProfilesDesign
 import com.github.kr328.clash.design.SettingsDesign
@@ -34,7 +34,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
 class MainActivity : BaseActivity<MainDesign>() {
@@ -58,8 +57,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         design.fetch()
         profilesDesign.fetch()
 
-        val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
-        val profileTicker = ticker(TimeUnit.MINUTES.toMillis(1))
+        val profileTicker = com.github.kr328.clash.common.util.ticker(60_000L)
 
         while (isActive) {
             select<Unit> {
@@ -158,11 +156,6 @@ class MainActivity : BaseActivity<MainDesign>() {
                 if (activityStarted && design.selectedPrimaryTab == 1) {
                     profileTicker.onReceive { profilesDesign.updateElapsed() }
                 }
-                if (com.github.kr328.clash.service.model.MobilePolicy.shouldRefreshHome(activityStarted, clashRunning)) {
-                    ticker.onReceive {
-                        if (!design.pausedAtHome) design.fetchTraffic()
-                    }
-                }
             }
         }
     }
@@ -191,14 +184,6 @@ class MainActivity : BaseActivity<MainDesign>() {
         setHasProviders(providers.isNotEmpty())
 
         withProfile { setProfile(queryActive()) }
-        withClash { setTrafficHistory(queryTrafficHistory()) }
-    }
-
-    private suspend fun MainDesign.fetchTraffic() {
-        withClash {
-            setForwarded(queryTrafficTotal())
-            setTrafficHistory(queryTrafficHistory())
-        }
     }
 
     private suspend fun MainDesign.checkDns() {
@@ -206,7 +191,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         updateDnsLoading(true)
         try {
             val results = coroutineScope {
-                listOf("baidu.com", "bilibili.com", "google.com", "youtube.com").map { domain ->
+                HomeDnsTargets.domains.map { domain ->
                     async { domain to runCatching { withClash { queryDnsDiagnostic(domain) } }.getOrDefault("{}") }
                 }.awaitAll()
             }

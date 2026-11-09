@@ -100,10 +100,8 @@ internal fun ClashHome(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
@@ -116,7 +114,7 @@ internal fun ClashHome(
         scrollState = scroll,
         topBar = {
             ColorOsLargeTopBar(
-                title = stringResource(R.string.application_name),
+                title = stringResource(R.string.coui_home_header),
                 scrollBehavior = scrollBehavior,
                 actions = {
                     ToolbarIcon(CouiIcons.Filled.Setting, stringResource(R.string.settings)) {
@@ -135,8 +133,8 @@ internal fun ClashHome(
         },
     ) {
         HomeTabContent(
-            running, paused, profileName, quota, days, dns, dnsLoading,
-            forwarded, mode, hasProviders, onRequest,
+            running, paused, profileName, quota, dns, dnsLoading,
+            mode, hasProviders, onRequest,
         )
     }
 }
@@ -147,17 +145,14 @@ internal fun HomeTabContent(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onRequest: (HomeRequest) -> Unit,
 ) {
         HomeConnectionCard(running, paused, profileName) { onRequest(HomeRequest.ToggleStatus) }
         HomeQuotaCard(quota)
-        HomeTrafficCard(days, forwarded, running && !paused)
         HomeDnsCard(mode, dns, dnsLoading, running && !paused) { onRequest(HomeRequest.CheckDns) }
 
         if (running) {
@@ -283,10 +278,8 @@ internal fun ClashPrimaryTabs(
     paused: Boolean,
     profileName: String?,
     quota: HomeQuota?,
-    days: List<HomeTrafficDay>,
     dns: List<HomeDnsResult>,
     dnsLoading: Boolean,
-    forwarded: String?,
     mode: String?,
     hasProviders: Boolean,
     onHomeRequest: (HomeRequest) -> Unit,
@@ -318,7 +311,7 @@ internal fun ClashPrimaryTabs(
                     title = stringResource(when (selected) {
                         1 -> R.string.profiles
                         2 -> R.string.settings
-                        else -> R.string.application_name
+                        else -> R.string.coui_home_header
                     }),
                     scrollBehavior = activeTopBar,
                     actions = {
@@ -351,8 +344,8 @@ internal fun ClashPrimaryTabs(
                         .padding(homePadding).consumeWindowInsets(padding)
                         .padding(bottom = CouiPageDefaults.groupSpacing),
                 ) {
-                    HomeTabContent(running, paused, profileName, quota, days, dns,
-                        dnsLoading, forwarded, mode, hasProviders, onHomeRequest)
+                    HomeTabContent(running, paused, profileName, quota, dns,
+                        dnsLoading, mode, hasProviders, onHomeRequest)
                 }
                 1 -> profiles.PrimaryTabContent(padding, profilesPadding, profilesScroll)
                 2 -> Column(

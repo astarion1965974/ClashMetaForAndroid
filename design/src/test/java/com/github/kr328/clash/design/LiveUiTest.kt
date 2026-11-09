@@ -124,7 +124,6 @@ class LiveUiTest {
         updateHome {
             design.setProfile(profile)
             design.setClashRunning(true)
-            design.setTrafficHistory("""[{"date":"2026-11-07","upload":30,"download":70,"recorded":true}]""")
             design.setDnsResults(listOf("baidu.com" to """{"addresses":["192.0.2.1"],"millis":42}"""))
         }
         ctx.setContentView(design.root)

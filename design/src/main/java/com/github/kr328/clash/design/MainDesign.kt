@@ -8,9 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import com.github.kr328.clash.core.model.TunnelState
-import com.github.kr328.clash.core.util.trafficTotal
 import com.github.kr328.clash.service.model.Profile
-import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,11 +25,9 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
 
     private var profileName by mutableStateOf<String?>(null)
     private var quota by mutableStateOf<HomeQuota?>(null)
-    private var days by mutableStateOf<List<HomeTrafficDay>>(emptyList())
     private var dns by mutableStateOf<List<HomeDnsResult>>(emptyList())
     private var dnsLoading by mutableStateOf(false)
     private var running by mutableStateOf(false)
-    private var forwarded by mutableStateOf<String?>(null)
     private var modeLabel by mutableStateOf<String?>(null)
     private var hasProviders by mutableStateOf(false)
     var pausedAtHome by mutableStateOf(false)
@@ -68,10 +64,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                     paused = pausedAtHome,
                     profileName = profileName,
                     quota = quota,
-                    days = days,
                     dns = dns,
                     dnsLoading = dnsLoading,
-                    forwarded = forwarded,
                     mode = modeLabel,
                     hasProviders = hasProviders,
                     onHomeRequest = ::request,
@@ -82,10 +76,8 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                 paused = pausedAtHome,
                 profileName = profileName,
                 quota = quota,
-                days = days,
                 dns = dns,
                 dnsLoading = dnsLoading,
-                forwarded = forwarded,
                 mode = modeLabel,
                 hasProviders = hasProviders,
                 onRequest = ::request,
@@ -109,24 +101,21 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         }
     }
 
-    suspend fun setTrafficHistory(json: String) = withContext(Dispatchers.Main) {
-        days = runCatching {
-            val array = JSONArray(json)
-            (0 until array.length()).map { index ->
-                val item = array.getJSONObject(index)
-                HomeTrafficDay(item.optString("date"), item.optLong("upload"),
-                    item.optLong("download"), item.optBoolean("recorded"))
-            }
-        }.getOrDefault(emptyList())
-    }
-
     fun updateDnsLoading(value: Boolean) { dnsLoading = value }
 
     fun setDnsResults(results: List<Pair<String, String>>) {
         dns = results.map { (domain, json) ->
             val item = runCatching { JSONObject(json) }.getOrDefault(JSONObject())
-            HomeDnsResult(domain, item.optJSONArray("addresses")?.optString(0).orEmpty(),
-                item.optString("error"), item.optLong("millis", -1))
+            HomeDnsResult(
+                domain=domain,
+                address=item.optJSONArray("addresses")?.optString(0).orEmpty(),
+                error=item.optString("error"),
+                millis=item.optLong("millis",-1),
+                dnsRoute=item.optString("dnsRoute","unknown"),
+                dnsProxy=item.optString("dnsProxy"),
+                dnsUpstream=item.optString("dnsUpstream"),
+                dnsSource=item.optString("dnsSource"),
+            )
         }
         dnsLoading = false
     }
@@ -140,12 +129,6 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         withContext(Dispatchers.Main) {
             if (this@MainDesign.running != running) dns = emptyList()
             this@MainDesign.running = running
-        }
-    }
-
-    suspend fun setForwarded(value: Long) {
-        withContext(Dispatchers.Main) {
-            forwarded = value.trafficTotal()
         }
     }
 
