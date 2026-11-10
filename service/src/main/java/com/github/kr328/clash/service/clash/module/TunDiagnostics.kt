@@ -1,7 +1,6 @@
 package com.github.kr328.clash.service.clash.module
 
 import java.util.concurrent.atomic.AtomicLong
-import org.json.JSONObject
 
 /**
  * Runtime counters only. No socket addresses, credentials, profile contents or
@@ -30,11 +29,9 @@ object TunDiagnostics {
         }
     }
 
-    fun snapshot(): String = JSONObject().apply {
-        put("vpn_mtu", mtu)
-        put("vpn_started_epoch_ms", startedMs)
-        put("protect_success", protectedSockets.get())
-        put("protect_failure", failedSockets.get())
-        put("last_protect_failure_epoch_ms", lastFailureMs)
-    }.toString()
+    fun snapshot(): String = "{\"vpn_mtu\":" + mtu +
+        ",\"vpn_started_epoch_ms\":" + startedMs +
+        ",\"protect_success\":" + protectedSockets.get() +
+        ",\"protect_failure\":" + failedSockets.get() +
+        ",\"last_protect_failure_epoch_ms\":" + lastFailureMs + "}"
 }
