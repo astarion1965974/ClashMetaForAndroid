@@ -143,7 +143,7 @@ internal class NetworkDiagnosticRunner(
         conn.setRequestProperty("User-Agent", "ClashMetaLive-Diagnostic/1.0")
         return try {
             val status = conn.responseCode
-            val type = conn.headerField("Content-Type")?.substringBefore(';') ?: "unknown"
+            val type = conn.getHeaderField("Content-Type")?.substringBefore(';') ?: "unknown"
             var consumed = 0
             val limit = 512 * 1024
             val stream = if (status >= 400) conn.errorStream else conn.inputStream
