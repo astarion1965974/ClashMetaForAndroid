@@ -166,7 +166,7 @@ internal class NetworkDiagnosticRunner(
         withTimeout(6_000) { operation() }
 
     suspend fun run(progress: suspend (String) -> Unit): String = withContext(Dispatchers.IO) {
-        append("# Clash Meta Live · Network Diagnostic (v1)")
+        append("# Clash Meta Live · Network Diagnostic (v2)")
         append("Started: " + now())
         append("Android API: " + Build.VERSION.SDK_INT)
         append("App version: " + context.packageManager.getPackageInfo(context.packageName, 0).versionName)
@@ -197,6 +197,7 @@ internal class NetworkDiagnosticRunner(
         append("")
 
         append("## Live core snapshot")
+        var liveExit: String? = null
         if (vpnRunning) {
             step("Mihomo TUN mode", progress) {
                 coreCall { withClash { queryTunnelState().mode.toString() } }
@@ -206,6 +207,21 @@ internal class NetworkDiagnosticRunner(
             }
             step("Selected GLOBAL exit", progress) {
                 coreCall { withClash { queryProxyGroup("GLOBAL", ProxySort.Default).now } }
+            }
+            step("Effective managed proxy exit", progress) {
+                val chain = mutableListOf("Live · 默认代理")
+                var current = "Live · 默认代理"
+                for (index in 0 until 5) {
+                    val selection = coreCall {
+                        withClash { queryProxyGroup(current, ProxySort.Default) }
+                    }
+                    val next = selection.now
+                    if (next.isBlank() || next == current || next in chain) break
+                    chain.add(next)
+                    current = next
+                }
+                liveExit = current.takeIf { it != "Live · 默认代理" }
+                "selection_chain=" + chain.joinToString(" → ")
             }
         } else {
             append("SKIP core tests: VPN is not running")
@@ -250,6 +266,75 @@ internal class NetworkDiagnosticRunner(
                 step("underlay TCP 1.1.1.1:443", progress) {
                     tcpConnect("1.1.1.1", 443, physical)
                 }
+                append("")
+                append("## Selected proxy server / physical Wi-Fi diagnostics")
+                val selected = liveExit
+                if (subscription == null || selected.isNullOrBlank() ||
+                    selected in setOf("DIRECT", "REJECT", "GLOBAL")
+                ) {
+                    append("SKIP selected-node test: active subscription URL or selected node unavailable")
+                } else {
+                    val endpoint = runCatching {
+                        val yaml = NodeEndpointDiagnostic.readSubscription(physical, subscription)
+                        NodeEndpointDiagnostic.parseProxy(yaml, selected)
+                    }.onFailure {
+                        append("SKIP node endpoint discovery: " + it.javaClass.simpleName)
+                    }.getOrNull()
+                    if (endpoint == null) {
+                        append("SKIP node address tests: node unavailable in inline subscription proxies (proxy-providers are not covered)")
+                    } else {
+                        append("Selected node type=" + endpoint.type + " server=[REDACTED] port=" +
+                            endpoint.port + " (host and credentials never exported)")
+                        var addresses: NodeEndpointDiagnostic.AddressSet? = null
+                        step("Wi-Fi DNS of selected node", progress) {
+                            try {
+                                val resolved = NodeEndpointDiagnostic.resolve(physical, endpoint.server)
+                                addresses = resolved
+                                "IPv4_count=" + resolved.v4.size + " IPv6_count=" + resolved.v6.size
+                            } catch (e: Exception) {
+                                throw IllegalStateException("physical DNS " + e.javaClass.simpleName)
+                            }
+                        }
+                        val addr = addresses
+                        if (addr != null) {
+                            for ((label, ip) in listOfNotNull(
+                                addr.v4.firstOrNull()?.let { "IPv4" to it },
+                                addr.v6.firstOrNull()?.let { "IPv6" to it },
+                            )) {
+                                if (!NodeEndpointDiagnostic.isTcp(endpoint.type)) {
+                                    append("SKIP " + label + " TCP: node uses UDP-based transport (" +
+                                        endpoint.type + ")")
+                                    continue
+                                }
+                                step("Wi-Fi selected node " + label + " TCP", progress) {
+                                    try {
+                                        "connected_in_ms=" + NodeEndpointDiagnostic.tcp(
+                                            physical, ip, endpoint.port,
+                                        )
+                                    } catch (e: Exception) {
+                                        throw IllegalStateException("node TCP " + e.javaClass.simpleName)
+                                    }
+                                }
+                                if (label == "IPv4" && endpoint.type in setOf(
+                                    "anytls", "trojan", "vless", "vmess", "socks5", "http"
+                                )) {
+                                    step("Wi-Fi selected node standard TLS IPv4 (not proxy authentication)", progress) {
+                                        try {
+                                            NodeEndpointDiagnostic.tls(
+                                                physical, ip, endpoint.port, endpoint.sni,
+                                            )
+                                        } catch (e: Exception) {
+                                            throw IllegalStateException(
+                                                "generic TLS handshake " + e.javaClass.simpleName +
+                                                    " (may differ from configured SNI, ALPN or fingerprint)",
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
                 append("SKIP physical network tests: no non-VPN underlay found")
             }
@@ -265,7 +350,8 @@ internal class NetworkDiagnosticRunner(
                 for (domain in listOf("google.com", "youtube.com", "chatgpt.com")) {
                     if (!DnsDiagnosticTargets.supports(domain)) continue
                     step("Mihomo DNS " + domain, progress) {
-                        coreCall { withClash { queryDnsDiagnostic(domain) }.also { if (it == "{}") error("No core DNS diagnostic data") } }
+                        val response = coreCall { withClash { queryDnsDiagnostic(domain) } }
+                        NetworkDiagnosticDns.requireResolved(response)
                     }
                 }
             }
@@ -311,6 +397,15 @@ internal class NetworkDiagnosticRunner(
             append("Underlying HTTPS works but explicit Mihomo proxy fails: inspect node dial/TLS, proxy DNS and socket protection counters.")
         if (proxyGoogleOk == null)
             append("HTTP mixed port was unavailable: explicit Mihomo proxy outcome was NOT measured.")
+        val nodeTcp = probes.filter { it.key.startsWith("Wi-Fi selected node ") && it.key.endsWith(" TCP") }
+        if (nodeTcp.isNotEmpty() && nodeTcp.all { !it.ok })
+            append("Selected node TCP could not be reached over physical Wi-Fi: compare the same node from the cellular network.")
+        if (nodeTcp.any { it.ok } && proxyGoogleOk == false)
+            append("Physical Wi-Fi can establish node TCP, but Mihomo proxy still fails: inspect outbound binding, configured SNI/ALPN and proxy authentication.")
+        if (nodeTcp.isEmpty())
+            append("No selected-node TCP was measured: UDP-based node, unsupported subscription layout or DNS failure.")
+        if (coreLogs.any { it.contains("yyds.sbyun.org") && it.contains("Live · 默认代理") })
+            append("Subscription hostname entered managed proxy routing; add the subscription domain to Network > Managed Rules > Direct domains, then save/reconnect.")
         append("To reproduce a browser failure, keep VPN active; do not change network or node during the test.")
         append("Finished: " + now())
         progress("检测完成，可导出诊断日志")
