@@ -5,6 +5,7 @@ import android.net.VpnService
 import android.os.Build
 import androidx.core.content.getSystemService
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.util.parseInetSocketAddress
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
@@ -61,7 +62,11 @@ class TunModule(private val vpn: VpnService) : Module<Unit>(vpn) {
             gateway = device.gateway,
             portal = device.portal,
             dns = device.dns,
-            markSocket = vpn::protect,
+            markSocket = { fd ->
+                if (!vpn.protect(fd)) {
+                    Log.e("VPN socket protect failed: fd=$fd")
+                }
+            },
             querySocketUid = this::queryUid
         )
     }

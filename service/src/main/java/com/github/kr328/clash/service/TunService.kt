@@ -256,7 +256,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     }
 
     companion object {
-        private const val TUN_MTU = 9000
+        // Conservative Android VPN MTU for mobile tethering and carrier tunnels.
+        private const val TUN_MTU = 1400
         private const val TUN_SUBNET_PREFIX = 30
         private const val TUN_GATEWAY = "172.19.0.1"
         private const val TUN_SUBNET_PREFIX6 = 126
