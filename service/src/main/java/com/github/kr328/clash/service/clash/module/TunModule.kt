@@ -63,9 +63,11 @@ class TunModule(private val vpn: VpnService) : Module<Unit>(vpn) {
             portal = device.portal,
             dns = device.dns,
             markSocket = { fd ->
-                if (!vpn.protect(fd)) {
+                val protected = vpn.protect(fd)
+                if (!protected) {
                     Log.e("VPN socket protect failed: fd=$fd")
                 }
+                protected
             },
             querySocketUid = this::queryUid
         )
