@@ -23,7 +23,7 @@ class NetworkSettingsDesign(
     srvStore: ServiceStore,
     running: Boolean,
 ) : Design<NetworkSettingsDesign.Request>(context) {
-    enum class Request { StartAccessControlList, StartManagedRouting, StartMobileNetwork }
+    enum class Request { StartAccessControlList, StartManagedRouting, StartMobileNetwork, StartDiagnostic }
 
     override val root: View = ComposeView(context).apply {
         setContent {
@@ -91,6 +91,12 @@ class NetworkSettingsDesign(
                     )
                 }
                 Group {
+                    NativeCouiAction(
+                        title = stringResource(R.string.diagnostic_title),
+                        navigation = true,
+                        summary = stringResource(R.string.diagnostic_run_hint),
+                    ) { requests.trySend(Request.StartDiagnostic) }
+                    SettingDivider()
                     NativeCouiAction(
                         title = stringResource(R.string.mobile_title),
                         navigation = true,

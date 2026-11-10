@@ -373,4 +373,20 @@
     <string name="shortcut_start_long">Start Clash service</string>
     <string name="shortcut_stop_short">Stop Clash</string>
     <string name="shortcut_stop_long">Stop Clash service</string>
+
+    <string name="diagnostic_title">Network Diagnostics</string>
+    <string name="diagnostic_actions">Connection diagnostics</string>
+    <string name="diagnostic_run">Run diagnostic</string>
+    <string name="diagnostic_run_hint">Check DNS, Wi-Fi, VPN, subscription and proxy in stages</string>
+    <string name="diagnostic_export">Export detailed report</string>
+    <string name="diagnostic_export_hint">Save a redacted text report to attach in ChatGPT</string>
+    <string name="diagnostic_copy">Copy report</string>
+    <string name="diagnostic_copy_hint">Copy the full report to clipboard</string>
+    <string name="diagnostic_status">Status</string>
+    <string name="diagnostic_steps">Latest checks</string>
+    <string name="diagnostic_preview">Report preview</string>
+    <string name="diagnostic_idle">Tap Run diagnostic while connected to the affected Wi-Fi.</string>
+    <string name="diagnostic_finished">Complete. Review and export the report.</string>
+    <string name="diagnostic_failed">Diagnostic interrupted</string>
+    <string name="diagnostic_privacy">Manual test only. No automatic upload. Paths, subscription tokens and common credentials are redacted; review the report before sharing.</string>
 </resources>

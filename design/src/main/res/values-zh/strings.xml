@@ -282,4 +282,20 @@
     <string name="shortcut_start_long">启动 Clash 服务</string>
     <string name="shortcut_stop_short">停止 Clash</string>
     <string name="shortcut_stop_long">停止 Clash 服务</string>
+
+    <string name="diagnostic_title">网络诊断</string>
+    <string name="diagnostic_actions">连接故障检测</string>
+    <string name="diagnostic_run">开始诊断</string>
+    <string name="diagnostic_run_hint">分阶段检测 DNS、Wi-Fi、VPN、订阅和代理</string>
+    <string name="diagnostic_export">导出详细报告</string>
+    <string name="diagnostic_export_hint">保存脱敏 TXT，随后可上传到 ChatGPT</string>
+    <string name="diagnostic_copy">复制诊断报告</string>
+    <string name="diagnostic_copy_hint">复制完整日志到剪贴板</string>
+    <string name="diagnostic_status">检测状态</string>
+    <string name="diagnostic_steps">最近检测步骤</string>
+    <string name="diagnostic_preview">报告预览</string>
+    <string name="diagnostic_idle">连接出现故障的随身 Wi-Fi，并保持 VPN 开启，然后开始检测。</string>
+    <string name="diagnostic_finished">检测完成，请检查并导出报告。</string>
+    <string name="diagnostic_failed">诊断中断</string>
+    <string name="diagnostic_privacy">仅手动运行，不自动上传。订阅路径、令牌和常见凭据会脱敏；分享前请再次检查报告。</string>
 </resources>

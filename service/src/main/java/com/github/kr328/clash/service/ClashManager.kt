@@ -22,6 +22,9 @@ class ClashManager(private val context: Context) : IClashManager,
     private val store = ServiceStore(context)
     private var logReceiver: ReceiveChannel<LogMessage>? = null
 
+    override fun queryRuntimeDiagnostics(): String =
+        com.github.kr328.clash.service.clash.module.TunDiagnostics.snapshot()
+
     override fun queryTunnelState(): TunnelState {
         return Clash.queryTunnelState()
     }

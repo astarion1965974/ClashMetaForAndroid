@@ -136,6 +136,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     }
 
     private fun TunModule.open() {
+        TunDiagnostics.reset(TUN_MTU)
         val store = ServiceStore(self)
         // Initialize defaults before VPN routing is built, even if the user has
         // not opened Application Routing yet. Saved policies always take priority.

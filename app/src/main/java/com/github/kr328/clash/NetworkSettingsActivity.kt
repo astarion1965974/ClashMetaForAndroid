@@ -30,6 +30,8 @@ class NetworkSettingsActivity : BaseActivity<NetworkSettingsDesign>() {
                     when (it) {
                         NetworkSettingsDesign.Request.StartMobileNetwork ->
                             startActivity(MobileNetworkActivity::class.intent)
+                        NetworkSettingsDesign.Request.StartDiagnostic ->
+                            startActivity(NetworkDiagnosticActivity::class.intent)
                         NetworkSettingsDesign.Request.StartManagedRouting ->
                             startActivity(ManagedRoutingActivity::class.intent)
                         NetworkSettingsDesign.Request.StartAccessControlList ->
