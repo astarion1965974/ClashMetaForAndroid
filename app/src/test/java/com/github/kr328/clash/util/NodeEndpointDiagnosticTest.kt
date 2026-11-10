@@ -50,6 +50,28 @@ class NodeEndpointDiagnosticTest {
         assertEquals("def.example.net",NodeEndpointDiagnostic.parseProxy(yaml,"Tokyo B")!!.server)
     }
 
+    @Test fun parsesProviderInlineYamlWithSpaceAfterBraceAndFindsAnyTlsControl() {
+        val yaml = """
+            mixed-port: 7890
+            proxies:
+                - { name: '日本[1.5x]-高端B1', type: tuic, server: udp.example.org, port: 443, uuid: hidden, password: secret, sni: udp.example.org }
+                - { name: '香港[20x]-专线A', type: anytls, server: hk.example.org, port: 65535, password: secret }
+                - { name: '日本[20x]-联移专线', type: anytls, server: tokyo.example.org, port: 8443, password: secret, sni: tokyo.example.org }
+            rules:
+              - MATCH,DIRECT
+        """.trimIndent()
+        val selected = NodeEndpointDiagnostic.parseProxy(yaml, "日本[1.5x]-高端B1")!!
+        assertEquals("tuic", selected.type)
+        assertEquals("udp.example.org", selected.server)
+        val control = NodeEndpointDiagnostic.findAnyTlsControl(
+            yaml, "日本[1.5x]-高端B1",
+        )!!
+        assertEquals("日本[20x]-联移专线", control.nodeName)
+        assertEquals("anytls", control.type)
+        assertEquals(8443, control.port)
+        assertFalse(NodeEndpointDiagnostic.isTcp(selected.type))
+    }
+
     @Test fun rejectsMissingAndInvalidAddress() {
         val yaml = """
             proxies:

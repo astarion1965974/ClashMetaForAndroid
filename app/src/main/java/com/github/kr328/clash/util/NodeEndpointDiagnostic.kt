@@ -65,7 +65,7 @@ internal object NodeEndpointDiagnostic {
             if (t.startsWith("- ")) {
                 if (found == null) found = toEndpoint()
                 fields = linkedMapOf()
-                val raw = t.removePrefix("- ").trim().removePrefix("{").removeSuffix("}")
+                val raw = t.removePrefix("- ").trim().removePrefix("{").trim().removeSuffix("}").trim()
                 if (raw.startsWith("name:")) {
                     val rest = raw.substringAfter(":").trim()
                     fields["name"] = unquote(rest.substringBefore(","))
@@ -81,6 +81,37 @@ internal object NodeEndpointDiagnostic {
             }
         }
         return found ?: toEndpoint()
+    }
+
+    /**
+     * Probe a second, TCP-based node without changing the active selection.
+     * Prefer AnyTLS from the same named region where possible, then an
+     * AnyTLS endpoint on TCP/443, then the first other AnyTLS endpoint.
+     */
+    fun findAnyTlsControl(yaml: String, selectedName: String): Endpoint? {
+        var inside = false
+        val names = mutableListOf<String>()
+        for (line in yaml.lineSequence()) {
+            val t = line.trim()
+            if (!inside) {
+                if (t == "proxies:") inside = true
+                continue
+            }
+            if (line.isNotBlank() && !line.startsWith(" ") && !line.startsWith("\t")) break
+            if (!t.startsWith("- ")) continue
+            val raw = t.removePrefix("- ").trim().removePrefix("{").trim()
+            // Quoted names may contain punctuation, so match until the closing quote.
+            val match = Regex("""^name\s*:\s*("[^"]*"|'[^']*'|[^,}]+)""")
+                .find(raw) ?: continue
+            val name = unquote(match.groupValues[1])
+            if (name != selectedName) names.add(name)
+        }
+        val available = names.mapNotNull { parseProxy(yaml, it) }
+            .filter { it.type == "anytls" }
+        val region = selectedName.takeWhile { it != '[' && it != '【' && it != ' ' }
+        return available.firstOrNull { region.isNotBlank() && it.nodeName.startsWith(region) }
+            ?: available.firstOrNull { it.port == 443 }
+            ?: available.firstOrNull()
     }
 
     fun readSubscription(network: Network, url: URL): String {

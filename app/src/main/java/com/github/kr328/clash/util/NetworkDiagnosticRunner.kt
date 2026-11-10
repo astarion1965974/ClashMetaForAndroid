@@ -274,8 +274,10 @@ internal class NetworkDiagnosticRunner(
                 ) {
                     append("SKIP selected-node test: active subscription URL or selected node unavailable")
                 } else {
+                    var subscriptionYaml: String? = null
                     val endpoint = runCatching {
                         val yaml = NodeEndpointDiagnostic.readSubscription(physical, subscription)
+                        subscriptionYaml = yaml
                         NodeEndpointDiagnostic.parseProxy(yaml, selected)
                     }.onFailure {
                         append("SKIP node endpoint discovery: " + it.javaClass.simpleName)
@@ -330,6 +332,66 @@ internal class NetworkDiagnosticRunner(
                                             )
                                         }
                                     }
+                                }
+                            }
+                        }
+                        // TUIC/Hysteria are UDP based. A raw TCP probe to their
+                        // destination would not diagnose a QUIC handshake, so
+                        // compare an existing AnyTLS endpoint from this profile.
+                        if (!NodeEndpointDiagnostic.isTcp(endpoint.type)) {
+                            append("Selected node uses " + endpoint.type +
+                                "/UDP: raw TCP would not validate this node's QUIC handshake")
+                            val control = NodeEndpointDiagnostic.findAnyTlsControl(
+                                subscriptionYaml.orEmpty(), selected,
+                            )
+                            if (control == null) {
+                                append("SKIP AnyTLS control: no inline AnyTLS alternative")
+                            } else {
+                                append("AnyTLS control selected from same subscription: " +
+                                    "type=" + control.type + " port=" + control.port +
+                                    " server=[REDACTED] (no selector changes)")
+                                var controlV4: InetAddress? = null
+                                step("Wi-Fi AnyTLS control DNS", progress) {
+                                    try {
+                                        val resolved = NodeEndpointDiagnostic.resolve(
+                                            physical, control.server,
+                                        )
+                                        controlV4 = resolved.v4.firstOrNull()
+                                        "IPv4_count=" + resolved.v4.size +
+                                            " IPv6_count=" + resolved.v6.size
+                                    } catch (e: Exception) {
+                                        throw IllegalStateException(
+                                            "AnyTLS control DNS " + e.javaClass.simpleName,
+                                        )
+                                    }
+                                }
+                                val ip = controlV4
+                                if (ip != null) {
+                                    step("Wi-Fi AnyTLS control IPv4 TCP", progress) {
+                                        try {
+                                            "connected_in_ms=" + NodeEndpointDiagnostic.tcp(
+                                                physical, ip, control.port,
+                                            )
+                                        } catch (e: Exception) {
+                                            throw IllegalStateException(
+                                                "AnyTLS control TCP " + e.javaClass.simpleName,
+                                            )
+                                        }
+                                    }
+                                    step("Wi-Fi AnyTLS control standard TLS", progress) {
+                                        try {
+                                            NodeEndpointDiagnostic.tls(
+                                                physical, ip, control.port, control.sni,
+                                            )
+                                        } catch (e: Exception) {
+                                            throw IllegalStateException(
+                                                "AnyTLS control TLS " + e.javaClass.simpleName +
+                                                " (generic TLS, not AnyTLS authentication)",
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    append("SKIP AnyTLS control TCP/TLS: no IPv4 result")
                                 }
                             }
                         }
@@ -404,6 +466,11 @@ internal class NetworkDiagnosticRunner(
             append("Physical Wi-Fi can establish node TCP, but Mihomo proxy still fails: inspect outbound binding, configured SNI/ALPN and proxy authentication.")
         if (nodeTcp.isEmpty())
             append("No selected-node TCP was measured: UDP-based node, unsupported subscription layout or DNS failure.")
+        val controlTcp = probes.firstOrNull { it.key == "Wi-Fi AnyTLS control IPv4 TCP" }
+        if (controlTcp?.ok == false)
+            append("AnyTLS control TCP failed on physical Wi-Fi: test the same AnyTLS node over cellular before concluding the Wi-Fi transport is blocked.")
+        if (controlTcp?.ok == true && proxyGoogleOk == false)
+            append("Physical Wi-Fi can reach an AnyTLS server via TCP, but selected Mihomo exit still fails: compare protocol-specific TUIC/QUIC and AnyTLS proxy authentication.")
         if (coreLogs.any { it.contains("yyds.sbyun.org") && it.contains("Live · 默认代理") })
             append("Subscription hostname entered managed proxy routing; add the subscription domain to Network > Managed Rules > Direct domains, then save/reconnect.")
         append("To reproduce a browser failure, keep VPN active; do not change network or node during the test.")
