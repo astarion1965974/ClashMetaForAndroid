@@ -112,6 +112,9 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 	for _, d := range s.ProxyDomains {
 		rules = append(rules, "DOMAIN-SUFFIX,"+d+","+MainGroup)
 	}
+	// Built-in Claude Code coverage takes priority over the generic geosite,
+	// country and fallback rules while respecting explicit user exceptions.
+	rules = append(rules, claudeRules(target("ai"))...)
 	for _, r := range Sets {
 		if r.Category == "ads" && !s.BlockAds {
 			continue
