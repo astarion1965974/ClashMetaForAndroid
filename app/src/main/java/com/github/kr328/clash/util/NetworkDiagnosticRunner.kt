@@ -408,6 +408,12 @@ internal class NetworkDiagnosticRunner(
             step("Android process HTTPS baidu", progress) {
                 httpsProbe("https://www.baidu.com/")
             }
+            // TLS trust/handshake failures are reported as SSL exceptions. This
+            // application-process probe is diagnostic and does not impersonate
+            // the ChatGPT app's VPN capture path.
+            step("Android process HTTPS ChatGPT", progress) {
+                httpsProbe("https://chatgpt.com/")
+            }
             if (vpnRunning) {
                 for (domain in listOf("google.com", "youtube.com", "chatgpt.com")) {
                     if (!DnsDiagnosticTargets.supports(domain)) continue
@@ -426,6 +432,9 @@ internal class NetworkDiagnosticRunner(
                 }
                 step("Mihomo HTTP proxy YouTube", progress) {
                     httpsProbe("https://www.youtube.com/", proxy = proxy)
+                }
+                step("Mihomo HTTP proxy ChatGPT", progress) {
+                    httpsProbe("https://chatgpt.com/", proxy = proxy)
                 }
                 step("Mihomo HTTP proxy subscription " + subHost, progress) {
                     httpsProbe(subAddress, proxy = proxy)
