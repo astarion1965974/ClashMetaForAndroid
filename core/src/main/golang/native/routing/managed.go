@@ -92,6 +92,13 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		if t := s.Targets[category]; available[t] && !strings.Contains(t, ",") {
 			return t
 		}
+		// Individual AI services may have dedicated stable exits. Without
+		// an override, inherit the user's existing AI exit for compatibility.
+		if category == "claude" || category == "muse" {
+			if t := s.Targets["ai"]; available[t] && !strings.Contains(t, ",") {
+				return t
+			}
+		}
 		if category == "cn" || category == "private" {
 			return "DIRECT"
 		}
@@ -114,7 +121,8 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 	}
 	// Built-in Claude Code coverage takes priority over the generic geosite,
 	// country and fallback rules while respecting explicit user exceptions.
-	rules = append(rules, claudeRules(target("ai"))...)
+	rules = append(rules, claudeRules(target("claude"))...)
+	rules = append(rules, museRules(target("muse"))...)
 	for _, r := range Sets {
 		if r.Category == "ads" && !s.BlockAds {
 			continue
