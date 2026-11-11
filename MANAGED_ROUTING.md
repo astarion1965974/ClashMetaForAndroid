@@ -46,11 +46,12 @@ and reject when no permitted proxy is present. The automatic group uses lazy
 health checks and chooses an available proxy; the manual group lets the user
 select a specific node. Neither can fall back to DIRECT.
 
-Strict mode routes private networks directly and uses an intentionally small
-built-in domestic-domain allowlist plus explicit user direct exceptions. Known
-overseas categories and explicit proxy domains precede that allowlist. Unknown
-hostnames and public IP addresses go to the protected selector; there is no CN
-GeoIP direct rule. Full-proxy mode ignores domestic exceptions. The DNS policy
+Strict mode routes private networks directly and uses the bundled MetaCubeX
+CN domain rules plus explicit user direct exceptions. Known overseas categories
+and explicit proxy domains precede the CN domain rules. Domain categorization is
+not proof of a service's ownership or geographic location; shared domains can be
+misclassified. Unknown hostnames and public IP addresses go to the protected
+selector; there is no CN GeoIP direct rule. Full-proxy mode ignores domestic exceptions. The DNS policy
 uses fake-IP, direct domestic resolvers for allowed domains, proxied DoH for the
 rest, and a separate direct bootstrap resolver for proxy-node names. Protected
 profiles override app bypass, VPN allowBypass, private-network exclusions, IPv6
