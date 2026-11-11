@@ -1,14 +1,17 @@
 package routing
 
 import (
+	"net/netip"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	"cfa/native/diagnostic"
 	"github.com/metacubex/mihomo/config"
 	C "github.com/metacubex/mihomo/constant"
+	T "github.com/metacubex/mihomo/tunnel"
 )
 
 func TestProtectedRoutesRejectUnsafeTargets(t *testing.T) {
@@ -87,6 +90,7 @@ func TestProtectedProxyGroupFiltersDirectAndReject(t *testing.T) {
 }
 
 func TestProtectedBundledRuleRouting(t *testing.T) {
+	defer T.UpdateRules(nil, nil, nil)
 	assets, err := filepath.Abs("../../../assets/managed-rules")
 	if err != nil {
 		t.Fatal(err)
@@ -126,31 +130,52 @@ func TestProtectedBundledRuleRouting(t *testing.T) {
 				defer closer.Close()
 			}
 		}
-		route := func(host string) string {
-			m := &C.Metadata{Host: host}
+		// Rule-set DNS matchers consult the active tunnel provider registry.
+		T.UpdateRules(parsed.Rules, parsed.SubRules, parsed.RuleProviders)
+		route := func(m *C.Metadata) string {
 			for _, rule := range parsed.Rules {
 				if rule.RuleType() == C.RuleSet {
 					if parsed.RuleProviders[rule.Payload()].Match(m, C.RuleMatchHelper{}) {
 						return rule.Adapter()
 					}
-				} else if ok, _ := rule.Match(m, C.RuleMatchHelper{}); ok {
+				} else if matched, _ := rule.Match(m, C.RuleMatchHelper{}); matched {
 					return rule.Adapter()
 				}
 			}
 			return ""
 		}
-		for _, host := range []string{"chatgpt.com", "claude.ai", "muse.ai", "unknown-site-example.xyz", "google.com"} {
-			if v := route(host); v != ProtectedGroup {
-				t.Errorf("%s %s -> %s", level, host, v)
+		for _, host := range []string{"chatgpt.com", "api.openai.com", "oaistatic.com", "oaiusercontent.com", "claude.ai", "anthropic.com", "claudeusercontent.com", "meta.ai", "facebook.com", "instagram.com", "grok.com", "x.ai", "google.com", "gstatic.com", "googleapis.com", "googleusercontent.com", "cloudflare.com", "cloudfront.net", "amazonaws.com", "azureedge.net", "microsoft.com", "github.com", "unknown-site-example.xyz"} {
+			if got := route(&C.Metadata{Host: host}); got != ProtectedGroup {
+				t.Errorf("%s %s route=%s", level, host, got)
+			}
+			if got := diagnostic.InspectDNSPolicy(parsed.DNS, host).Route; got != "proxy" {
+				t.Errorf("%s %s DNS=%s", level, host, got)
 			}
 		}
-		want := "DIRECT"
+		domestic := []string{"www.baidu.com", "api.bilibili.com", "wx.qlogo.cn", "mmbiz.qpic.cn", "www.xiaohongshu.com", "sns-img-bd.xhscdn.com", "www.pinduoduo.com", "www.sankuai.com", "img.alicdn.com", "www.ctrip.com", "www.12306.cn"}
+		want, dnsWant := "DIRECT", "direct"
 		if level == "full" {
-			want = ProtectedGroup
+			want, dnsWant = ProtectedGroup, "proxy"
 		}
-		if v := route("www.baidu.com"); v != want {
-			t.Errorf("%s baidu -> %s, want %s", level, v, want)
+		for _, host := range domestic {
+			if got := route(&C.Metadata{Host: host}); got != want {
+				t.Errorf("%s %s route=%s want=%s", level, host, got, want)
+			}
+			if got := diagnostic.InspectDNSPolicy(parsed.DNS, host).Route; got != dnsWant {
+				t.Errorf("%s %s DNS=%s want=%s", level, host, got, dnsWant)
+			}
 		}
+		// A public address, including a well-known CN resolver, is never
+		// made direct solely by the country of its IP address.
+		for _, ip := range []string{"223.5.5.5", "114.114.114.114", "8.8.8.8"} {
+			if got := route(&C.Metadata{DstIP: netip.MustParseAddr(ip)}); got != ProtectedGroup {
+				t.Errorf("%s IP %s route=%s", level, ip, got)
+			}
+		}
+		if got := route(&C.Metadata{DstIP: netip.MustParseAddr("192.168.1.1")}); got != "DIRECT" {
+			t.Errorf("%s private IP route=%s", level, got)
+		}
+		T.UpdateRules(nil, nil, nil)
 	}
 }
 
@@ -271,6 +296,74 @@ func TestProtectedProviderFiltersDirectAndEmptyProviderRejects(t *testing.T) {
 			}
 		} else if err = selector.Set("provider-proxy"); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestProtectedForeignAndExplicitProxyPrecedeDomesticOverlap(t *testing.T) {
+	assets, err := filepath.Abs("../../../assets/managed-rules")
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := t.TempDir()
+	C.SetHomeDir(home)
+	for _, set := range Sets {
+		data, e := os.ReadFile(filepath.Join(assets, set.Name+".mrs"))
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = os.WriteFile(filepath.Join(home, set.Name+".mrs"), data, 0600); e != nil {
+			t.Fatal(e)
+		}
+	}
+	c := original()
+	if err = Apply(c, Settings{Enabled: true, Protection: "strict", ProxyDomains: []string{"baidu.com"}, DirectDomains: []string{"google.com"}}, home); err != nil {
+		t.Fatal(err)
+	}
+	// Force an overlap: CN also claims a protected overseas and an explicit
+	// proxy domain. Neither route nor DNS may be redirected to DIRECT.
+	c.RuleProvider["live-cn-compat"] = map[string]any{"type": "inline", "behavior": "domain", "payload": []string{"+.baidu.com", "+.google.com"}}
+	filtered := c.Rule[:0]
+	for _, r := range c.Rule {
+		if !strings.HasPrefix(r, "IP-ASN,") {
+			filtered = append(filtered, r)
+		}
+	}
+	c.Rule = filtered
+	parsed, err := config.ParseRawConfig(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range parsed.RuleProviders {
+		if err = p.Initial(); err != nil {
+			t.Fatal(err)
+		}
+		if closer, ok := p.(interface{ Close() error }); ok {
+			defer closer.Close()
+		}
+	}
+	T.UpdateRules(parsed.Rules, parsed.SubRules, parsed.RuleProviders)
+	defer T.UpdateRules(nil, nil, nil)
+	for _, host := range []string{"www.baidu.com", "google.com", "www.google.com"} {
+		m := &C.Metadata{Host: host}
+		got := ""
+		for _, rule := range parsed.Rules {
+			matched := false
+			if rule.RuleType() == C.RuleSet {
+				matched = parsed.RuleProviders[rule.Payload()].Match(m, C.RuleMatchHelper{})
+			} else {
+				matched, _ = rule.Match(m, C.RuleMatchHelper{})
+			}
+			if matched {
+				got = rule.Adapter()
+				break
+			}
+		}
+		if got != ProtectedGroup {
+			t.Errorf("%s route=%s", host, got)
+		}
+		if dns := diagnostic.InspectDNSPolicy(parsed.DNS, host); dns.Route != "proxy" {
+			t.Errorf("%s DNS=%+v", host, dns)
 		}
 	}
 }

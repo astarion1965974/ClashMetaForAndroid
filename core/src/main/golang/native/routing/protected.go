@@ -18,8 +18,8 @@ const ProtectedManual = "Live · 严格手动"
 const ProtectedAuto = "Live · 严格自动"
 const excludedAdapterTypes = "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns|Relay|Selector|Fallback|URLTest|LoadBalance"
 
-// A deliberately small allowlist of domestic-owned services. The broad upstream
-// CN set and GeoIP CN are not safe enough to classify unknown overseas traffic.
+// A small list of domestic services supplements the maintained CN domain set.
+// Neither this list nor upstream categorization proves the ownership of a host.
 var verifiedCN = []string{
 	"baidu.com", "bdstatic.com", "bilibili.com", "bilivideo.com",
 	"biliimg.com", "douyin.com", "douyinvod.com", "douyinpic.com", "toutiao.com",
@@ -53,11 +53,15 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		cfg.RuleProvider = map[string]map[string]any{}
 	}
 	for _, r := range Sets {
-		// No broad Chinese IP or domain classification in protected modes.
-		if r.Name == "cn" || r.Name == "cn-ip" || (r.Category == "ads" && !s.BlockAds) {
+		// Domestic domains use a maintained ruleset in strict mode, after
+		// known foreign services; a China IP alone is never a direct signal.
+		if r.Name == "cn-ip" || (r.Name == "cn" && s.Protection != "strict") || (r.Category == "ads" && !s.BlockAds) {
 			continue
 		}
 		name := Prefix + r.Name
+		if r.Name == "cn" {
+			name = Prefix + "cn-compat"
+		}
 		if _, exists := cfg.RuleProvider[name]; exists {
 			return fmt.Errorf("reserved managed provider: %s", name)
 		}
@@ -80,6 +84,9 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 	if s.Protection == "strict" {
 		direct = append(direct, verifiedCN...)
 		direct = append(direct, s.DirectDomains...)
+		// The maintained domain set covers domestic application dependencies;
+		// protected overseas categories above always take precedence.
+		rules = append(rules, "RULE-SET,live-cn-compat,DIRECT")
 		for _, d := range direct {
 			rules = append(rules, "DOMAIN-SUFFIX,"+strings.ToLower(d)+",DIRECT")
 		}
@@ -115,6 +122,9 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 	// Overseas policies must win over a suffix in the direct list.
 	for _, n := range []string{"openai", "anthropic", "gemini", "media", "telegram", "twitter", "facebook", "github", "dev", "foreign"} {
 		cfg.DNS.NameServerPolicy.Set("rule-set:live-"+n, []string{"https://1.1.1.1/dns-query#" + ProtectedGroup})
+	}
+	if s.Protection == "strict" {
+		cfg.DNS.NameServerPolicy.Set("rule-set:live-cn-compat", []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"})
 	}
 	proxyOnly := map[string]bool{}
 	for _, d := range append(append(append([]string{}, s.ProxyDomains...), claudeSuffixes...), museSuffixes...) {
