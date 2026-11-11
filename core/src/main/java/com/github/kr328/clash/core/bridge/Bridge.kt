@@ -10,6 +10,7 @@ import java.io.File
 
 @Keep
 object Bridge {
+    external fun nativeQueryDirectHistory(): String
     external fun nativeReleaseConnections()
     external fun nativeProbeSelection(completable: CompletableDeferred<Unit>, name: String)
     external fun nativeMobileState(online: Boolean, screen: Boolean, metered: Boolean, charge: Boolean, paused: Boolean)

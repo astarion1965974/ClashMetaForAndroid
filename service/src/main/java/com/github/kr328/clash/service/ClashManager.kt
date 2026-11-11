@@ -35,6 +35,9 @@ class ClashManager(private val context: Context) : IClashManager,
 
     override fun queryTrafficHistory(): String = TrafficHistory.snapshot(context)
 
+    override fun queryDirectHistory(): String = if (StatusProvider.profileLoaded)
+        com.github.kr328.clash.core.bridge.Bridge.nativeQueryDirectHistory() else "[]"
+
     override fun queryDnsDiagnostic(domain: String): String {
         if (!StatusProvider.serviceRunning || !StatusProvider.profileLoaded) return "{}"
         if (!DnsDiagnosticTargets.supports(domain)) return "{}"

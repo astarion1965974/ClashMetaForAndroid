@@ -10,6 +10,7 @@ class ManagedRoutingSettingsCodecTest {
     @Test fun enabledTemplateRoundTripsEveryUserSetting() {
         val settings = ManagedRoutingSettings(
             enabled = true,
+            protectionLevel = "strict",
             blockAds = true,
             domesticDns = false,
             aiProxyDns = false,
@@ -22,12 +23,14 @@ class ManagedRoutingSettingsCodecTest {
 
     @Test fun defaultsAreWrittenExplicitlyForNativeGoConsumer() {
         val keys = Json.parseToJsonElement(ManagedRoutingSettingsCodec.encode(ManagedRoutingSettings())).jsonObject.keys
-        assertEquals(setOf("enabled", "blockAds", "domesticDns", "aiProxyDns", "targets", "directDomains", "proxyDomains"), keys)
+        assertEquals(setOf("enabled", "protectionLevel", "blockAds", "domesticDns", "aiProxyDns", "targets", "directDomains", "proxyDomains"), keys)
     }
 
     @Test fun olderPartialSettingsRetainExpectedDefaults() {
         val settings = ManagedRoutingSettingsCodec.decode("""{"enabled":true}""")
         assertTrue(settings.enabled)
+        assertEquals("standard", settings.protectionLevel)
+        assertFalse(settings.protectedMode)
         assertTrue(settings.domesticDns)
         assertTrue(settings.aiProxyDns)
         assertFalse(settings.blockAds)

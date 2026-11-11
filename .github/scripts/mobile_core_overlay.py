@@ -7,6 +7,11 @@ def build():
     out = ROOT / 'core/build/mobile-overlay'
     out.mkdir(parents=True, exist_ok=True)
     changes = {
+        'tunnel/statistic/tracker.go': [
+            ('type Tracker interface {', 'var TrackOpened = func(*TrackerInfo) {}\n\ntype Tracker interface {'),
+            ('\tmanager.Join(t)\n\treturn t', '\tmanager.Join(t)\n\tTrackOpened(t.TrackerInfo)\n\treturn t'),
+            ('\tmanager.Join(ut)\n\treturn ut', '\tmanager.Join(ut)\n\tTrackOpened(ut.TrackerInfo)\n\treturn ut'),
+        ],
         'adapter/provider/healthcheck.go': [
             ('func (hc *HealthCheck) process() {', 'var BackgroundHealthCheckAllowed = func() bool { return true }\n\nfunc (hc *HealthCheck) process() {'),
             ('\tgo hc.check()\n', '\tif BackgroundHealthCheckAllowed() { go hc.check() }\n'),

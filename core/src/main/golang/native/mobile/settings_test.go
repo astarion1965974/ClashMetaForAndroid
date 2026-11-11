@@ -1,6 +1,7 @@
 package mobile
 
 import (
+	"cfa/native/routing"
 	"encoding/json"
 	"github.com/metacubex/mihomo/common/orderedmap"
 	"github.com/metacubex/mihomo/config"
@@ -184,5 +185,18 @@ func TestGeneratedFallbackParsesWithMihomo(t *testing.T) {
 		if closer, ok := p.(interface{ Close() error }); ok {
 			_ = closer.Close()
 		}
+	}
+}
+
+func TestProtectedDNSNotReplacedByMobilePreset(t *testing.T) {
+	c := base()
+	c.ProxyGroup = append(c.ProxyGroup, map[string]any{"name": routing.ProtectedGroup})
+	c.DNS.NameServer = []string{"https://1.1.1.1/dns-query#" + routing.ProtectedGroup}
+	before := append([]string{}, c.DNS.NameServer...)
+	if err := Apply(c, Settings{Enabled: true, SecureDNS: true}); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before, c.DNS.NameServer) {
+		t.Fatalf("protected DNS changed: %v", c.DNS.NameServer)
 	}
 }

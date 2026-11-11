@@ -18,6 +18,7 @@ const Source = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/
 
 type Settings struct {
 	Enabled       bool              `json:"enabled"`
+	Protection    string            `json:"protectionLevel"`
 	BlockAds      bool              `json:"blockAds"`
 	DomesticDNS   bool              `json:"domesticDns"`
 	AIProxyDNS    bool              `json:"aiProxyDns"`
@@ -66,6 +67,12 @@ func ValidDomain(s string) bool {
 func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 	if !s.Enabled {
 		return nil
+	}
+	if s.Protection == "strict" || s.Protection == "full" {
+		return applyProtected(cfg, s, cacheDir)
+	}
+	if s.Protection != "" && s.Protection != "standard" {
+		return fmt.Errorf("unknown protection level: %s", s.Protection)
 	}
 	for _, domain := range append(append([]string{}, s.DirectDomains...), s.ProxyDomains...) {
 		if !ValidDomain(domain) {

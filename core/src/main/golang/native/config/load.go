@@ -4,10 +4,11 @@ import (
 	"os"
 	P "path"
 	"runtime"
-	"sync/atomic"
 	"strings"
+	"sync/atomic"
 
 	"cfa/native/app"
+	"cfa/native/startup"
 
 	"github.com/metacubex/mihomo/common/yaml"
 	"github.com/metacubex/mihomo/config"
@@ -89,8 +90,10 @@ func Load(path string) error {
 	return nil
 }
 
+// During startup/reset the VPN may already be capturing packets, before a
+// profile is loaded. Never let the empty core use an implicit DIRECT fallback.
 func LoadDefault() {
-	cfg, err := config.Parse([]byte{})
+	cfg, err := config.Parse([]byte(startup.SafeYAML))
 	if err != nil {
 		panic(err.Error())
 	}

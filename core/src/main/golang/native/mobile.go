@@ -3,6 +3,7 @@ package main
 //#include "bridge.h"
 import "C"
 import (
+	"cfa/native/directhistory"
 	"cfa/native/mobile"
 	nativeTunnel "cfa/native/tunnel"
 	"context"
@@ -70,3 +71,6 @@ func probeSelection(completable unsafe.Pointer, name C.c_string) {
 
 //export releaseConnections
 func releaseConnections() { nativeTunnel.CloseAllConnections() }
+
+//export queryDirectHistory
+func queryDirectHistory() *C.char { return marshalJson(directhistory.Snapshot()) }

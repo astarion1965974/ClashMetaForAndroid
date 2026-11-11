@@ -4,6 +4,8 @@ import android.content.Context
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -44,7 +46,7 @@ class ManagedRoutingDesign(
     private val targets: List<String>,
     running: Boolean,
 ) : Design<ManagedRoutingDesign.Request>(context) {
-    enum class Request { Save, Update, Refresh }
+    enum class Request { Save, Update, Refresh, SystemVpn, DirectHistory }
     private var original = settings.copy()
     private var savingState by mutableStateOf(false)
     private var updatingState by mutableStateOf(false)
@@ -71,6 +73,24 @@ class ManagedRoutingDesign(
         )
     }
 
+    fun showDirectHistory(message: String) {
+        context.showCouiContent { dismiss ->
+            Dialog(
+                onDismissRequest = dismiss,
+                title = context.getString(R.string.managed_direct_history),
+                message = context.getString(R.string.managed_direct_history_hint),
+                confirmAction = CouiDialogAction(context.getString(R.string.close), dismiss),
+            ) {
+                Text(
+                    text = message,
+                    kind = CouiTextKind.Description,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                        .heightIn(max = 400.dp).verticalScroll(rememberScrollState()),
+                )
+            }
+        }
+    }
+
     private fun targetName(value: String): String = when (value) {
         "Live · 默认代理" -> context.getString(R.string.managed_default_proxy)
         "DIRECT" -> context.getString(R.string.managed_direct_out)
@@ -82,6 +102,23 @@ class ManagedRoutingDesign(
         "cn" -> "DIRECT"
         "claude", "muse" -> settings.targets["ai"] ?: "Live · 默认代理"
         else -> "Live · 默认代理"
+    }
+
+    private fun protectionName(value: String): String = context.getString(when (value) {
+        "strict" -> R.string.managed_protection_strict
+        "full" -> R.string.managed_protection_full
+        else -> R.string.managed_protection_standard
+    })
+
+    private fun chooseProtection() {
+        if (savingState || updatingState) return
+        context.showCouiMenu(listOf("standard", "strict", "full").map { level ->
+            CouiMenuOption(protectionName(level), selected = level == settings.protectionLevel) {
+                settings.protectionLevel = level
+                settings.enabled = true
+                changed()
+            }
+        })
     }
 
     private fun chooseTarget(category: String) {
@@ -107,8 +144,8 @@ class ManagedRoutingDesign(
             var invalid by remember { mutableStateOf(false) }
             Dialog(
                 onDismissRequest = dismiss,
-                title = context.getString(if (direct) R.string.managed_direct else R.string.managed_proxy),
-                message = context.getString(R.string.managed_domain_hint),
+                title = context.getString(if (direct && settings.protectedMode) R.string.managed_direct_verified else if (direct) R.string.managed_direct else if (settings.protectedMode) R.string.managed_proxy_protected else R.string.managed_proxy),
+                message = context.getString(if (direct && settings.protectedMode) R.string.managed_direct_verified_hint else R.string.managed_domain_hint),
                 dismissAction = CouiDialogAction(context.getString(R.string.cancel), dismiss),
                 confirmAction = CouiDialogAction(context.getString(R.string.route_save), {
                     try {
@@ -207,7 +244,19 @@ class ManagedRoutingDesign(
                         value = settings::enabled, enabled = editable, onChanged = { changed() },
                     )
                 }
-                Group(title = stringResource(R.string.managed_categories)) {
+                Group(footer = stringResource(R.string.managed_protection_hint)) {
+                    NativeCouiAction(
+                        title = stringResource(R.string.managed_protection),
+                        summary = protectionName(settings.protectionLevel), enabled = editable,
+                    ) { chooseProtection() }
+                }
+                if (settings.protectedMode) Group {
+                    NativeCouiAction(
+                        title = stringResource(R.string.managed_protection_forced),
+                        summary = stringResource(R.string.managed_protection_forced_hint), enabled = false,
+                    ) { }
+                }
+                if (!settings.protectedMode) Group(title = stringResource(R.string.managed_categories)) {
                     categories.forEachIndexed { index, (category, titleRes) ->
                         if (index > 0) SettingDivider()
                         val choice = settings.targets[category]
@@ -223,6 +272,7 @@ class ManagedRoutingDesign(
                         title = stringResource(R.string.managed_ads),
                         value = settings::blockAds, enabled = editable, onChanged = { changed() },
                     )
+                    if (!settings.protectedMode) {
                     SettingDivider()
                     NativeCouiSwitch(
                         title = stringResource(R.string.managed_dns),
@@ -235,23 +285,36 @@ class ManagedRoutingDesign(
                         summary = stringResource(R.string.managed_ai_proxy_dns_hint),
                         value = settings::aiProxyDns, enabled = editable, onChanged = { changed() },
                     )
+                    }
                 }
                 Group(title = stringResource(R.string.managed_exceptions)) {
                     NativeCouiAction(
-                        title = stringResource(R.string.managed_direct),
+                        title = stringResource(if (settings.protectedMode) R.string.managed_direct_verified else R.string.managed_direct),
                         summary = if (settings.directDomains.isEmpty())
                             stringResource(R.string.managed_no_exceptions)
                         else context.getString(R.string.managed_exception_count, settings.directDomains.size),
-                        enabled = editable,
+                        enabled = editable && settings.protectionLevel != "full",
                     ) { editDomains(true) }
                     SettingDivider()
                     NativeCouiAction(
-                        title = stringResource(R.string.managed_proxy),
+                        title = stringResource(if (settings.protectedMode) R.string.managed_proxy_protected else R.string.managed_proxy),
                         summary = if (settings.proxyDomains.isEmpty())
                             stringResource(R.string.managed_no_exceptions)
                         else context.getString(R.string.managed_exception_count, settings.proxyDomains.size),
                         enabled = editable,
                     ) { editDomains(false) }
+                }
+                Group {
+                    NativeCouiAction(
+                        title = stringResource(R.string.managed_direct_history),
+                        summary = stringResource(R.string.managed_direct_history_hint),
+                        enabled = runningNow,
+                    ) { requests.trySend(Request.DirectHistory) }
+                    SettingDivider()
+                    NativeCouiAction(
+                        title = stringResource(R.string.managed_system_lockdown),
+                        summary = stringResource(R.string.managed_system_lockdown_hint),
+                    ) { requests.trySend(Request.SystemVpn) }
                 }
                 Group(
                     title = stringResource(R.string.managed_source),
@@ -273,7 +336,7 @@ class ManagedRoutingDesign(
                         enabled = editable,
                     ) { requestReset() }
                 }
-                Group {
+                if (!settings.protectedMode) Group {
                     Text(
                         text = stringResource(R.string.managed_order),
                         kind = CouiTextKind.PreferenceSummary,

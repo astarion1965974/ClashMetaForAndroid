@@ -96,4 +96,8 @@ class NotificationNodeResolverTest {
         assertFalse(Character.isHighSurrogate(text.last()))
         assertEquals("HK 01", NotificationNodeResolver.chipText("HK\n01"))
     }
+    @org.junit.Test fun protectedGroupTakesPrecedenceOverSavedSubscriptionGroup() {
+        org.junit.Assert.assertEquals("Live · 严格代理", NotificationNodeResolver.mainGroup(
+            "Rule", listOf("subscription", "Live · 严格代理"), "subscription"))
+    }
 }

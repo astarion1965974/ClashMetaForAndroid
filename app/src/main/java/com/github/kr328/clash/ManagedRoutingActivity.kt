@@ -1,5 +1,11 @@
 package com.github.kr328.clash
 
+import android.content.Intent
+import android.provider.Settings
+import org.json.JSONArray
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import com.github.kr328.clash.core.model.Provider
 import com.github.kr328.clash.design.ManagedRoutingDesign
 import com.github.kr328.clash.design.R
@@ -54,6 +60,25 @@ class ManagedRoutingActivity : BaseActivity<ManagedRoutingDesign>() {
             design.requests.onReceive {
                 when (it) {
                     ManagedRoutingDesign.Request.Refresh -> refresh()
+                    ManagedRoutingDesign.Request.SystemVpn -> {
+                        runCatching { startActivity(Intent(Settings.ACTION_VPN_SETTINGS)) }
+                            .onFailure { design.showToast(it.message.orEmpty(), ToastDuration.Long) }
+                    }
+                    ManagedRoutingDesign.Request.DirectHistory -> {
+                        val payload = runCatching { withClash { queryDirectHistory() } }.getOrDefault("[]")
+                        val values = runCatching { JSONArray(payload) }.getOrDefault(JSONArray())
+                        val formatted = (0 until values.length()).joinToString("\n\n") { index ->
+                            val item = values.getJSONObject(index)
+                            val time = runCatching {
+                                OffsetDateTime.parse(item.optString("time")).atZoneSameInstant(ZoneId.systemDefault())
+                                    .format(DateTimeFormatter.ofPattern("MM-dd HH:mm:ss"))
+                            }.getOrDefault("")
+                            val rule = listOf(item.optString("rule"), item.optString("payload"))
+                                .filter { it.isNotBlank() }.joinToString(" · ")
+                            "$time  ${item.optString("target", "—")}\n${rule.ifBlank { "未记录规则" }}"
+                        }
+                        design.showDirectHistory(formatted.ifBlank { getString(R.string.managed_direct_history_empty) })
+                    }
                     ManagedRoutingDesign.Request.Save -> {
                         if (!saving && !updating) {
                             saving = true; design.setSaving(true)

@@ -201,6 +201,12 @@ Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryGroup(JNIEnv *env, job
     return new_string(response);
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryDirectHistory(JNIEnv *env, jobject thiz) {
+    scoped_string response = queryDirectHistory();
+    return new_string(response);
+}
+
 JNIEXPORT void JNICALL
 Java_com_github_kr328_clash_core_bridge_Bridge_nativeHealthCheck(JNIEnv *env, jobject thiz,
                                                                  jobject completable,
