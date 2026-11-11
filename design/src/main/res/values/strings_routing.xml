@@ -41,8 +41,10 @@
     <string name="managed_protection_strict">严格 · 国内规则直连，其他代理</string>
     <string name="managed_protection_full">全代理 · 仅局域网直连</string>
     <string name="managed_protection_hint">严格与全代理会接管全部应用和 IPv6，忽略应用绕过、可信 Wi-Fi 暂停与分类出口。默认使用安全自动切换；如需固定节点，在“Live · 严格代理”切换到严格手动，再在“Live · 严格手动”选择节点。</string>
-    <string name="managed_protection_forced">未知流量代理 · 故障不直连 · 海外 DNS 代理</string>
-    <string name="managed_protection_forced_hint">这三项在严格和全代理下始终启用。局域网可直连；严格模式另按国内域名规则直连，已知海外服务优先代理。节点全部不可用时连接失败。</string>
+    <string name="managed_protection_forced">海外优先代理 · 故障不回退 · 海外 DNS 代理</string>
+    <string name="managed_protection_forced_hint">已知海外服务优先代理；未匹配的流量按下方国内 IP 开关和兜底规则处理。代理不可用时不会自动回退直连。</string>
+    <string name="managed_domestic_ip_direct">国内 IP 直连</string>
+    <string name="managed_domestic_ip_direct_hint">默认开启，改善国内 App 连接；已知海外规则优先。未知海外服务如使用国内 IP，可能误走直连。关闭可提高保护。</string>
     <string name="managed_system_lockdown">系统断线保护</string>
     <string name="managed_system_lockdown_hint">在系统 VPN 设置中开启“始终开启 VPN”和“阻止非 VPN 连接”，防止 VPN 断开时流量走系统网络。</string>
     <string name="managed_direct_history">最近直连记录</string>

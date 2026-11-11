@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 data class ManagedRoutingSettings(
     var enabled: Boolean = false,
     var protectionLevel: String = "standard",
+    var domesticIpDirect: Boolean = true,
     var blockAds: Boolean = false,
     var domesticDns: Boolean = true,
     var aiProxyDns: Boolean = true,

@@ -11,6 +11,7 @@ class ManagedRoutingSettingsCodecTest {
         val settings = ManagedRoutingSettings(
             enabled = true,
             protectionLevel = "strict",
+            domesticIpDirect = false,
             blockAds = true,
             domesticDns = false,
             aiProxyDns = false,
@@ -23,7 +24,7 @@ class ManagedRoutingSettingsCodecTest {
 
     @Test fun defaultsAreWrittenExplicitlyForNativeGoConsumer() {
         val keys = Json.parseToJsonElement(ManagedRoutingSettingsCodec.encode(ManagedRoutingSettings())).jsonObject.keys
-        assertEquals(setOf("enabled", "protectionLevel", "blockAds", "domesticDns", "aiProxyDns", "targets", "directDomains", "proxyDomains"), keys)
+        assertEquals(setOf("enabled", "protectionLevel", "domesticIpDirect", "blockAds", "domesticDns", "aiProxyDns", "targets", "directDomains", "proxyDomains"), keys)
     }
 
     @Test fun olderPartialSettingsRetainExpectedDefaults() {
@@ -31,11 +32,18 @@ class ManagedRoutingSettingsCodecTest {
         assertTrue(settings.enabled)
         assertEquals("standard", settings.protectionLevel)
         assertFalse(settings.protectedMode)
+        assertTrue(settings.domesticIpDirect)
         assertTrue(settings.domesticDns)
         assertTrue(settings.aiProxyDns)
         assertFalse(settings.blockAds)
         assertEquals(emptyMap<String, String>(), settings.targets)
         assertEquals(emptyList<String>(), settings.directDomains)
+    }
+
+    @Test fun explicitDisabledDomesticIpSwitchRemainsDisabled() {
+        val settings = ManagedRoutingSettingsCodec.decode("""{"enabled":true,"protectionLevel":"strict","domesticIpDirect":false}""")
+        assertFalse(settings.domesticIpDirect)
+        assertFalse(ManagedRoutingSettingsCodec.decode(ManagedRoutingSettingsCodec.encode(settings)).domesticIpDirect)
     }
 
     @Test fun unknownFieldsDoNotBlockOpeningExistingSettings() {

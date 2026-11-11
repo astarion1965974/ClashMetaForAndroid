@@ -17,14 +17,15 @@ const Prefix = "live-"
 const Source = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/"
 
 type Settings struct {
-	Enabled       bool              `json:"enabled"`
-	Protection    string            `json:"protectionLevel"`
-	BlockAds      bool              `json:"blockAds"`
-	DomesticDNS   bool              `json:"domesticDns"`
-	AIProxyDNS    bool              `json:"aiProxyDns"`
-	Targets       map[string]string `json:"targets"`
-	DirectDomains []string          `json:"directDomains"`
-	ProxyDomains  []string          `json:"proxyDomains"`
+	Enabled          bool              `json:"enabled"`
+	Protection       string            `json:"protectionLevel"`
+	DomesticIPDirect *bool             `json:"domesticIpDirect"`
+	BlockAds         bool              `json:"blockAds"`
+	DomesticDNS      bool              `json:"domesticDns"`
+	AIProxyDNS       bool              `json:"aiProxyDns"`
+	Targets          map[string]string `json:"targets"`
+	DirectDomains    []string          `json:"directDomains"`
+	ProxyDomains     []string          `json:"proxyDomains"`
 }
 
 type RuleSet struct{ Name, Category, Path, Behavior string }
