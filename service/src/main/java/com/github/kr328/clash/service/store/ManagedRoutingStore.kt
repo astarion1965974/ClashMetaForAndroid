@@ -9,6 +9,7 @@ data class ManagedRoutingSettings(
     var enabled: Boolean = false,
     var blockAds: Boolean = false,
     var domesticDns: Boolean = true,
+    var aiProxyDns: Boolean = true,
     var targets: Map<String, String> = emptyMap(),
     var directDomains: List<String> = emptyList(),
     var proxyDomains: List<String> = emptyList(),
