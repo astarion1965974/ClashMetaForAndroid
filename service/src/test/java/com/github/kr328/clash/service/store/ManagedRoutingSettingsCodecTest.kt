@@ -12,6 +12,7 @@ class ManagedRoutingSettingsCodecTest {
             enabled = true,
             blockAds = true,
             domesticDns = false,
+            aiProxyDns = false,
             targets = mapOf("ai" to "日本 · AI", "cn" to "DIRECT", "fallback" to "Live · 默认代理"),
             directDomains = listOf("example.cn", "xn--fiqs8s.com"),
             proxyDomains = listOf("chatgpt.com", "claude.ai"),
@@ -21,13 +22,14 @@ class ManagedRoutingSettingsCodecTest {
 
     @Test fun defaultsAreWrittenExplicitlyForNativeGoConsumer() {
         val keys = Json.parseToJsonElement(ManagedRoutingSettingsCodec.encode(ManagedRoutingSettings())).jsonObject.keys
-        assertEquals(setOf("enabled", "blockAds", "domesticDns", "targets", "directDomains", "proxyDomains"), keys)
+        assertEquals(setOf("enabled", "blockAds", "domesticDns", "aiProxyDns", "targets", "directDomains", "proxyDomains"), keys)
     }
 
     @Test fun olderPartialSettingsRetainExpectedDefaults() {
         val settings = ManagedRoutingSettingsCodec.decode("""{"enabled":true}""")
         assertTrue(settings.enabled)
         assertTrue(settings.domesticDns)
+        assertTrue(settings.aiProxyDns)
         assertFalse(settings.blockAds)
         assertEquals(emptyMap<String, String>(), settings.targets)
         assertEquals(emptyList<String>(), settings.directDomains)

@@ -78,10 +78,16 @@ class ManagedRoutingDesign(
         else -> value
     }
 
+    private fun defaultTarget(category: String): String = when (category) {
+        "cn" -> "DIRECT"
+        "claude", "muse" -> settings.targets["ai"] ?: "Live · 默认代理"
+        else -> "Live · 默认代理"
+    }
+
     private fun chooseTarget(category: String) {
         if (savingState || updatingState) return
         val current = settings.targets[category]
-            ?: if (category == "cn") "DIRECT" else "Live · 默认代理"
+            ?: defaultTarget(category)
         val options = (listOf("Live · 默认代理", "DIRECT", "REJECT") + targets)
             .distinct().filterNot { it.contains(',') }
         context.showCouiMenu(options.map { choice ->
@@ -159,6 +165,7 @@ class ManagedRoutingDesign(
                     settings.proxyDomains = emptyList()
                     settings.blockAds = false
                     settings.domesticDns = true
+                    settings.aiProxyDns = true
                     dismiss()
                     changed()
                 }),
@@ -173,6 +180,8 @@ class ManagedRoutingDesign(
             val categories = listOf(
                 "cn" to R.string.managed_cn,
                 "ai" to R.string.managed_ai,
+                "claude" to R.string.managed_claude,
+                "muse" to R.string.managed_muse,
                 "media" to R.string.managed_media,
                 "social" to R.string.managed_social,
                 "dev" to R.string.managed_dev,
@@ -202,7 +211,7 @@ class ManagedRoutingDesign(
                     categories.forEachIndexed { index, (category, titleRes) ->
                         if (index > 0) SettingDivider()
                         val choice = settings.targets[category]
-                            ?: if (category == "cn") "DIRECT" else "Live · 默认代理"
+                            ?: defaultTarget(category)
                         NativeCouiAction(
                             title = stringResource(titleRes),
                             summary = targetName(choice), enabled = editable,
@@ -219,6 +228,12 @@ class ManagedRoutingDesign(
                         title = stringResource(R.string.managed_dns),
                         summary = stringResource(R.string.managed_dns_hint),
                         value = settings::domesticDns, enabled = editable, onChanged = { changed() },
+                    )
+                    SettingDivider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.managed_ai_proxy_dns),
+                        summary = stringResource(R.string.managed_ai_proxy_dns_hint),
+                        value = settings::aiProxyDns, enabled = editable, onChanged = { changed() },
                     )
                 }
                 Group(title = stringResource(R.string.managed_exceptions)) {

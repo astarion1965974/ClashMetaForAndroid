@@ -18,6 +18,7 @@ import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.bridge.Bridge
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.service.StatusProvider
@@ -35,6 +36,7 @@ class MobileNetworkModule(service: Service) : Module<Boolean>(service) {
     private val changes = Channel<Unit>(Channel.CONFLATED)
     private var recovery: Job? = null
     private var previousNetwork: String? = null
+    private val handoverRecovery = UnderlayRecoveryPolicy()
     private val capabilityKeys = java.util.concurrent.ConcurrentHashMap<Network, String>()
     private val linkKeys = java.util.concurrent.ConcurrentHashMap<Network, String>()
     private var previousPause: Boolean? = null
@@ -70,6 +72,19 @@ class MobileNetworkModule(service: Service) : Module<Boolean>(service) {
                 val settings = runCatching { MobileNetworkStore(service).read() }.getOrDefault(MobileNetworkSettings())
                 val state = snapshot(service, settings)
                 Bridge.nativeMobileState(state.network != null, state.screen, state.metered, state.charging, state.pause)
+                // A network change invalidates active TCP/TLS sessions, even when the
+                // VPN interface stays up. Close stale sockets once on handover or
+                // validated underlay recovery; never bypass certificate checking.
+                val underlayChanged = handoverRecovery.shouldCloseStaleConnections(
+                    state.key, state.network != null
+                )
+                if (underlayChanged && service is VpnService &&
+                    !state.pause && !StatusProvider.homePaused && StatusProvider.profileLoaded
+                ) {
+                    Log.i("Underlay restored or changed: close stale proxy connections")
+                    runCatching { Bridge.nativeReleaseConnections() }
+                        .onFailure { Log.w("Underlay connection recovery failed", it) }
+                }
                 if (previousPause != state.pause) { previousPause = state.pause; if(service is VpnService) enqueueEvent(state.pause) }
                 if (state.network == null || state.pause || !state.screen) {
                     recovery?.cancel(); recovery = null
