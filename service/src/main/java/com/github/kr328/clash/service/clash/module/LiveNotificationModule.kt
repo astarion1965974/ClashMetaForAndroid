@@ -114,7 +114,8 @@ class LiveNotificationModule(service: Service) : Module<Unit>(service) {
                     val value = Json.parseToJsonElement(payload).jsonObject
                     val selected = value.getValue("now").jsonPrimitive.content
                     NotificationNodeResolver.Group(value.getValue("type").jsonPrimitive.content, selected,
-                        if (value.getValue("child").jsonPrimitive.boolean) setOf(selected) else emptySet())
+                        if (value.getValue("child").jsonPrimitive.boolean) setOf(selected) else emptySet(),
+                        value["unavailable"]?.jsonPrimitive?.booleanOrNull ?: false)
                 }
             }
 
@@ -122,6 +123,7 @@ class LiveNotificationModule(service: Service) : Module<Unit>(service) {
             val nodeLabel = when {
                 paused -> service.getString(R.string.live_home_title)
                 mode == TunnelState.Mode.Direct -> service.getString(R.string.live_direct)
+                selection?.unavailable == true -> service.getString(R.string.live_probe_failed)
                 selection?.balanced == true -> service.getString(R.string.live_multi_route)
                 selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
                 selection?.node != null -> selection.node
@@ -130,6 +132,7 @@ class LiveNotificationModule(service: Service) : Module<Unit>(service) {
             val capsuleLabel = when {
                 paused -> service.getString(R.string.live_home_capsule)
                 mode == TunnelState.Mode.Direct || selection?.node == "DIRECT" -> service.getString(R.string.live_direct)
+                selection?.unavailable == true -> service.getString(R.string.live_probe_failed)
                 selection?.balanced == true -> service.getString(R.string.live_multi_route)
                 selection?.node in setOf("REJECT", "REJECT-DROP") -> service.getString(R.string.live_blocked)
                 selection?.node != null -> region(selection.node)

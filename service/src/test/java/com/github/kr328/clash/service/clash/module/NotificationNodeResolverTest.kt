@@ -100,4 +100,13 @@ class NotificationNodeResolverTest {
         org.junit.Assert.assertEquals("Live · 严格代理", NotificationNodeResolver.mainGroup(
             "Rule", listOf("subscription", "Live · 严格代理"), "subscription"))
     }
+    @Test fun reportsFailedAutoGroupWithoutInventingANode() {
+        val groups = mapOf(
+            "Live · 严格代理" to group("Live · 严格自动", "Live · 严格自动"),
+            "Live · 严格自动" to NotificationNodeResolver.Group("Fallback", "JP", emptySet(), unavailable = true),
+        )
+        val value = NotificationNodeResolver.resolveMain("Rule", groups.keys.toList(), "", groups::get)
+        assertTrue(value?.unavailable == true)
+        assertNull(value?.node)
+    }
 }

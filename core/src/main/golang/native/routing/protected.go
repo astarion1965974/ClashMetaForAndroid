@@ -11,8 +11,11 @@ import (
 	T "github.com/metacubex/mihomo/tunnel"
 )
 
-// ProtectedGroup contains only leaf proxy adapters. Empty provider lists reject.
+// The public selector contains only two internally generated safe groups.
+// Each child excludes DIRECT and every other nested group, failing to REJECT.
 const ProtectedGroup = "Live · 严格代理"
+const ProtectedManual = "Live · 严格手动"
+const ProtectedAuto = "Live · 严格自动"
 const excludedAdapterTypes = "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns|Relay|Selector|Fallback|URLTest|LoadBalance"
 
 // A deliberately small allowlist of domestic-owned services. The broad upstream
@@ -32,15 +35,20 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		}
 	}
 	for _, p := range append(append([]map[string]any{}, cfg.Proxy...), cfg.ProxyGroup...) {
-		if n, _ := p["name"].(string); n == ProtectedGroup {
+		if n, _ := p["name"].(string); n == ProtectedGroup || n == ProtectedManual || n == ProtectedAuto {
 			return fmt.Errorf("reserved managed name: %s", n)
 		}
 	}
-	cfg.ProxyGroup = append(cfg.ProxyGroup, map[string]any{
-		"name": ProtectedGroup, "type": "select", "include-all-proxies": true,
-		"include-all-providers": true, "exclude-type": excludedAdapterTypes,
-		"empty-fallback": "REJECT",
-	})
+	cfg.ProxyGroup = append(cfg.ProxyGroup,
+		map[string]any{"name": ProtectedManual, "type": "select", "include-all-proxies": true,
+			"include-all-providers": true, "exclude-type": excludedAdapterTypes, "empty-fallback": "REJECT"},
+		map[string]any{"name": ProtectedAuto, "type": "fallback", "include-all-proxies": true,
+			"include-all-providers": true, "exclude-type": excludedAdapterTypes, "empty-fallback": "REJECT",
+			"url": "https://www.gstatic.com/generate_204", "expected-status": "204", "interval": 600,
+			"lazy": true, "timeout": 5000, "max-failed-times": 3},
+		map[string]any{"name": ProtectedGroup, "type": "select", "proxies": []string{ProtectedAuto, ProtectedManual},
+			"empty-fallback": "REJECT"},
+	)
 	if cfg.RuleProvider == nil {
 		cfg.RuleProvider = map[string]map[string]any{}
 	}

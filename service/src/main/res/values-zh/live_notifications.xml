@@ -9,6 +9,7 @@
     <string name="live_multi_route">多线路分流</string>
     <string name="live_multiple_nodes">%1$d 个节点</string>
     <string name="live_by_rule">按规则分流</string>
+    <string name="live_probe_failed">代理探测未通过</string>
     <string name="live_unavailable">正在更新…</string>
     <string name="live_mode_direct">直连</string>
     <string name="live_mode_global">全局</string>

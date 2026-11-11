@@ -9,6 +9,7 @@
     <string name="live_multi_route">Multiple routes</string>
     <string name="live_multiple_nodes">%1$d nodes</string>
     <string name="live_by_rule">By rule</string>
+    <string name="live_probe_failed">Proxy tests failed</string>
     <string name="live_unavailable">Updating…</string>
     <string name="live_mode_direct">Direct</string>
     <string name="live_mode_global">Global</string>

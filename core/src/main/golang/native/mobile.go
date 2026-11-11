@@ -5,6 +5,7 @@ import "C"
 import (
 	"cfa/native/directhistory"
 	"cfa/native/mobile"
+	"cfa/native/routing"
 	nativeTunnel "cfa/native/tunnel"
 	"context"
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
@@ -30,16 +31,29 @@ func querySelection(name C.c_string) *C.char {
 	if !ok {
 		return nil
 	}
+	unavailable := false
+	if C.GoString(name) == routing.ProtectedAuto {
+		states := make([]routing.ProbeState, 0)
+		for _, candidate := range g.Proxies() {
+			if candidate.Type() == constant.Reject || candidate.Type() == constant.RejectDrop {
+				continue
+			}
+			probe, found := candidate.ExtraDelayHistories()["https://www.gstatic.com/generate_204"]
+			states = append(states, routing.ProbeState{Candidate: true, Tested: found && len(probe.History) > 0, Alive: probe.Alive})
+		}
+		unavailable = routing.ProtectedUnavailable(states)
+	}
 	n := g.Now()
 	child := false
 	if selected := tunnel.Proxies()[n]; selected != nil {
 		_, child = selected.Adapter().(outboundgroup.ProxyGroup)
 	}
 	return marshalJson(struct {
-		Type  string `json:"type"`
-		Now   string `json:"now"`
-		Child bool   `json:"child"`
-	}{g.Type().String(), n, child})
+		Type        string `json:"type"`
+		Now         string `json:"now"`
+		Child       bool   `json:"child"`
+		Unavailable bool   `json:"unavailable"`
+	}{g.Type().String(), n, child, unavailable})
 }
 
 //export probeSelection
