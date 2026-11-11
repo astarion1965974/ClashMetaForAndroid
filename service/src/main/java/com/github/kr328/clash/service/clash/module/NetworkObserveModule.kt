@@ -42,6 +42,14 @@ class NetworkObserveModule(service: Service) : Module<Network>(service) {
         override fun onAvailable(network: Network) {
             Log.i("NetworkObserve onAvailable network=$network")
             networkInfos[network] = NetworkInfo()
+            networks.trySend(network)
+        }
+
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            // A captive or temporarily unvalidated Wi-Fi must not supply stale
+            // DNS after Android selects a validated cellular underlay.
+            notifyDnsChange()
+            networks.trySend(network)
         }
 
         override fun onLosing(network: Network, maxMsToLive: Int) {
@@ -117,10 +125,15 @@ class NetworkObserveModule(service: Service) : Module<Network>(service) {
     }
 
     private fun notifyDnsChange() {
-        val dnsList = (networkInfos.asSequence().minByOrNull { networkToInt(it) }?.value?.dnsList
+        val dnsList = (networkInfos.asSequence()
+            .filter { connectivity.getNetworkCapabilities(it.key)
+                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true }
+            .minByOrNull { networkToInt(it) }?.value?.dnsList
             ?: emptyList()).map { x -> x.asSocketAddressText(53) }
         val prevDnsList = curDnsList
-        if (dnsList.isNotEmpty() && prevDnsList != dnsList) {
+        // Empty is meaningful: clear former network DNS when all validated
+        // underlays are gone, rather than reusing stale resolver addresses.
+        if (prevDnsList != dnsList) {
             Log.i("notifyDnsChange $prevDnsList -> $dnsList")
             curDnsList = dnsList
             Clash.notifyDnsChanged(dnsList)
