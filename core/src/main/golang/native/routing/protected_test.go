@@ -144,7 +144,7 @@ func TestProtectedBundledRuleRouting(t *testing.T) {
 			}
 			return ""
 		}
-		for _, host := range []string{"chatgpt.com", "api.openai.com", "claude.ai", "meta.ai", "grok.com", "google.com", "unknown-site-example.xyz"} {
+		for _, host := range []string{"chatgpt.com", "api.openai.com", "oaistatic.com", "oaiusercontent.com", "claude.ai", "anthropic.com", "claudeusercontent.com", "meta.ai", "facebook.com", "instagram.com", "grok.com", "x.ai", "google.com", "gstatic.com", "googleapis.com", "googleusercontent.com", "cloudflare.com", "cloudfront.net", "amazonaws.com", "azureedge.net", "microsoft.com", "github.com", "unknown-site-example.xyz"} {
 			if got := route(&C.Metadata{Host: host}); got != ProtectedGroup {
 				t.Errorf("%s %s route=%s", level, host, got)
 			}
