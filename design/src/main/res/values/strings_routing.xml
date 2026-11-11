@@ -38,6 +38,8 @@
     <string name="managed_ads">拦截广告与跟踪域名</string>
     <string name="managed_dns">国内域名使用国内 DNS</string>
     <string name="managed_dns_hint">为国内域名指定阿里、腾讯加密 DNS；保留其他 DNS 设置。</string>
+    <string name="managed_ai_proxy_dns">Claude / Muse 使用代理 DNS</string>
+    <string name="managed_ai_proxy_dns_hint">仅为 Claude 和 Meta Muse 域名指定经所选出口访问的 DoH，不影响其他域名。</string>
     <string name="managed_categories">分类出口</string>
     <string name="managed_exceptions">优先域名例外</string>
     <string name="managed_direct">始终直连的域名</string>
