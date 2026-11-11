@@ -20,6 +20,7 @@ type Settings struct {
 	Enabled       bool              `json:"enabled"`
 	BlockAds      bool              `json:"blockAds"`
 	DomesticDNS   bool              `json:"domesticDns"`
+	AIProxyDNS    bool              `json:"aiProxyDns"`
 	Targets       map[string]string `json:"targets"`
 	DirectDomains []string          `json:"directDomains"`
 	ProxyDomains  []string          `json:"proxyDomains"`
@@ -146,6 +147,27 @@ func Apply(cfg *config.RawConfig, s Settings, cacheDir string) error {
 			cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
 		}
 		cfg.DNS.NameServerPolicy.Set("rule-set:live-cn", []string{"https://dns.alidns.com/dns-query#DIRECT", "https://doh.pub/dns-query#DIRECT"})
+	}
+	if s.AIProxyDNS {
+		// Route only these service DNS queries through their selected proxy
+		// using IP-addressed DoH. Never force all device DNS through a proxy.
+		if cfg.DNS.NameServerPolicy == nil {
+			cfg.DNS.NameServerPolicy = orderedmap.New[string, any]()
+		}
+		addDNS := func(outbound string, suffixes []string, exact []string) {
+			if outbound == "DIRECT" || outbound == "REJECT" {
+				return
+			}
+			resolver := []string{"https://1.1.1.1/dns-query#" + outbound}
+			for _, domain := range suffixes {
+				cfg.DNS.NameServerPolicy.Set("+."+domain, resolver)
+			}
+			for _, domain := range exact {
+				cfg.DNS.NameServerPolicy.Set(domain, resolver)
+			}
+		}
+		addDNS(target("claude"), claudeSuffixes, claudeExactDomains)
+		addDNS(target("muse"), museSuffixes, museExactDomains)
 	}
 	// DNS policies and group filters may still reference original providers.
 	old := map[string]map[string]any{}
