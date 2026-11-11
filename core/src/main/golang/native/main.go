@@ -13,6 +13,7 @@ import (
 
 	"cfa/native/config"
 	"cfa/native/delegate"
+	"cfa/native/directhistory"
 	"cfa/native/tunnel"
 
 	"github.com/metacubex/mihomo/log"
@@ -36,6 +37,7 @@ func coreInit(home, versionName, gitVersion C.c_string, sdkVersion C.int) {
 
 //export reset
 func reset() {
+	directhistory.Clear()
 	config.LoadDefault()
 	tunnel.ResetStatistic()
 	tunnel.CloseAllConnections()

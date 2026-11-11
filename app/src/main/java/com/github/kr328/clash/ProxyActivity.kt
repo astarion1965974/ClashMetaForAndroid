@@ -4,6 +4,10 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.Proxy
+import com.github.kr328.clash.core.model.TunnelState
+import com.github.kr328.clash.service.store.ManagedRoutingStore
+import com.github.kr328.clash.design.ui.ToastDuration
+import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.ProxyDesign
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.util.withClash
@@ -15,7 +19,8 @@ import kotlinx.coroutines.sync.withPermit
 
 class ProxyActivity : BaseActivity<ProxyDesign>() {
     override suspend fun main() {
-        val mode = withClash { queryOverride(Clash.OverrideSlot.Session).mode }
+        val protectedMode = runCatching { ManagedRoutingStore(this).read().protectedMode }.getOrDefault(true)
+        val mode = if (protectedMode) TunnelState.Mode.Rule else withClash { queryOverride(Clash.OverrideSlot.Session).mode }
         val names = withClash { queryProxyGroupNames(uiStore.proxyExcludeNotSelectable) }
         intent.getStringExtra(Intents.EXTRA_NOTIFICATION_PROXY_GROUP)?.takeIf { it in names }?.let {
             uiStore.proxyLastGroup = it
@@ -104,6 +109,10 @@ class ProxyActivity : BaseActivity<ProxyDesign>() {
                             }
                         }
                         is ProxyDesign.Request.PatchMode -> {
+                            if (protectedMode) {
+                                design.showToast(R.string.managed_mode_locked, ToastDuration.Long)
+                                return@onReceive
+                            }
                             design.showModeSwitchTips()
 
                             withClash {

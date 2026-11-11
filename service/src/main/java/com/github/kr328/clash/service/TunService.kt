@@ -12,8 +12,10 @@ import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.service.clash.clashRuntime
 import com.github.kr328.clash.service.clash.module.*
 import com.github.kr328.clash.service.model.AccessControlMode
+import com.github.kr328.clash.service.model.VpnCapturePolicy
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.service.store.MobileNetworkStore
+import com.github.kr328.clash.service.store.ManagedRoutingStore
 import com.github.kr328.clash.service.util.sendServiceRecreated
 import com.github.kr328.clash.service.util.cancelAndJoinBlocking
 import com.github.kr328.clash.service.util.parseCIDR
@@ -140,21 +142,25 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val store = ServiceStore(self)
         // Initialize defaults before VPN routing is built, even if the user has
         // not opened Application Routing yet. Saved policies always take priority.
-        store.initializeDomesticBypassIfUnconfigured()
+        val protectedMode = ManagedRoutingStore(self).read().protectedMode
+        if (!protectedMode) store.initializeDomesticBypassIfUnconfigured()
+        val policy = VpnCapturePolicy.resolve(protectedMode, store.accessControlMode, store.allowIpv6,
+            store.bypassPrivateNetwork, store.allowBypass, store.dnsHijacking)
+        val ipv6 = policy.ipv6
 
         val device = with(Builder()) {
             // Interface address
             addAddress(TUN_GATEWAY, TUN_SUBNET_PREFIX)
-            if (store.allowIpv6) {
+            if (ipv6) {
                 addAddress(TUN_GATEWAY6, TUN_SUBNET_PREFIX6)
             }
 
             // Route
-            if (store.bypassPrivateNetwork) {
+            if (policy.bypassPrivate) {
                 resources.getStringArray(R.array.bypass_private_route).map(::parseCIDR).forEach {
                     addRoute(it.ip, it.prefix)
                 }
-                if (store.allowIpv6) {
+                if (ipv6) {
                     resources.getStringArray(R.array.bypass_private_route6).map(::parseCIDR).forEach {
                         addRoute(it.ip, it.prefix)
                     }
@@ -162,12 +168,12 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
                 // Route of virtual DNS
                 addRoute(TUN_DNS, 32)
-                if (store.allowIpv6) {
+                if (ipv6) {
                     addRoute(TUN_DNS6, 128)
                 }
             } else {
                 addRoute(NET_ANY, 0)
-                if (store.allowIpv6) {
+                if (ipv6) {
                     addRoute(NET_ANY6, 0)
                 }
             }
@@ -177,7 +183,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             // including apps not yet installed. Keep the full list in preferences
             // for future installs, but submit only installed package IDs to the
             // VPN builder (which otherwise performs thousands of failed lookups).
-            val mode = store.accessControlMode
+            val mode = policy.mode
             if (mode != AccessControlMode.AcceptAll) {
                 val installed = packageManager.getInstalledPackages(0)
                     .asSequence().map { it.packageName }.toSet()
@@ -207,7 +213,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
             // Virtual Dns Server
             addDnsServer(TUN_DNS)
-            if (store.allowIpv6) {
+            if (ipv6) {
                 addDnsServer(TUN_DNS6)
             }
 
@@ -239,7 +245,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                 }
             }
 
-            if (store.allowBypass) {
+            if (policy.allowBypass) {
                 allowBypass()
             }
 
@@ -247,9 +253,9 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                 fd = establish()?.detachFd()
                     ?: throw NullPointerException("Establish VPN rejected by system"),
                 stack = store.tunStackMode,
-                gateway = "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" + if (store.allowIpv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
-                portal = TUN_PORTAL + if (store.allowIpv6) ",$TUN_PORTAL6" else "",
-                dns = if (store.dnsHijacking) NET_ANY else (TUN_DNS + if (store.allowIpv6) ",$TUN_DNS6" else ""),
+                gateway = "$TUN_GATEWAY/$TUN_SUBNET_PREFIX" + if (ipv6) ",$TUN_GATEWAY6/$TUN_SUBNET_PREFIX6" else "",
+                portal = TUN_PORTAL + if (ipv6) ",$TUN_PORTAL6" else "",
+                dns = if (policy.hijackDns) NET_ANY else (TUN_DNS + if (ipv6) ",$TUN_DNS6" else ""),
             )
         }
 

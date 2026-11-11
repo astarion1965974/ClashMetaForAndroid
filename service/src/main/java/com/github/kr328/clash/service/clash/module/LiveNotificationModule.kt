@@ -212,7 +212,9 @@ class LiveNotificationModule(service: Service) : Module<Unit>(service) {
                     interactive = it.action == Intent.ACTION_SCREEN_ON
                     if (interactive) update()
                 }
-                if (interactive && !StatusProvider.homePaused) onTimeout(3_000) { update() }
+                // Selection changes refresh immediately through broadcasts; this slower
+                // safety poll covers changes from outside the app without frequent wakeups.
+                if (interactive && !StatusProvider.homePaused) onTimeout(15_000) { update() }
             }
         }
     }

@@ -34,3 +34,31 @@ The Live3 release used reflective serializer lookup for managed settings. R8 rem
 ## Live3.2 compact notification region
 
 The promoted notification's short critical text now shows only the selected main-group node's country/region (for example 香港 or 日本), inferred from its flag, country/region name or common subscription abbreviation. Expanded notification titles continue to show the full node name. Ambiguous or unidentified labels show the localized proxy status; direct, blocked, updating and multi-route states remain explicit. This is the region advertised by the node name, not an outbound-IP geolocation measurement. VersionCode 211040 supports in-place upgrades from Live3.1.
+
+## Protected routing
+
+Rule management offers standard, strict and full-proxy levels. Existing stored
+settings without a level retain standard behavior; new installations are offered
+strict when managed routing is enabled. Protected profiles use the dedicated
+`Live · 严格代理` selector, which only exposes leaf proxy adapters and rejects
+when no permitted proxy is present. The selected proxy is not automatically
+replaced on failure; choose a healthy node manually. The protected selector and
+all overseas/default routes cannot resolve to DIRECT.
+
+Strict mode routes private networks directly and uses an intentionally small
+built-in domestic-domain allowlist plus explicit user direct exceptions. Known
+overseas categories and explicit proxy domains precede that allowlist. Unknown
+hostnames and public IP addresses go to the protected selector; there is no CN
+GeoIP direct rule. Full-proxy mode ignores domestic exceptions. The DNS policy
+uses fake-IP, direct domestic resolvers for allowed domains, proxied DoH for the
+rest, and a separate direct bootstrap resolver for proxy-node names. Protected
+profiles override app bypass, VPN allowBypass, private-network exclusions, IPv6
+and trusted-Wi-Fi pause without rewriting the saved standard settings. The empty
+startup core rejects until a profile loads. Android always-on VPN and lockdown
+still require the user to enable them in system settings.
+
+The recent DIRECT view is a bounded in-memory record of successful connections
+seen by Mihomo; it cannot see apps that bypassed the tunnel, failed attempts, or
+traffic when the VPN was stopped. It clears on core reset. Changes are tested
+with bundled rule providers, proxy-group filtering and empty-group rejection,
+DNS/exception precedence, startup blocking and Android capture policy.

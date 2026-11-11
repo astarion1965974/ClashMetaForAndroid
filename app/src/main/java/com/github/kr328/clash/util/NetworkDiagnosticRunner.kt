@@ -209,8 +209,10 @@ internal class NetworkDiagnosticRunner(
                 coreCall { withClash { queryProxyGroup("GLOBAL", ProxySort.Default).now } }
             }
             step("Effective managed proxy exit", progress) {
-                val chain = mutableListOf("Live · 默认代理")
-                var current = "Live · 默认代理"
+                val available = coreCall { withClash { queryProxyGroupNames(false) } }
+                val group = if ("Live · 严格代理" in available) "Live · 严格代理" else "Live · 默认代理"
+                val chain = mutableListOf(group)
+                var current = group
                 for (index in 0 until 5) {
                     val selection = coreCall {
                         withClash { queryProxyGroup(current, ProxySort.Default) }
@@ -220,7 +222,7 @@ internal class NetworkDiagnosticRunner(
                     chain.add(next)
                     current = next
                 }
-                liveExit = current.takeIf { it != "Live · 默认代理" }
+                liveExit = current.takeIf { it != group }
                 "selection_chain=" + chain.joinToString(" → ")
             }
         } else {

@@ -1,6 +1,7 @@
 package mobile
 
 import (
+	"cfa/native/routing"
 	"encoding/json"
 	"fmt"
 	"github.com/metacubex/mihomo/common/orderedmap"
@@ -142,7 +143,14 @@ func Apply(cfg *config.RawConfig, s Settings) error {
 			}
 		}
 	}
-	if s.SecureDNS {
+	protectedDNS := false
+	for _, group := range cfg.ProxyGroup {
+		if group["name"] == routing.ProtectedGroup {
+			protectedDNS = true
+			break
+		}
+	}
+	if s.SecureDNS && !protectedDNS {
 		// Keep custom DNS policies; supply independent bootstrap and node resolution.
 		if len(cfg.DNS.DefaultNameserver) == 0 {
 			cfg.DNS.DefaultNameserver = []string{"223.5.5.5", "119.29.29.29"}

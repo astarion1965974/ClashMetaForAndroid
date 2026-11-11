@@ -24,6 +24,7 @@ import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.service.StatusProvider
 import com.github.kr328.clash.service.util.importedDir
 import com.github.kr328.clash.service.model.MobilePolicy
+import com.github.kr328.clash.service.store.ManagedRoutingStore
 import com.github.kr328.clash.service.store.MobileNetworkSettings
 import com.github.kr328.clash.service.store.MobileNetworkStore
 import kotlinx.coroutines.*
@@ -153,7 +154,10 @@ class MobileNetworkModule(service: Service) : Module<Boolean>(service) {
             val identityAvailable = Build.VERSION.SDK_INT < 29 || ContextCompat.checkSelfPermission(service,
                 Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
             val ssid = if (service is VpnService && settings.enabled && settings.trustedWifiEnabled && wifi && identityAvailable) currentSSID(service) else null
-            val lockdown = Build.VERSION.SDK_INT >= 29 && (service as? VpnService)?.isLockdownEnabled == true
+            // Protected routing cannot tear down the VPN for a trusted Wi-Fi.
+            // On settings read errors prefer keeping the tunnel up.
+            val protectedMode = runCatching { ManagedRoutingStore(service).read().protectedMode }.getOrDefault(true)
+            val lockdown = protectedMode || (Build.VERSION.SDK_INT >= 29 && (service as? VpnService)?.isLockdownEnabled == true)
             val battery = service.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             val plugged = (battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
             return State(network, (service.getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive,
