@@ -232,7 +232,7 @@ internal class NetworkDiagnosticRunner(
                 val message = log.message
                 if (coreLogs.size >= 320) return
                 val relevant = Regex(
-                    "error|warn|failed|timeout|eof|closed|handshake|dns|dial|connect|google|youtube|sbyun|protect",
+                    "error|warn|failed|timeout|eof|closed|handshake|ssl|certificate|x509|underlay|dns|dial|connect|google|youtube|sbyun|protect",
                     RegexOption.IGNORE_CASE,
                 ).containsMatchIn(message)
                 if (relevant) coreLogs.add(
