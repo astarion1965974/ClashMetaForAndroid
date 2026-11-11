@@ -165,6 +165,7 @@ class ManagedRoutingDesign(
                     settings.proxyDomains = emptyList()
                     settings.blockAds = false
                     settings.domesticDns = true
+                    settings.aiProxyDns = true
                     dismiss()
                     changed()
                 }),
@@ -227,6 +228,12 @@ class ManagedRoutingDesign(
                         title = stringResource(R.string.managed_dns),
                         summary = stringResource(R.string.managed_dns_hint),
                         value = settings::domesticDns, enabled = editable, onChanged = { changed() },
+                    )
+                    SettingDivider()
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.managed_ai_proxy_dns),
+                        summary = stringResource(R.string.managed_ai_proxy_dns_hint),
+                        value = settings::aiProxyDns, enabled = editable, onChanged = { changed() },
                     )
                 }
                 Group(title = stringResource(R.string.managed_exceptions)) {
