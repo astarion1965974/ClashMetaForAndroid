@@ -189,3 +189,51 @@ func TestProtectedExplicitProxyKeepsProxyDNS(t *testing.T) {
 		t.Fatalf("proxy exception DNS = %#v", value)
 	}
 }
+
+func TestProtectedProviderFiltersDirectAndEmptyProviderRejects(t *testing.T) {
+	for _, onlyDirect := range []bool{true, false} {
+		home := t.TempDir()
+		C.SetHomeDir(home)
+		c := original()
+		c.Proxy = nil
+		c.ProxyGroup = nil
+		nodes := []map[string]any{{"name": "provider-direct", "type": "direct"}}
+		if !onlyDirect {
+			nodes = append(nodes, map[string]any{"name": "provider-proxy", "type": "socks5", "server": "127.0.0.1", "port": 1080})
+		}
+		c.ProxyProvider = map[string]map[string]any{"Airport": {"type": "inline", "payload": nodes}}
+		if err := Apply(c, Settings{Enabled: true, Protection: "strict"}, home); err != nil {
+			t.Fatal(err)
+		}
+		filtered := c.Rule[:0]
+		for _, r := range c.Rule {
+			if !strings.HasPrefix(r, "IP-ASN,") {
+				filtered = append(filtered, r)
+			}
+		}
+		c.Rule = filtered
+		parsed, err := config.ParseRawConfig(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = parsed.Providers["Airport"].Initial(); err != nil {
+			t.Fatal(err)
+		}
+		p := parsed.Proxies[ProtectedGroup]
+		selector, ok := p.Adapter().(interface{ Set(string) error })
+		if !ok {
+			t.Fatal("not selector")
+		}
+		if selector.Set("provider-direct") == nil {
+			t.Fatal("provider direct is selectable")
+		}
+		if onlyDirect {
+			selected := p.Unwrap(&C.Metadata{}, false)
+			if selected == nil || selected.Type() != C.Reject {
+				t.Fatal("provider direct-only must reject")
+			}
+		} else if err = selector.Set("provider-proxy"); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
