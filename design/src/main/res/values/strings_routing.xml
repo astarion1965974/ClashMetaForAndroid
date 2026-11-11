@@ -46,6 +46,8 @@
     <string name="managed_domain_invalid">域名格式无效，或与另一份例外名单重复</string>
     <string name="managed_cn">国内网站与 IP</string>
     <string name="managed_ai">AI 服务</string>
+    <string name="managed_claude">Claude / Claude Code</string>
+    <string name="managed_muse">Meta Muse / Muse Code</string>
     <string name="managed_media">流媒体与娱乐</string>
     <string name="managed_social">海外社交</string>
     <string name="managed_dev">开发服务</string>
@@ -62,7 +64,7 @@
     <string name="managed_update_offline">请先保存并启动 Clash，再更新规则。APK 内置的规则快照可用于首次启动。</string>
     <string name="managed_updating">正在更新规则…</string>
     <string name="managed_update_result">规则更新：成功 %1$d，失败 %2$d；失败的规则保留原缓存</string>
-    <string name="managed_order">优先级：域名例外 → 局域网 → 广告（可选）→ AI / 流媒体 / 社交 / 开发 → 国内域名 → 海外域名 → 国内 IP → 未匹配。</string>
+    <string name="managed_order">优先级：域名例外 → Claude / Muse 专属规则 → 局域网 → 广告（可选）→ AI / 流媒体 / 社交 / 开发 → 国内域名 → 海外域名 → 国内 IP → 未匹配。Claude 和 Muse 默认继承 AI 出口，可单独指定固定节点。</string>
     <string name="managed_targets_note">分类出口保存在本机；订阅更新后仍保留。若指定的节点或策略组已被订阅删除，该分类回退到默认出口。</string>
     <string name="managed_no_exceptions">未设置</string>
     <string name="managed_exception_count">%1$d 个域名</string>
