@@ -4,11 +4,14 @@ import (
     "testing"
 
     "github.com/metacubex/mihomo/config"
+    C "github.com/metacubex/mihomo/constant"
 )
 
 func TestAIProxyDNSRespectsSelectedExitsAndParses(t *testing.T) {
     cfg := original()
     cfg.DNS.Enable = true
+    home := t.TempDir()
+    C.SetHomeDir(home)
     settings := Settings{
         Enabled: true,
         DomesticDNS: true,
@@ -19,7 +22,7 @@ func TestAIProxyDNSRespectsSelectedExitsAndParses(t *testing.T) {
             "muse": "Subscription group",
         },
     }
-    if err := Apply(cfg, settings, t.TempDir()); err != nil {
+    if err := Apply(cfg, settings, home); err != nil {
         t.Fatal(err)
     }
     policy := cfg.DNS.NameServerPolicy
