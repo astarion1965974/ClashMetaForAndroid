@@ -3,6 +3,7 @@ package routing
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -38,9 +39,14 @@ func TestProtectedRoutesRejectUnsafeTargets(t *testing.T) {
 		if c.DNS.NameServerPolicy == nil || len(c.DNS.ProxyServerNameserver) == 0 {
 			t.Fatal("missing DNS policies or bootstrap")
 		}
-		group := c.ProxyGroup[len(c.ProxyGroup)-1]
-		if group["empty-fallback"] != "REJECT" || !strings.Contains(group["exclude-type"].(string), "Direct") {
-			t.Fatal(group)
+		for _, group := range c.ProxyGroup[len(c.ProxyGroup)-3 : len(c.ProxyGroup)-1] {
+			if group["empty-fallback"] != "REJECT" || !strings.Contains(group["exclude-type"].(string), "Direct") {
+				t.Fatal(group)
+			}
+		}
+		outer := c.ProxyGroup[len(c.ProxyGroup)-1]
+		if !reflect.DeepEqual(outer["proxies"], []string{ProtectedAuto, ProtectedManual}) {
+			t.Fatal(outer)
 		}
 	}
 }
@@ -64,7 +70,7 @@ func TestProtectedProxyGroupFiltersDirectAndReject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := parsed.Proxies[ProtectedGroup]
+	p := parsed.Proxies[ProtectedManual]
 	if p == nil {
 		t.Fatal("missing protected group")
 	}
@@ -168,7 +174,7 @@ func TestProtectedGroupRejectsWhenOnlyDirectIsAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := parsed.Proxies[ProtectedGroup]
+	p := parsed.Proxies[ProtectedManual]
 	if p == nil {
 		t.Fatal("no protected group")
 	}
@@ -219,7 +225,38 @@ func TestProtectedProviderFiltersDirectAndEmptyProviderRejects(t *testing.T) {
 		if err = parsed.Providers["Airport"].Initial(); err != nil {
 			t.Fatal(err)
 		}
-		p := parsed.Proxies[ProtectedGroup]
+		outer := parsed.Proxies[ProtectedGroup]
+		initial := outer.Unwrap(&C.Metadata{}, false)
+		if initial == nil || initial.Name() != ProtectedAuto {
+			t.Fatal("automatic group must be the default")
+		}
+		choose, ok := outer.Adapter().(interface{ Set(string) error })
+		if !ok {
+			t.Fatal("outer not selectable")
+		}
+		if err = choose.Set(ProtectedAuto); err != nil {
+			t.Fatal(err)
+		}
+		if choose.Set("provider-direct") == nil {
+			t.Fatal("outer accepts untrusted direct")
+		}
+		auto := parsed.Proxies[ProtectedAuto]
+		list, ok := auto.Adapter().(interface{ GetProxies(bool) []C.Proxy })
+		if !ok {
+			t.Fatal("automatic group missing proxies")
+		}
+		for _, candidate := range list.GetProxies(false) {
+			if candidate.Type() == C.Direct {
+				t.Fatal("auto group contains direct")
+			}
+		}
+		if onlyDirect {
+			selected := auto.Unwrap(&C.Metadata{}, false)
+			if selected == nil || selected.Type() != C.Reject {
+				t.Fatal("automatic group must reject if only direct exists")
+			}
+		}
+		p := parsed.Proxies[ProtectedManual]
 		selector, ok := p.Adapter().(interface{ Set(string) error })
 		if !ok {
 			t.Fatal("not selector")

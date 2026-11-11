@@ -2,8 +2,8 @@ package com.github.kr328.clash.service.clash.module
 
 /** Resolves configured selections, not a claim that every rule uses the same exit. */
 internal object NotificationNodeResolver {
-    data class Group(val type: String, val selected: String, val childGroups: Set<String>)
-    data class Entry(val group: String, val node: String?, val balanced: Boolean = false)
+    data class Group(val type: String, val selected: String, val childGroups: Set<String>, val unavailable: Boolean = false)
+    data class Entry(val group: String, val node: String?, val balanced: Boolean = false, val unavailable: Boolean = false)
 
     fun mainGroup(mode: String, names: List<String>, preferred: String): String? {
         if (mode == "Direct") return null
@@ -47,6 +47,7 @@ internal object NotificationNodeResolver {
             repeat(32) {
                 if (!visited.add(current)) return Entry(name, null)
                 val value = group(current) ?: return Entry(name, null)
+                if (value.unavailable) return Entry(name, null, unavailable = true)
                 if (value.type == "LoadBalance" || value.type == "Relay") {
                     return Entry(name, null, balanced = true)
                 }

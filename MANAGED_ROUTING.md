@@ -40,10 +40,11 @@ The promoted notification's short critical text now shows only the selected main
 Rule management offers standard, strict and full-proxy levels. Existing stored
 settings without a level retain standard behavior; new installations are offered
 strict when managed routing is enabled. Protected profiles use the dedicated
-`Live · 严格代理` selector, which only exposes leaf proxy adapters and rejects
-when no permitted proxy is present. The selected proxy is not automatically
-replaced on failure; choose a healthy node manually. The protected selector and
-all overseas/default routes cannot resolve to DIRECT.
+`Live · 严格代理` selector, which contains only the internally created safe
+manual and automatic groups. Both child groups expose only leaf proxy adapters
+and reject when no permitted proxy is present. The automatic group uses lazy
+health checks and chooses an available proxy; the manual group lets the user
+select a specific node. Neither can fall back to DIRECT.
 
 Strict mode routes private networks directly and uses an intentionally small
 built-in domestic-domain allowlist plus explicit user direct exceptions. Known
