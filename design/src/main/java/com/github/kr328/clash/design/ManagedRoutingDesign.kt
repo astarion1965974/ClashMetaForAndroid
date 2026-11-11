@@ -203,6 +203,7 @@ class ManagedRoutingDesign(
                     settings.blockAds = false
                     settings.domesticDns = true
                     settings.aiProxyDns = true
+                    settings.domesticIpDirect = true
                     dismiss()
                     changed()
                 }),
@@ -255,6 +256,13 @@ class ManagedRoutingDesign(
                         title = stringResource(R.string.managed_protection_forced),
                         summary = stringResource(R.string.managed_protection_forced_hint), enabled = false,
                     ) { }
+                }
+                if (settings.protectedMode && settings.protectionLevel == "strict") Group {
+                    NativeCouiSwitch(
+                        title = stringResource(R.string.managed_domestic_ip_direct),
+                        summary = stringResource(R.string.managed_domestic_ip_direct_hint),
+                        value = settings::domesticIpDirect, enabled = editable, onChanged = { changed() },
+                    )
                 }
                 if (!settings.protectedMode) Group(title = stringResource(R.string.managed_categories)) {
                     categories.forEachIndexed { index, (category, titleRes) ->

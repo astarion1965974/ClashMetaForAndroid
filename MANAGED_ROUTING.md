@@ -50,8 +50,12 @@ Strict mode routes private networks directly and uses the bundled MetaCubeX
 CN domain rules plus explicit user direct exceptions. Known overseas categories
 and explicit proxy domains precede the CN domain rules. Domain categorization is
 not proof of a service's ownership or geographic location; shared domains can be
-misclassified. Unknown hostnames and public IP addresses go to the protected
-selector; there is no CN GeoIP direct rule. Full-proxy mode ignores domestic exceptions. The DNS policy
+misclassified. The optional domestic-IP direct switch defaults on for new and
+existing settings in strict mode: after known overseas and domain rules, already
+available CN public IPs match a `no-resolve` direct rule, then all remaining
+traffic goes to the proxy. This may include an unknown overseas service using a
+CN IP, even if a hostname is present. Disable the switch to send unmatched public
+IPs to the proxy. Full-proxy mode ignores domestic exceptions and this switch. The DNS policy
 uses fake-IP, direct domestic resolvers for allowed domains, proxied DoH for the
 rest, and a separate direct bootstrap resolver for proxy-node names. Protected
 profiles override app bypass, VPN allowBypass, private-network exclusions, IPv6

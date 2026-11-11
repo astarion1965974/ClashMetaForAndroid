@@ -18,6 +18,12 @@ const ProtectedManual = "Live · 严格手动"
 const ProtectedAuto = "Live · 严格自动"
 const excludedAdapterTypes = "Direct|Reject|RejectDrop|Compatible|Pass|PassRule|Rematch|Dns|Relay|Selector|Fallback|URLTest|LoadBalance"
 
+// Old settings did not contain the switch. The user-selected compatibility
+// default applies even before the UI first saves the new field.
+func (s Settings) domesticIPDirectEnabled() bool {
+	return s.DomesticIPDirect == nil || *s.DomesticIPDirect
+}
+
 // A small list of domestic services supplements the maintained CN domain set.
 // Neither this list nor upstream categorization proves the ownership of a host.
 var verifiedCN = []string{
@@ -53,14 +59,15 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		cfg.RuleProvider = map[string]map[string]any{}
 	}
 	for _, r := range Sets {
-		// Domestic domains use a maintained ruleset in strict mode, after
-		// known foreign services; a China IP alone is never a direct signal.
-		if r.Name == "cn-ip" || (r.Name == "cn" && s.Protection != "strict") || (r.Category == "ads" && !s.BlockAds) {
+		// The IP compatibility provider is optional and is never used in full-proxy mode.
+		if (r.Name == "cn-ip" && (s.Protection != "strict" || !s.domesticIPDirectEnabled())) || (r.Name == "cn" && s.Protection != "strict") || (r.Category == "ads" && !s.BlockAds) {
 			continue
 		}
 		name := Prefix + r.Name
 		if r.Name == "cn" {
 			name = Prefix + "cn-compat"
+		} else if r.Name == "cn-ip" {
+			name = Prefix + "cn-ip-compat"
 		}
 		if _, exists := cfg.RuleProvider[name]; exists {
 			return fmt.Errorf("reserved managed provider: %s", name)
@@ -90,6 +97,11 @@ func applyProtected(cfg *config.RawConfig, s Settings, cacheDir string) error {
 		for _, d := range direct {
 			rules = append(rules, "DOMAIN-SUFFIX,"+strings.ToLower(d)+",DIRECT")
 		}
+	}
+	if s.Protection == "strict" && s.domesticIPDirectEnabled() {
+		// Only examine an IP already present; known overseas and explicit proxy
+		// rules have matched first. This is not a domain-absence check.
+		rules = append(rules, "RULE-SET,live-cn-ip-compat,DIRECT,no-resolve")
 	}
 	cfg.Rule = append(rules, "MATCH,"+ProtectedGroup)
 	cfg.SubRules = nil

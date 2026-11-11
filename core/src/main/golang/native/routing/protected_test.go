@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"encoding/json"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -30,8 +31,12 @@ func TestProtectedRoutesRejectUnsafeTargets(t *testing.T) {
 				t.Errorf("%s missing %s", level, expected)
 			}
 		}
-		if strings.Contains(joined, "live-cn-ip") || strings.Contains(joined, ",Subscription group") {
+		ipRule := "RULE-SET,live-cn-ip-compat,DIRECT,no-resolve"
+		if (level == "strict") != strings.Contains(joined, ipRule) || strings.Contains(joined, ",Subscription group") {
 			t.Fatal(joined)
+		}
+		if level == "strict" && !(strings.Index(joined, "RULE-SET,live-foreign,") < strings.Index(joined, ipRule) && strings.Index(joined, ipRule) < strings.Index(joined, "MATCH,")) {
+			t.Fatal("unsafe IP rule precedence", joined)
 		}
 		if (level == "strict") != strings.Contains(joined, "DOMAIN-SUFFIX,my-domestic.example,DIRECT") {
 			t.Fatal(joined)
@@ -106,9 +111,18 @@ func TestProtectedBundledRuleRouting(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, level := range []string{"strict", "full"} {
+	off, on := false, true
+	cases := []struct {
+		level       string
+		ipDirect    *bool
+		chinaDirect bool
+	}{
+		{"strict", nil, true}, {"strict", &off, false}, {"full", nil, false}, {"full", &on, false},
+	}
+	for _, tc := range cases {
+		level := tc.level
 		c := original()
-		if err = Apply(c, Settings{Enabled: true, Protection: level}, home); err != nil {
+		if err = Apply(c, Settings{Enabled: true, Protection: level, DomesticIPDirect: tc.ipDirect}, home); err != nil {
 			t.Fatal(err)
 		}
 		filtered := c.Rule[:0]
@@ -165,11 +179,41 @@ func TestProtectedBundledRuleRouting(t *testing.T) {
 				t.Errorf("%s %s DNS=%s want=%s", level, host, got, dnsWant)
 			}
 		}
-		// A public address, including a well-known CN resolver, is never
-		// made direct solely by the country of its IP address.
-		for _, ip := range []string{"223.5.5.5", "114.114.114.114", "8.8.8.8"} {
-			if got := route(&C.Metadata{DstIP: netip.MustParseAddr(ip)}); got != ProtectedGroup {
-				t.Errorf("%s IP %s route=%s", level, ip, got)
+		// The compatibility switch only changes CN public-IP fallback.
+		// Already identified overseas domains still take priority.
+		for _, ip := range []string{"223.5.5.5", "114.114.114.114"} {
+			expected := ProtectedGroup
+			if tc.chinaDirect {
+				expected = "DIRECT"
+			}
+			if got := route(&C.Metadata{DstIP: netip.MustParseAddr(ip)}); got != expected {
+				t.Errorf("%s IP %s route=%s want=%s", level, ip, got, expected)
+			}
+		}
+		if got := route(&C.Metadata{DstIP: netip.MustParseAddr("8.8.8.8")}); got != ProtectedGroup {
+			t.Errorf("foreign IP route=%s", got)
+		}
+		if got := route(&C.Metadata{Host: "chatgpt.com", DstIP: netip.MustParseAddr("223.5.5.5")}); got != ProtectedGroup {
+			t.Errorf("protected host with CN IP route=%s", got)
+		}
+		expectedUnknown := ProtectedGroup
+		if tc.chinaDirect {
+			expectedUnknown = "DIRECT"
+		}
+		if got := route(&C.Metadata{Host: "unknown-site-example.xyz", DstIP: netip.MustParseAddr("223.5.5.5")}); got != expectedUnknown {
+			t.Errorf("unknown host with already resolved CN IP route=%s", got)
+		}
+		if tc.chinaDirect {
+			for _, rule := range parsed.Rules {
+				if rule.RuleType() != C.RuleSet || rule.Payload() != "live-cn-ip-compat" {
+					continue
+				}
+				called := false
+				m := &C.Metadata{Host: "unknown-site-example.xyz"}
+				matched, _ := rule.Match(m, C.RuleMatchHelper{ResolveIP: func() { called = true; m.DstIP = netip.MustParseAddr("223.5.5.5") }})
+				if called || matched {
+					t.Error("IP fallback unexpectedly requested DNS resolution")
+				}
 			}
 		}
 		if got := route(&C.Metadata{DstIP: netip.MustParseAddr("192.168.1.1")}); got != "DIRECT" {
@@ -364,6 +408,34 @@ func TestProtectedForeignAndExplicitProxyPrecedeDomesticOverlap(t *testing.T) {
 		}
 		if dns := diagnostic.InspectDNSPolicy(parsed.DNS, host); dns.Route != "proxy" {
 			t.Errorf("%s DNS=%+v", host, dns)
+		}
+	}
+}
+
+func TestDomesticIPDirectSettingsMigration(t *testing.T) {
+	cases := []struct {
+		json string
+		want bool
+	}{
+		{`{"enabled":true,"protectionLevel":"strict"}`, true},
+		{`{"enabled":true,"protectionLevel":"strict","domesticIpDirect":true}`, true},
+		{`{"enabled":true,"protectionLevel":"strict","domesticIpDirect":false}`, false},
+	}
+	for _, tc := range cases {
+		var settings Settings
+		if err := json.Unmarshal([]byte(tc.json), &settings); err != nil {
+			t.Fatal(err)
+		}
+		if got := settings.domesticIPDirectEnabled(); got != tc.want {
+			t.Fatalf("%s -> %v", tc.json, got)
+		}
+		c := original()
+		if err := Apply(c, settings, t.TempDir()); err != nil {
+			t.Fatal(err)
+		}
+		_, hasProvider := c.RuleProvider["live-cn-ip-compat"]
+		if hasProvider != tc.want {
+			t.Fatalf("%s IP provider=%v", tc.json, hasProvider)
 		}
 	}
 }
